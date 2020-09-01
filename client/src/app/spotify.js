@@ -1,8 +1,4 @@
-import axios from "axios";
-require('dotenv').config();
-
-
-export function authorizeUser() {
-    console.log("Authorizing");
-
+export function login(){
+    console.log("login");
+    window.location.href = "http://localhost:5000/api/spotify/login"
 }

@@ -5,8 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server",
-    "server": "nodemon server",
-    "client": "npm run serve --prefix client"
+    "server": "nodemon server"
   },
   "repository": {
     "type": "git",
@@ -22,10 +21,13 @@
     "nodemon": "^2.0.4"
   },
   "dependencies": {
+    "body-parser": "^1.19.0",
     "concurrently": "^5.3.0",
+    "cors": "^2.8.5",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "morgan": "^1.10.0",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.6.0",
+    "querystring": "^0.2.0"
   }
 }
