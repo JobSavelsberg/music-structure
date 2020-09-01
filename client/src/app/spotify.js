@@ -1,4 +1,8 @@
-export function login(){
-    console.log("login");
-    window.location.href = "http://localhost:5000/api/spotify/login"
+import * as SpotifyWebApi from 'spotify-web-api-js';
+ 
+export const spotify = new SpotifyWebApi();
+
+export function spotifyInit(token){ 
+  spotify.setAccessToken(token);
 }
+
