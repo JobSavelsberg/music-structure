@@ -7,7 +7,7 @@
                     
                   
       <v-text-field
-        :v-model="searchQuery"
+        v-model="searchQuery"
         hide-details
         append-icon="mdi-magnify"
         single-line
@@ -22,18 +22,20 @@
       <v-btn icon>
         <v-icon>mdi-dots-vertical</v-icon>
       </v-btn>
-      
-            
     </v-app-bar>
-    <v-sheet>
-      <h1>Welcome {{user.display_name}}</h1>
-      <Album v-for="(track, index) in topTracks" :key="index" :album="track" :imgSize="0"/>
-    </v-sheet>
+
+    <TrackSelector v-model="selected" :tracks="trackList" :album-size="albumSize"/>
+    <h1 v-if="dataLoaded">
+      {{ trackList[selected].name }}
+    </h1>
+    <Visualization v-if="dataLoaded" :track="trackList[selected]"/>
+      
   </div>
 </template>
 
 <script>
-import Album from "../components/Album"
+import TrackSelector from "../components/TrackSelector"
+import Visualization from "../components/Visualization"
 
 import * as player from '../app/player';
 import * as app from '../app/app';
@@ -43,24 +45,45 @@ export default {
   name: 'Home',
   data () { 
     return {
+      albumSize: 120,
       searchQuery: "",
       user: {},
-      topTracks: [],
+      dataLoaded: false,
+      trackList: [],
+      selected: 0,
     }
   },
   components: {
-    Album
+    TrackSelector,
+    Visualization
   },
   beforeMount(){
     spotifyInit(app.token);
     spotify.getMe().then((data)=>{
       this.user = data;
     })
-    spotify.getMyTopTracks().then((data)=>{
-      this.topTracks = data.items;
-      console.log(this.topTracks);
+    spotify.getMyTopTracks({limit:50, offset:0}).then((data)=>{
+      console.log(data);
+      this.trackList = data.items;
+      this.dataLoaded = true;
     })
     //player.initialize(app.token);
+  },
+  methods:{
+    onTrackScroll (e) {
+      console.log(e.target.scrollTop)
+      console.log(e.target.scrollLeft)
+
+    },
   }
 }
 </script>
+
+<style>
+.trackScroll{
+  overflow-x: auto;
+}
+.trackScroll::-webkit-scrollbar {
+  display: none;
+}
+</style>
