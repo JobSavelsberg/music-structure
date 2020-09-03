@@ -5,7 +5,8 @@
 
       <v-spacer></v-spacer>
                     
-                  
+      <form v-on:submit.prevent="search">
+
       <v-text-field
         v-model="searchQuery"
         hide-details
@@ -15,6 +16,7 @@
         dense
         filled
       ></v-text-field>
+      </form>
       
       <v-btn icon>
         <v-icon>mdi-heart</v-icon>
@@ -72,7 +74,14 @@ export default {
       this.user = data;
     })
     spotify.getMyTopTracks({limit:50, offset:0}).then((tracks)=>{
-      this.trackList = tracks.items;
+      this.loadTracks(tracks.items)
+    }).catch((err)=>console.log(err));
+
+  },
+  methods:{
+    loadTracks(tracks){
+      this.readyForPlayer = false;
+      this.trackList = tracks;
       this.trackList.forEach((track, index) => {
         spotify.getAudioAnalysisForTrack(track.id).then((analysis)=>{
           this.trackAnalysisList[index] = analysis;
@@ -83,10 +92,7 @@ export default {
             console.log(err);
         })
       })
-    }).catch((err)=>console.log(err));
-
-  },
-  methods:{
+    },
     onTrackScroll (e) {
       console.log(e.target.scrollTop)
       console.log(e.target.scrollLeft)
@@ -94,6 +100,13 @@ export default {
     },
     playerStateChanged(state){
       this.playerState = state;
+    },
+    search(){
+      spotify.search(this.searchQuery, ["track"]).then((results) => {
+        this.loadTracks(results.tracks.items)
+      }).catch((err) => {
+        console.log(err);
+      })
     }
   }
 }

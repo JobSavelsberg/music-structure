@@ -1,7 +1,7 @@
 <template>
 
 <div>
-    <svg class="svgContainer">
+    <svg class="svgContainer" :height="verticalScale">
         <rect v-for="(segment, index) in analysis.segments"
             class="loudnessBlock"
             :key="index"

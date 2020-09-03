@@ -5,7 +5,7 @@ Vue.use(Vuetify);
 
 export default new Vuetify({
     theme: {
-        dark: false,
+        dark: true,
         themes:{
             // Spotify green = 1DB954
             // Spotify black = 191414

@@ -1,6 +1,5 @@
 <template>
     <div v-if="hasAnalysisData">
-        <v-divider></v-divider>
         <svg class="svgContainer">
 
             <rect v-for="(segment, index) in analysisData.segments"

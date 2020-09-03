@@ -80,8 +80,9 @@ export default {
             player.setTrack(this.track.uri)
         },
         clickedTimeSeeker () {
+            
             player.seek(this.seekTime).then((res) => {
-                //console.log(res);
+                if(!this.playing) this.play();
             }).catch((err)=> {
                 console.log(err)
             })
