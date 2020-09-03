@@ -42,7 +42,6 @@ export default {
   },
   methods: {
       sendValue () {
-          console.log(this.selected);
           this.$emit('input', this.selected);
       }
   }

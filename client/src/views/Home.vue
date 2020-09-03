@@ -25,10 +25,8 @@
     </v-app-bar>
 
     <TrackSelector v-model="selected" :tracks="trackList" :album-size="albumSize"/>
-    <h1 v-if="dataLoaded">
-      {{ trackList[selected].name }}
-    </h1>
-    <Visualization v-if="dataLoaded" :track="trackList[selected]"/>
+    <Player v-if="readyForPlayer" :track="trackList[selected]" :analysis="trackAnalysisList[selected]" :state="playerState"/>
+    <!--<Visualization v-if="allLoaded" :track="trackList[selected]" :analysis="trackAnalysisList[selected]"/>-->
       
   </div>
 </template>
@@ -36,9 +34,10 @@
 <script>
 import TrackSelector from "../components/TrackSelector"
 import Visualization from "../components/Visualization"
-
-import * as player from '../app/player';
+import Player from "../components/Player"
 import * as app from '../app/app';
+import * as player from "../app/player"
+
 import {spotify, spotifyInit} from '../app/spotify';
 
 export default {
@@ -48,26 +47,44 @@ export default {
       albumSize: 120,
       searchQuery: "",
       user: {},
-      dataLoaded: false,
       trackList: [],
+      trackAnalysisList: [],
       selected: 0,
+      readyForPlayer: false,
+      playerState: {},
+    }
+  },
+  computed: {
+    allLoaded() {
+      return this.trackList.length !== 0 && this.trackAnalysisList.length !== 0 && 
+              this.trackList.length === this.trackAnalysisList.length;
     }
   },
   components: {
     TrackSelector,
-    Visualization
+    //Visualization,
+    Player
   },
   beforeMount(){
+    player.initialize(app.token, this.playerStateChanged);
     spotifyInit(app.token);
     spotify.getMe().then((data)=>{
       this.user = data;
     })
-    spotify.getMyTopTracks({limit:50, offset:0}).then((data)=>{
-      console.log(data);
-      this.trackList = data.items;
-      this.dataLoaded = true;
-    })
-    //player.initialize(app.token);
+    spotify.getMyTopTracks({limit:50, offset:0}).then((tracks)=>{
+      this.trackList = tracks.items;
+      this.trackList.forEach((track, index) => {
+        spotify.getAudioAnalysisForTrack(track.id).then((analysis)=>{
+          this.trackAnalysisList[index] = analysis;
+          if(index === this.selected){
+            this.readyForPlayer = true;
+          }
+        }).catch((err) => {
+            console.log(err);
+        })
+      })
+    }).catch((err)=>console.log(err));
+
   },
   methods:{
     onTrackScroll (e) {
@@ -75,6 +92,9 @@ export default {
       console.log(e.target.scrollLeft)
 
     },
+    playerStateChanged(state){
+      this.playerState = state;
+    }
   }
 }
 </script>

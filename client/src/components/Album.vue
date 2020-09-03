@@ -1,31 +1,31 @@
 <template>
-    <v-card :style="cardStyle" :class="active ? 'elevation-3' : 'elevation-0'">
-        <div class="track" v-ripple @click="clicked">
-            <v-img
-                :height="imgSize"
-                :width="imgSize"
-                :src="album.album.images[imgIndex].url"
-            ></v-img>
-            <v-card-text class="pl-2 py-0 pt-1 ml-0 my-0">
-                <div class="text-subtitle-2 text--primary text-truncate " >{{ album.name }}</div>  
-            </v-card-text>
-        </div>
-        <v-card-actions class="pl-0 py-0 ml-0 my-0">
-            <v-btn
-            class="artistButton"
-            text
-            color="grey"
-            small
-            >
-            <span
-            class="artistButtonText text-caption text-truncate"
-            :style="{'max-width': this.imgSize-12 + 'px'}"
-            >
-                {{album.artists[0].name }}
-                </span>
-            </v-btn>
-        </v-card-actions>
-    </v-card>
+        <v-card :style="cardStyle" :class="active ? 'elevation-3' : 'elevation-0'" >
+            <div class="track" v-ripple @click="clicked">
+                <v-img
+                    :height="imgSize"
+                    :width="imgSize"
+                    :src="album.album.images[imgIndex].url"
+                ></v-img>
+                <v-card-text class="pl-2 py-0 pt-1 ml-0 my-0">
+                    <div class="text-subtitle-2 text--primary text-truncate " >{{ album.name }}</div>  
+                </v-card-text>
+            </div>
+            <v-card-actions class="pl-0 py-0 ml-0 my-0">
+                <v-btn
+                class="artistButton"
+                text
+                color="grey"
+                small
+                >
+                <span
+                class="artistButtonText text-caption text-truncate"
+                :style="{'max-width': this.imgSize-12 + 'px'}"
+                >
+                    {{album.artists[0].name }}
+                    </span>
+                </v-btn>
+            </v-card-actions>
+        </v-card>
 </template>
 
 <script>
@@ -41,7 +41,6 @@ export default {
         }
     },
     mounted () {
-        console.log(this.album);
     },
     computed: {
         imgIndex () {
