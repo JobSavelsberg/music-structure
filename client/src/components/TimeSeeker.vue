@@ -1,7 +1,7 @@
 <template>
 
 <div>
-    <svg class="svgContainer" :height="verticalScale">
+    <svg class="svgContainer" :height="verticalScale" @click="clickedSVG">
         <rect v-for="(segment, index) in analysis.segments"
             class="loudnessBlock"
             :key="index"
@@ -11,14 +11,13 @@
             :y="verticalScale-loudness(segment.loudness_max)*verticalScale"
             :fill="segment.start+segment.duration/2 < seek/1000 ? 'grey' : baseColor"
             @mouseover="hover = index"
-            @click="clicked(segment)"
         />
         <rect
             :x="50+seek/1000*scale-1"
             :y="0"
             :width="2"
             :height="verticalScale"
-            fill="grey"
+            fill="#1DB954"
         />
     </svg>
 </div>
@@ -50,7 +49,6 @@ export default {
         this.hover = 0;
         this.seek = 0; // in ms
         this.$emit('input', 0);
-
     },
     watch:{
         value: 'valueChanged',
@@ -69,16 +67,21 @@ export default {
             const l = Math.max(0,60+db)/60;
             return l*l;
         },
-        clicked(segment){
-            const ms = Math.round(segment.start*1000);
+        clicked(seconds){
+            const ms = Math.round(seconds*1000);
             this.seek =  ms;
             this.$emit('input', ms);
-            this.$emit('clicked');
+            this.$emit('clickedseeker');
+        },
+        clickedSVG(event){
+            const posY = Math.min(Math.max(0,event.clientX-50)/(this.windowWidth -100), 1);
+            this.clicked(posY*this.analysis.track.duration)
         },
         valueChanged(){
             this.seek = this.value;
         },
         changedTrack(){
+            console.log("changeTrackInSeeker");
             this.hover = 0;
             this.seek = 0; // in ms
             this.$emit('input', 0);
@@ -93,8 +96,10 @@ export default {
   overflow: visible;
   width: 100%;
   height: 100%;
+  cursor: pointer;
 }
 .loudnessBlock{
-    transition: fill 300ms ease;
+    transition: fill 200ms ease;
+    cursor: pointer
 }
 </style>

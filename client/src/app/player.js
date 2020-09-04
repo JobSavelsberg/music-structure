@@ -2,33 +2,42 @@ import {spotify} from '../app/spotify';
 
 export let deviceId = null;
 let playerRef;
+let trackIsLoaded = false;
+let currentTrackURI = "";
+let nextTrackURI = "";
+let nexStartPosition = 0;
 
-export let currentTrack = null;
-export let nextTrack = null;
-export let seeker = 0;
-
-export function setTrack(trackUri){
-    nextTrack = trackUri;
+export async function setTrack(trackUri, startPosition){
+    nextTrackURI = trackUri;
+    nexStartPosition = startPosition;
 }
 
-export async function play(){
-    if(nextTrack){
-        spotify.play({device_id: deviceId, uris: [nextTrack]}).catch((err) => console.log(err));
-        currentTrack = nextTrack;
-        nextTrack = null;
-    }else{
-        playerRef.resume();
+export async function resume(position){
+    if(deviceId){
+        if(trackIsLoaded && nextTrackURI === ""){
+            seek(position);
+            return playerRef.resume();
+        }else{ // Start new track
+            return spotify.play({device_id: deviceId, uris: [nextTrackURI], position_ms: position || nexStartPosition}).then(()=> {
+                trackIsLoaded = true;
+                currentTrackURI = nextTrackURI;
+                nextTrackURI = "";
+                nexStartPosition = 0;
+            });
+        }
     }
 }
 
-export function pause(){
-    if(currentTrack){
-        playerRef.pause();
+export async function pause(){
+    if(deviceId && trackIsLoaded){
+        return playerRef.pause();
     }
 }
 
 export async function seek(time){
-    return playerRef.seek(time)
+    if(deviceId && trackIsLoaded){
+        return playerRef.seek(time)
+    }
 }
 
 export async function deviceIdSet(){
