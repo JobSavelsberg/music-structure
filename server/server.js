@@ -15,12 +15,7 @@ if(process.env.NODE_ENV === 'development'){
     app.use(morgan('dev'));
 }
 
-// Use a fallback for non-root routes (required for Vue router)
-//   NOTE: History fallback must be "used" before the static serving middleware!
-app.use(history({
-    // OPTIONAL: Includes more verbose logging
-    verbose: true
-}))
+
 
 app.use(bodyParser.urlencoded({
     extended: true
@@ -32,11 +27,15 @@ app.use(cors({
     origin: true,
     credentials: true
 }))
-
-app.use('/', serveStatic(path.join(__dirname, '../client/dist')));
-app.use('/callback', serveStatic(path.join(__dirname, '../client/dist')));
-
 app.use("/api/spotify", spotifyAPI);
+
+// Use a fallback for non-root routes (required for Vue router)
+//   NOTE: History fallback must be "used" before the static serving middleware!
+app.use(history({
+    // OPTIONAL: Includes more verbose logging
+    verbose: true
+}))
+app.use(express.static(path.join(__dirname, '../client/dist')));
 
 const port = process.env.PORT || 5000;
 
