@@ -6,6 +6,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 const serveStatic = require('serve-static')
+var history = require('connect-history-api-fallback')
 
 dotenv.config();
 const app = express();
@@ -13,6 +14,13 @@ const app = express();
 if(process.env.NODE_ENV === 'development'){
     app.use(morgan('dev'));
 }
+
+// Use a fallback for non-root routes (required for Vue router)
+//   NOTE: History fallback must be "used" before the static serving middleware!
+app.use(history({
+    // OPTIONAL: Includes more verbose logging
+    verbose: true
+}))
 
 app.use(bodyParser.urlencoded({
     extended: true
@@ -26,6 +34,7 @@ app.use(cors({
 }))
 
 app.use('/', serveStatic(path.join(__dirname, '../client/dist')));
+app.use('/callback', serveStatic(path.join(__dirname, '../client/dist')));
 
 app.use("/api/spotify", spotifyAPI);
 

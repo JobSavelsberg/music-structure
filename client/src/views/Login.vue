@@ -27,7 +27,7 @@ export default {
   },
   methods: {
       spotifyAuthorize () {
-          window.location.href="http://localhost:5000/api/spotify/login"
+          window.location.href= process.env.VUE_APP_HOST_URL + "/api/spotify/login"
       }
   }
 }
