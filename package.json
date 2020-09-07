@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node server/server",
     "server": "nodemon --watch server server/server.js",
-    "build": "cd client && npm run build",
+    "client:build": "cd client && npm run build",
     "client": "cd client && npm run serve"
   },
   "repository": {
