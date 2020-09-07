@@ -4,6 +4,8 @@ const morgan = require('morgan');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const path = require('path');
+const serveStatic = require('serve-static')
 
 dotenv.config({ path: '../.env' });
 const app = express();
@@ -22,6 +24,8 @@ app.use(cors({
     origin: true,
     credentials: true
 }))
+
+app.use('/', serveStatic(path.join(__dirname, '../client/dist')));
 
 app.use("/api/spotify", spotifyAPI);
 

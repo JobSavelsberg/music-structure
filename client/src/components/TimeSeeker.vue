@@ -1,7 +1,6 @@
 <template>
-
 <div>
-    <svg class="svgContainer" :height="verticalScale" @click="clickedSVG">
+    <svg class="waveform" :height="verticalScale" @click="clickedSVG">
         <rect v-for="(segment, index) in analysis.segments"
             class="loudnessBlock"
             :key="index"
@@ -13,7 +12,7 @@
             @mouseover="hover = index"
         />
         <rect
-            :x="50+seek/1000*scale-1"
+            :x="50+((seek/1000.0)*scale)-1"
             :y="0"
             :width="2"
             :height="verticalScale"
@@ -92,7 +91,7 @@ export default {
 
 
 <style>
-.svgContainer{
+.waveform{
   overflow: visible;
   width: 100%;
   height: 100%;

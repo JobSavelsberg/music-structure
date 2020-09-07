@@ -17,10 +17,10 @@
         </div>
         <TimeSeeker v-if="analysisReady" v-model="seekTime" :track="track" :analysis="analysis" @clickedseeker="clickedTimeSeeker"/>
         <div v-if="!analysisReady">
-            <v-progress-circular
+            <v-progress-linear
                 indeterminate
-                size=56
-            ></v-progress-circular>
+                color="success"
+            ></v-progress-linear>
          </div>
     </div>
 </template>
@@ -45,6 +45,7 @@ export default {
             playing: false,
             seekTime: 0,
             interval: null,
+            lastTimePoll: null,
         }
     },
     beforeCreate () {
@@ -75,7 +76,7 @@ export default {
             if(!this.playing){
                 player.resume(this.seekTime).then(() => {
                     this.playing = true;
-                    this.interval = setInterval(() => this.seekTime+=33, 33);
+                    this.interval = setInterval(() => this.seekerTimer(33), 33);
                 });
             }
         },
@@ -108,6 +109,15 @@ export default {
         stateChanged(){
             this.seekTime = this.state.position;
         },
+        seekerTimer(increment){
+            const now = new Date();
+            let elapsed = increment
+            if(this.lastTimePoll){
+                elapsed = now-this.lastTimePoll;
+            }
+            this.lastTimePoll = now;
+            this.seekTime+=elapsed;
+        }
     },
     components:{
         TimeSeeker

@@ -48,7 +48,7 @@ export async function deviceIdSet(){
                 console.log("resolved after", new Date() - timeWas, "ms");
                 clearInterval(wait);
                 resolve();
-            } else if (new Date() - timeWas > 5000) { // Timeout
+            } else if (new Date() - timeWas > 10000) { // Timeout
                 console.log("rejected after", new Date() - timeWas, "ms");
                 clearInterval(wait);
                 reject();

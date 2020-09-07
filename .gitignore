@@ -3,6 +3,7 @@ client/node_modules
 server/node_modules
 node
 /dist
+/project
 
 
 # local env files

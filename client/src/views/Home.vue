@@ -28,8 +28,7 @@
 
     <TrackSelector v-model="selected" :tracks="trackList" :album-size="albumSize"/>
     <Player :analysis-ready="analysisReady" :track="selectedTrack" :analysis="selectedAnalysis" :state="playerState"/>
-    
-    <!--<Visualization v-if="allLoaded" :track="trackList[selected]" :analysis="trackAnalysisList[selected]"/>-->
+    <Visualization :analysis-ready="analysisReady" :track="selectedTrack" :analysis="selectedAnalysis"/>
       
   </div>
 </template>
@@ -78,7 +77,7 @@ export default {
   },
   components: {
     TrackSelector,
-    //Visualization,
+    Visualization,
     Player
   },
   beforeMount(){
