@@ -25,21 +25,12 @@ app.use(cors({
     credentials: true
 }))
 
+app.use('/', serveStatic(path.join(__dirname, '../client/dist')));
 
 app.use("/api/spotify", spotifyAPI);
 
-const port = process.env.BACKEND_PORT || 5000;
+const port = process.env.PORT || 5000;
 
 app.listen(port, () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${port}`);
 })
-
-if(process.env.NODE_ENV === 'production'){
-    const clientApp = express();
-    const clientPort = process.env.PORT || 8080;
-    clientApp.use('/', serveStatic(path.join(__dirname, '../client/dist')));
-    
-    clientApp.listen(clientPort, () => {
-        console.log(`Frontend running in ${process.env.NODE_ENV} mode on port ${clientPort}`);
-    })
-}
