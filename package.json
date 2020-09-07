@@ -4,8 +4,9 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "node server",
-    "server": "nodemon server"
+    "start": "node server/server",
+    "server": "nodemon --watch server server/server.js",
+    "client": "cd client && npm run serve"
   },
   "repository": {
     "type": "git",

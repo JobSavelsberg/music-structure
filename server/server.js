@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const serveStatic = require('serve-static')
 
-dotenv.config({ path: '../.env' });
+dotenv.config();
 const app = express();
 
 if(process.env.NODE_ENV === 'development'){
@@ -29,7 +29,7 @@ app.use('/', serveStatic(path.join(__dirname, '../client/dist')));
 
 app.use("/api/spotify", spotifyAPI);
 
-const port = process.env.SERVER_PORT || 8000;
+const port = process.env.SERVER_PORT || 5000;
 
 app.listen(port, () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${port}`);
