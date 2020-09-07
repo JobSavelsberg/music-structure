@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const port = process.env.SERVER_PORT || 5000;
-const url = ( process.env.HOST_URL || "http://localhost" + ":" + port ) + "/api";
+const url = ( process.env.VUE_APP_HOST_URL || "http://localhost" + ":" + port ) + "/api";
 const api = axios.create({
     baseURL: url,
     withCredentials: false,
