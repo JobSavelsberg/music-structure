@@ -1,61 +1,88 @@
-import axios from 'axios';
+import * as SpotifyWebApi from 'spotify-web-api-js';
+import * as auth from './authentication'; 
+import Track from './track'
+import vue from "../views/Home"
+import store from './../store'; // path to your Vuex store
 
-console.log(process.env);
+export const spotify = new SpotifyWebApi();
 
-const port = process.env.SERVER_PORT || 5000;
-const url = ( process.env.VUE_APP_HOST_URL || "http://localhost" + ":" + port ) + "/api";
-const api = axios.create({
-    baseURL: url,
-    withCredentials: false,
-});
+const allTracks = new Map(); 
 
-export let token;
-let tokenTimestamp;
-let expiresIn;
-let refreshToken;
+// Initialize spotify access, load tracks from local storage, get user data
+export async function initialize(){
+    loadAllTracks();
+    console.log("Got tracks from local storage: ", allTracks);
 
-export async function requestFirstToken(code){
-    await api.post('spotify/token', {
-        code: code
-    }).then((res) => {
-        token = res.data.access_token;
-        window.sessionStorage.setItem('token', token);
-        expiresIn = res.data.expires_in;
-        window.sessionStorage.setItem('tokenTimestamp', new Date().getTime().toString());
-        refreshToken = res.data.expires_in;
-        window.sessionStorage.setItem('refreshToken', refreshToken);
-    }).catch((err) => { 
-        console.log(err);
+    spotify.setAccessToken(auth.token);
+    spotify.getMe().then((data)=>{
+      store.commit('setUser', data);
+    }).catch((err)=>{
+        this.$router.push('/login');
+    });
+    spotify.getMyTopTracks({limit:50, offset:0}).then((tracks)=>{
+        loadTracksFromSpotify(tracks.items, false)
+        selectTrackAtIndex(0);
+    }).catch((err)=>console.log(err));
+}
+
+export async function selectTrackAtIndex(index){
+    store.commit('loadingTrack', true);
+    return getAnalysis(store.getters.trackList[index]).then(()=>{
+        store.commit('setSelectedIndex', index);
+        store.commit('loadingTrack', false);
     })
 }
 
-export async function requestRefreshToken(){
-    await api.post('spotify/token', {
-        refresh_token: refreshToken
-    }).then((res) => {
-        token = res.data.access_token;
-        window.sessionStorage.setItem('token', token);
-        expiresIn = res.data.expires_in;
-        window.sessionStorage.setItem('tokenTimestamp', new Date().getTime().toString());
-        refreshToken = res.data.expires_in;
-        window.sessionStorage.setItem('refreshToken', refreshToken);
-    }).catch((err) => { 
-        console.log(err);
+// Save tracks to local storage
+export function saveAllTracks(){
+    localStorage.allTracks = JSON.stringify(Array.from(allTracks.entries()));
+}
+
+// Save tracks to local storage
+export function loadAllTracks(){
+    const allTracksArray = JSON.parse(localStorage.allTracks);
+    allTracksArray.forEach((trackArray) => {
+        const track = new Track(trackArray[1].trackData, trackArray[1].analysisData)
+        allTracks.set(trackArray[0], track);
     })
 }
 
-export function isAuthorized(){
-    if(token === undefined){
-        const t = window.sessionStorage.getItem('token');
-        const e = window.sessionStorage.getItem('tokenTimestamp');
-        const r = window.sessionStorage.getItem('refreshToken');
-        if(t){
-            token = t;
-            // TODO: check if token is expired, if so renew
-            return true;
+/**
+ * Load tracks from spotify api result
+ */ 
+function loadTracksFromSpotify(tracks, keepCurrentTrack){
+    store.commit('clearTrackList');
+    console.log("tracks: ", tracks);
+    tracks.forEach((trackData) => {
+        if(allTracks.has(trackData.id)){
+            store.commit('addToTrackList', allTracks.get(trackData.id));
         }else{
-            return false
+            const track = new Track(trackData);
+            allTracks.set(trackData.id, track);
+            store.commit('addToTrackList', track);
         }
+    });
+    if(keepCurrentTrack){
+        //vue.trackList.push(currentTrack());
+    }else{
+        //selectTrack(vue.trackList[0]);
     }
-    return true;
+}
+
+export async function getAnalysis(track){
+    if(track.hasAnalysis()) return track.getAnalysis();
+    return spotify.getAudioAnalysisForTrack( track.getId())
+    .then((analysis)=>{
+        track.setAnalysis(analysis);
+    }).catch((err) => {
+        console.log(err);
+    })
+}
+
+export async function search(query){
+    spotify.search(query, ["track"]).then((results) => {
+        loadTracksFromSpotify(results.tracks.items, true)
+    }).catch((err) => {
+        console.log(err);
+    })
 }

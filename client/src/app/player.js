@@ -1,4 +1,4 @@
-import {spotify} from '../app/spotify';
+import {spotify} from '../app/app';
 
 export let deviceId = null;
 let playerRef;
@@ -16,27 +16,27 @@ export async function resume(position){
     if(deviceId){
         if(trackIsLoaded && nextTrackURI === ""){
             seek(position);
-            return playerRef.resume();
+            return playerRef.resume().catch((err)=>{console.log(err)});
         }else{ // Start new track
             return spotify.play({device_id: deviceId, uris: [nextTrackURI], position_ms: position || nexStartPosition}).then(()=> {
                 trackIsLoaded = true;
                 currentTrackURI = nextTrackURI;
                 nextTrackURI = "";
                 nexStartPosition = 0;
-            });
+            }).catch((err)=>{console.log(err)});
         }
     }
 }
 
 export async function pause(){
     if(deviceId && trackIsLoaded){
-        return playerRef.pause();
+        return playerRef.pause().catch((err)=>{console.log(err)});
     }
 }
 
 export async function seek(time){
     if(deviceId && trackIsLoaded){
-        return playerRef.seek(time)
+        return playerRef.seek(time).catch((err)=>{console.log(err)})
     }
 }
 
@@ -55,6 +55,12 @@ export async function deviceIdSet(){
             }
         }, 20);
     });
+}
+
+export function setVolume(volume){
+    if(playerRef){
+        playerRef.volume = volume;
+    }
 }
 
 async function waitForSpotifyWebPlaybackSDKToLoad () {
@@ -83,7 +89,6 @@ export async function initialize(token, stateChangedCallback) {
     playerRef.addListener('authentication_error', ({ message }) => { console.error(message); });
     playerRef.addListener('account_error', ({ message }) => { console.error(message); });
     playerRef.addListener('playback_error', ({ message }) => { console.error(message); });
-    
     // Playback status updates
     playerRef.addListener('player_state_changed', ({
         position,

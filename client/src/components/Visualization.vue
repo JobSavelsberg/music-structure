@@ -1,5 +1,5 @@
 <template>
-    <div class="vis" v-if="analysisReady">
+    <div class="vis" v-if="!$store.state.loadingTrack">
         <svg class="svgContainer" >
             <g v-for="(segment, index) in analysis.segments" :key="index+'segment'">
                 <g v-for="(n, i) in 12" :key="i+'v'">
@@ -23,30 +23,13 @@
                     />
                 </g>
             </g> 
-            <g v-for="(section, index) in analysis.sections" :key="index+'section'">
-                <rect
-                :width="section.duration*scale" 
-                :height="verticalScale"
-                :x="50+section.start*scale"
-                :y="26*(verticalScale+2)"
-                :fill="index % 2 === 0 ? 'blue' : 'yellow'"
+            <rect
+                    :x="50+(($store.state.seeker/1000.0)*scale)-1"
+                    :y="0"
+                    :width="2"
+                    :height="verticalScale*32"
+                    fill="#ffffff"
                 />
-                <rect
-                :width="section.duration*scale" 
-                :height="verticalScale"
-                :x="50+section.start*scale"
-                :y="27*(verticalScale+2)"
-                :fill="section.mode ===1 ? 'yellow' : section.mode === 0 ? 'blue' : grey "
-                />
-                <rect
-                :width="section.duration*scale" 
-                :height="verticalScale"
-                :x="50+section.start*scale"
-                :y="28*(verticalScale+2)"
-                :fill="pitchColorRange(section.key)"
-                />
-            </g> 
-
         </svg>
         <!-- <v-slider
           v-model="power"
@@ -58,27 +41,22 @@
 
 <script>
 import * as d3 from 'd3';
+import * as audioUtil from '../app/audioUtil'
 
 import * as colors from  '../app/colors'
 import { SpotifyVisualizer } from '../app/spotifyVisualizer';
 
 import * as player from '../app/player';
 import * as app from '../app/app';
-import {spotify, spotifyInit} from '../app/spotify';
 
 var pitchColor = d3.scaleSequential().domain([0,1]).interpolator(d3.interpolateViridis);
 var timbreColor = d3.scaleSequential().domain([-100,100]).interpolator(d3.interpolateViridis);
 var rainbowColor = d3.scaleSequential().domain([0, 11]).interpolator(d3.interpolateRainbow);
 export default {
-    props: {
-        track: Object,
-        analysis: Object,
-        analysisReady: Boolean,
-    },
     data () {
         return {
             hover: 0,
-            verticalScale: 15,
+            verticalScale: 7,
             windowWidth: window.innerWidth,
             spotifyVisualizer: null,
             seeker: 0, // in ms?
@@ -86,8 +64,11 @@ export default {
         }
     },
     computed: {
-        hasTrack() {
-            return this.track !== null;
+        track(){
+            return this.$store.getters.selectedTrack;
+        },
+        analysis(){
+            return this.track.getAnalysis();
         },
         scale(){
             return (1/this.analysis.track.duration)*(this.windowWidth -100);
@@ -106,8 +87,7 @@ export default {
     },
     methods: {
         loudness(db){
-            const l = Math.max(0,60+db)/60;
-            return l*l;
+            return audioUtil.loudness(db);
         },
         pitchColorRange(value){
             return pitchColor(value);
@@ -123,19 +103,6 @@ export default {
             this.spotifyVisualizer = new SpotifyVisualizer(this.analysis);
             this.refreshData();
         },
-        refreshData () {
-            this.analysisData = null;
-            spotify.getAudioAnalysisForTrack(this.track.id).then((data)=>{
-                this.analysisData = data;
-                this.spotifyVisualizer.setData(data);
-                this.spotifyVisualizer.logData();
-            }).catch((err) => {
-                console.log(err);
-            })
-
-
-        }, 
-
     }
 }
 </script>

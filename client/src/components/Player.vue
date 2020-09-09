@@ -1,22 +1,41 @@
 <template>
     <div class="player">
         <div class="d-flex justify-center pa-4">
-            <div v-if="deviceReady" >
+            <div v-if="$store.state.playerReady" >
                 <v-hover v-slot:default="{ hover }" >
                     <v-btn :elevation="hover ? 5 : 0" outlined fab @click="playPause" >
                         <v-icon large>mdi-{{playing ? 'pause' : 'play'}}</v-icon>
                     </v-btn>
                 </v-hover>
             </div>
-            <div v-if="!deviceReady">
+            <div v-if="!$store.state.playerReady">
                 <v-progress-circular
                     indeterminate
                     size=56
                 ></v-progress-circular>
             </div>
         </div>
-        <TimeSeeker v-if="analysisReady" v-model="seekTime" :track="track" :analysis="analysis" @clickedseeker="clickedTimeSeeker"/>
-        <div v-if="!analysisReady">
+        <div id="timeseeker" v-if="!$store.state.loadingTrack">
+            <svg class="waveform" :height="verticalScale" @click="clickedSVG">
+                <rect v-for="(segment, index) in track.getAnalysis().segments"
+                    class="loudnessBlock"
+                    :key="index"
+                    :width="segment.duration*scale" 
+                    :height="(loudness(segment.loudness_max))*verticalScale"
+                    :x="50+segment.start*scale"
+                    :y="verticalScale-loudness(segment.loudness_max)*verticalScale"
+                    :fill="segment.start+segment.duration/2 < $store.state.seeker/1000 ? 'grey' : baseColor"
+                />
+                <rect
+                    :x="50+((seeker/1000.0)*scale)-1"
+                    :y="0"
+                    :width="2"
+                    :height="verticalScale"
+                    fill="#1DB954"
+                />
+            </svg>
+        </div>
+        <div v-if="$store.state.loadingTrack">
             <v-progress-linear
                 indeterminate
                 color="success"
@@ -28,62 +47,78 @@
 <script>
 import * as player from "../app/player"
 import * as app from "../app/app"
-
-import TimeSeeker from "./TimeSeeker"
-
+import * as auth from '../app/authentication';
+import * as audioUtil from '../app/audioUtil'
+import Track from "../app/track"
+import {spotify} from '../app/app';
 
 export default {
-    props:{
-        analysisReady: Boolean,
-        track: Object,
-        analysis: Object,
-        state: Object
-    },
+    inject: ['theme'],
     data () {
         return {
-            deviceReady: false,
-            playing: false,
-            seekTime: 0,
-            interval: null,
-            lastTimePoll: null,
+            verticalScale: 50,
+            windowWidth: window.innerWidth,
+            hover: 0,
+            ending: false,
         }
     },
     beforeCreate () {
+        player.initialize(auth.token, (newState) => this.stateChanged(newState));
         player.deviceIdSet().then(()=>{ 
-            this.deviceReady = true
+            this.$store.commit('playerReady', true);
         })
     },
     mounted(){
         
     },
     computed: {
-        trackReady(){
-            return this.track!==null;
+        track(){
+            return this.$store.getters.selectedTrack;
+        },
+        baseColor(){
+            return this.theme.isDark ? 'white' : 'black'
+        },
+        scale(){
+            return (1/this.track.getAnalysis().track.duration)*(this.windowWidth -100);
+        },
+        duration(){
+            return Math.round(this.track.getAnalysis().track.duration*1000);
+        },
+        playing(){
+            return this.$store.getters.playing;
+        },
+        seeker(){
+            return this.$store.getters.seeker;
         }
     },
     watch: {
         track: 'trackChanged',
-        state: {
-            deep: true,
-            handler: function(newState, oldState){ 
-                this.stateChanged(); 
-            }
-        },
-        analsysisReady: 'analysisReadyChanged',
     },
     methods: {
+        clickedSVG(event){
+            const posY = Math.min(Math.max(0,event.clientX-50)/(this.windowWidth -100), 1);
+            const ms = posY*this.duration;
+            this.$store.commit('setSeeker', ms);
+            player.seek(this.seeker);
+        },
+        trackChanged(newTrack, oldTrack){
+            this.reset().then(()=>{
+                player.setTrack(this.track.getUri(), 0);
+                this.$store.commit('setSeeker', 0);
+            });
+        },
         resume () {
             if(!this.playing){
-                player.resume(this.seekTime).then(() => {
-                    this.playing = true;
-                    this.interval = setInterval(() => this.seekerTimer(33), 33);
+                player.resume(this.seeker).then(() => {
+                    this.$store.commit('setPlaying', true);
+                    this.interval = setInterval(() => this.$store.state.seeker+=33, 33);
                 });
             }
         },
         pause () {
             if(this.playing){
                 player.pause();
-                this.playing = false;
+                this.$store.commit('setPlaying', false);
                 clearInterval(this.interval);
             }
         },
@@ -91,23 +126,16 @@ export default {
             this.playing ? this.pause() : this.resume();
         },
         async reset(){
+            this.ending = false;
             return player.pause().then(() => {
-                this.seekTime = 0;
+                this.$store.commit('setSeeker', 0);
                 clearInterval(this.interval);
-                this.playing = false;
-            });
-        },
-        trackChanged () {
-            this.reset().then(()=>{
-                player.setTrack(this.track.uri, 0);
-            });
+                this.$store.commit('setPlaying', false);
+            }).catch((err) => console.log(err));
         },
         clickedTimeSeeker () {
             player.seek(this.seekTime);
-            
-        },
-        stateChanged(){
-            this.seekTime = this.state.position;
+        
         },
         seekerTimer(increment){
             const now = new Date();
@@ -117,16 +145,42 @@ export default {
             }
             this.lastTimePoll = now;
             this.seekTime+=elapsed;
+        },
+        loudness(db){
+            return audioUtil.loudness(db);
+        },
+        stateChanged(state){
+            if(this.playing){
+                const {current_track, position, duration} = state;
+                this.$store.commit('setSeeker', position);
+
+                // if state gotten at the end, assume it is a stop and reset when next state position is 0
+                if(this.ending && state.position === 0){
+                    this.reset();
+                }
+                console.log(state);
+                if(!this.ending && (state.duration - state.position) < 500){
+                    this.ending = true;
+                }
+                
+            }
+
         }
     },
     components:{
-        TimeSeeker
     }
 }
 </script>
 
 <style>
-.player{
-
+.waveform{
+  overflow: visible;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.loudnessBlock{
+    transition: fill 200ms ease;
+    cursor: pointer
 }
 </style>

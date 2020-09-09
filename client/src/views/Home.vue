@@ -25,10 +25,9 @@
         <v-icon>mdi-dots-vertical</v-icon>
       </v-btn>
     </v-app-bar>
-
-    <TrackSelector v-model="selected" :tracks="trackList" :album-size="albumSize"/>
-    <Player :analysis-ready="analysisReady" :track="selectedTrack" :analysis="selectedAnalysis" :state="playerState"/>
-    <Visualization :analysis-ready="analysisReady" :track="selectedTrack" :analysis="selectedAnalysis"/>
+    <TrackSelector :tracks="trackList" :album-size="120"/>
+    <Player/>
+    <Visualization/>
       
   </div>
 </template>
@@ -38,41 +37,39 @@ import TrackSelector from "../components/TrackSelector"
 import Visualization from "../components/Visualization"
 import Player from "../components/Player"
 import * as app from '../app/app';
-import * as player from "../app/player"
+import * as auth from '../app/authentication';
 
-import {spotify, spotifyInit} from '../app/spotify';
 
 export default {
   name: 'Home',
   data () { 
     return {
-      albumSize: 120,
       searchQuery: "",
-      user: {},
-      trackList: [],
-      trackAnalysis: new Map(),
-      selected: 0,
-      analysisReady: false,
-      playerState: {},
+    }
+  },
+  computed: {
+    user(){
+      return this.$store.getters.user;
+    },
+    trackList(){
+      return this.$store.getters.trackList
+    },
+    selectedIndex(){
+      return this.$store.getters.selectedIndex;
+    },
+    selectedTrack(){
+      return this.$store.getters.selectedTrack;
+    },
+    seeker(){
+      return this.$store.getters.seeker;
     }
   },
   watch: {
-    selected: {immediate: false, handler(newVal, oldVal){this.selectedTrackChanged()}}
-  },
-  computed: {
-    allLoaded() {
-      return this.trackList.length !== 0 && this.trackAnalysisList.length !== 0 && 
-              this.trackList.length === this.trackAnalysisList.length;
+    selectedIndex (newIndex, oldIndex) {
+      //console.log(`We have ${newVal} selected!`)
     },
-    selectedTrack(){
-      return this.trackList[this.selected];
-    },
-    selectedAnalysis(){
-      if(this.trackList[this.selected]){
-        return this.trackAnalysis.get(this.trackList[this.selected].id);
-      }else{
-        return null;
-      }
+    selectedTrack (newTrack, oldTrack) {
+      console.log(`We have ${newTrack.getName()} selected!`)
     },
   },
   components: {
@@ -80,39 +77,12 @@ export default {
     Visualization,
     Player
   },
-  beforeMount(){
-    player.initialize(app.token, this.playerStateChanged);
-    spotifyInit(app.token);
-    spotify.getMe().then((data)=>{
-      this.user = data;
-    })
-    spotify.getMyTopTracks({limit:50, offset:0}).then((tracks)=>{
-      this.loadTracks(tracks.items, false)
-      this.selectedTrackChanged();
-    }).catch((err)=>console.log(err));
-
+  beforeCreate(){
+    app.initialize();
   },
   methods:{
-    loadTracks(tracks, keepCurrentTrack){
-      if(keepCurrentTrack){
-        let currentTrack = this.trackList[this.selected];
-        let currentAnalysis = this.trackAnalysis.get(currentTrack.id);
-        this.trackList = tracks;
-        this.trackList.unshift(currentTrack);
-      }else{
-        this.trackList = tracks;
-      }
-      this.selected = 0;
-    },
-    playerStateChanged(state){
-      this.playerState = state;
-    },
     search(){
-      spotify.search(this.searchQuery, ["track"]).then((results) => {
-        this.loadTracks(results.tracks.items, true)
-      }).catch((err) => {
-        console.log(err);
-      })
+      app.search(this.searchQuery);
     },
     selectedTrackChanged(){
       console.log("selected track", this.trackList[this.selected].name)
@@ -123,13 +93,7 @@ export default {
       if(!this.trackAnalysis.has(selectedTrackId)){
         this.analysisReady = false;
         console.log("Getting analysis for: ",  this.trackList[index].name)
-        spotify.getAudioAnalysisForTrack(selectedTrackId).then((analysis)=>{
-          this.trackAnalysis = new Map(this.trackAnalysis.set(selectedTrackId, analysis));
-          this.analysisReady = true;
-          console.log("Got analysis for: ",  this.trackList[index].name)
-        }).catch((err) => {
-            console.log(err);
-        })
+        
       }
         
     }

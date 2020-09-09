@@ -4,6 +4,7 @@ import Home from '../views/Home.vue'
 import Callback from '../views/Callback.vue'
 import Login from '../views/Login.vue'
 import * as app from '../app/app'
+import * as auth from '../app/authentication'
 
 Vue.use(VueRouter)
 
@@ -18,7 +19,7 @@ const routes = [
     name: 'Home',
     component: Home,
     beforeEnter(to, from, next) {
-      if (app.isAuthorized()) {
+      if (auth.isAuthorized()) {
         next();
       }else{
         next('/');

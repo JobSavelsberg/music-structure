@@ -4,7 +4,7 @@
 </template>
 
 <script>
-import { requestFirstToken } from "../app/app"
+import { requestFirstToken } from "../app/authentication"
 
 export default {
   name: 'Callback',
