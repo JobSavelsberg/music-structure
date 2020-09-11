@@ -43,11 +43,13 @@ export function saveAllTracks(){
 
 // Save tracks to local storage
 export function loadAllTracks(){
-    const allTracksArray = JSON.parse(localStorage.allTracks);
-    allTracksArray.forEach((trackArray) => {
-        const track = new Track(trackArray[1].trackData, trackArray[1].analysisData)
-        allTracks.set(trackArray[0], track);
-    })
+    if(localStorage.allTracks){
+        const allTracksArray = JSON.parse(localStorage.allTracks);
+        allTracksArray.forEach((trackArray) => {
+            const track = new Track(trackArray[1].trackData, trackArray[1].analysisData)
+            allTracks.set(trackArray[0], track);
+        })
+    }
 }
 
 /**
