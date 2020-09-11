@@ -17,7 +17,12 @@
         filled
       ></v-text-field>
       </form>
-      
+      <div class="volumeSlider">
+        <v-container>
+          <v-slider @click:prepend="clickVolume" :prepend-icon="getVolumeIcon(volume)" v-model="volume" :min='0' :max='1' :step="0.02"></v-slider>
+        </v-container>
+      </div>
+
       <v-btn icon>
         <v-icon>mdi-heart</v-icon>
       </v-btn>
@@ -26,8 +31,8 @@
       </v-btn>
     </v-app-bar>
     <TrackSelector :tracks="trackList" :album-size="120"/>
-    <Player/>
-    <Visualization/>
+    <Player :padding="padding"/>
+    <Visualization :padding="padding"/>
       
   </div>
 </template>
@@ -38,6 +43,7 @@ import Visualization from "../components/Visualization"
 import Player from "../components/Player"
 import * as app from '../app/app';
 import * as auth from '../app/authentication';
+import * as player from "../app/player"
 
 
 export default {
@@ -45,6 +51,9 @@ export default {
   data () { 
     return {
       searchQuery: "",
+      volume: 0.75,
+      prevVolume: 0.75,
+      padding: 50,
     }
   },
   computed: {
@@ -71,6 +80,9 @@ export default {
     selectedTrack (newTrack, oldTrack) {
       console.log(`We have ${newTrack.getName()} selected!`)
     },
+    volume(newVol, oldVol) {
+      player.setVolume(Math.pow(this.volume, 2))
+    },
   },
   components: {
     TrackSelector,
@@ -95,13 +107,30 @@ export default {
         console.log("Getting analysis for: ",  this.trackList[index].name)
         
       }
-        
+    },
+    getVolumeIcon(volume){
+      if(volume > 0.6) return 'mdi-volume-high'
+      if(volume > 0.2) return 'mdi-volume-medium'
+      if(volume > 0) return  'mdi-volume-low'
+      return 'mdi-volume-off'
+    },
+    clickVolume(){
+      if(this.volume > 0){
+        this.prevVolume = this.volume;
+        this.volume = 0;
+      }else{
+        this.volume = this.prevVolume;
+      }
     }
   }
 }
 </script>
 
 <style>
+.volumeSlider{
+  height: 100%;
+  width: 10%;
+}
 .trackScroll{
   overflow-x: auto;
 }

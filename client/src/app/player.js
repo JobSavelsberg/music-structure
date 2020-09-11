@@ -59,7 +59,7 @@ export async function deviceIdSet(){
 
 export function setVolume(volume){
     if(playerRef){
-        playerRef.volume = volume;
+        playerRef.setVolume(volume);
     }
 }
 
@@ -81,7 +81,8 @@ export async function initialize(token, stateChangedCallback) {
     await waitForSpotifyWebPlaybackSDKToLoad();
     playerRef = new window.Spotify.Player({
         name: 'Music Structure Visualizer',
-        getOAuthToken: cb => { cb(token); }
+        getOAuthToken: cb => { cb(token); },
+        volume: 0.5,
     });
     
     // Error handling

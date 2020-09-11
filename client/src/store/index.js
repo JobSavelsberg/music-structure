@@ -26,16 +26,6 @@ export default new Vuex.Store({
     setPlayerState(state, playerState){
       state.playerState = playerState;
     },
-    addToAllTracks(state, track) {
-      if(track instanceof Track){
-        Vue.set(state.allTracks, track.getId(), track.toJSON());
-      }else{
-        Vue.set(state.allTracks, track.id, new Track(track).toJSON());
-      }
-    },
-    loadAllTracks(state, tracks){
-      state.allTracks = tracks;
-    },
     loadingTrack(state, loadingTrack){
       state.loadingTrack = loadingTrack;
     },
@@ -43,12 +33,13 @@ export default new Vuex.Store({
       state.playerReady = playerReady
     },
     addToTrackList(state, track){
-      if(track instanceof Track){
-        state.trackList.push(track);
-      }else{
-        state.trackList.push(track);
-        Vue.set(state.allTracks, track.id, new Track(track));
-      }
+      state.trackList.push(track);
+    },
+    addToTrackListIndex(state, index, track){
+      state.trackList.splice(index, 0, track);
+    },
+    addToTrackListFront(state, track){
+      state.trackList.unshift(track);
     },
     clearTrackList(state){
       state.trackList = [];

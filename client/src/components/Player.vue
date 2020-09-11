@@ -22,12 +22,12 @@
                     :key="index"
                     :width="segment.duration*scale" 
                     :height="(loudness(segment.loudness_max))*verticalScale"
-                    :x="50+segment.start*scale"
+                    :x="padding+segment.start*scale"
                     :y="verticalScale-loudness(segment.loudness_max)*verticalScale"
                     :fill="segment.start+segment.duration/2 < $store.state.seeker/1000 ? 'grey' : baseColor"
                 />
                 <rect
-                    :x="50+((seeker/1000.0)*scale)-1"
+                    :x="padding+((seeker/1000.0)*scale)-1"
                     :y="0"
                     :width="2"
                     :height="verticalScale"
@@ -54,6 +54,9 @@ import {spotify} from '../app/app';
 
 export default {
     inject: ['theme'],
+    props:[
+        'padding',
+    ],
     data () {
         return {
             verticalScale: 50,
@@ -79,7 +82,10 @@ export default {
             return this.theme.isDark ? 'white' : 'black'
         },
         scale(){
-            return (1/this.track.getAnalysis().track.duration)*(this.windowWidth -100);
+            return this.width/this.track.getAnalysis().track.duration;
+        },
+        width(){
+            return this.windowWidth - this.padding*2;
         },
         duration(){
             return Math.round(this.track.getAnalysis().track.duration*1000);
@@ -96,8 +102,8 @@ export default {
     },
     methods: {
         clickedSVG(event){
-            const posY = Math.min(Math.max(0,event.clientX-50)/(this.windowWidth -100), 1);
-            const ms = posY*this.duration;
+            const posX = Math.min(Math.max(0,event.clientX-this.padding)/this.width, 1);
+            const ms = posX*this.duration;
             this.$store.commit('setSeeker', ms);
             player.seek(this.seeker);
         },
@@ -158,7 +164,6 @@ export default {
                 if(this.ending && state.position === 0){
                     this.reset();
                 }
-                console.log(state);
                 if(!this.ending && (state.duration - state.position) < 500){
                     this.ending = true;
                 }

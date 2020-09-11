@@ -3,6 +3,8 @@ import * as auth from './authentication';
 import Track from './track'
 import vue from "../views/Home"
 import store from './../store'; // path to your Vuex store
+import router from '../router'
+import { select } from 'd3';
 
 export const spotify = new SpotifyWebApi();
 
@@ -17,7 +19,7 @@ export async function initialize(){
     spotify.getMe().then((data)=>{
       store.commit('setUser', data);
     }).catch((err)=>{
-        this.$router.push('/login');
+        router.push('/');
     });
     spotify.getMyTopTracks({limit:50, offset:0}).then((tracks)=>{
         loadTracksFromSpotify(tracks.items, false)
@@ -28,6 +30,7 @@ export async function initialize(){
 export async function selectTrackAtIndex(index){
     store.commit('loadingTrack', true);
     return getAnalysis(store.getters.trackList[index]).then(()=>{
+        console.log("Getting analysis and everything done, now setting selected index");
         store.commit('setSelectedIndex', index);
         store.commit('loadingTrack', false);
     })
@@ -51,8 +54,8 @@ export function loadAllTracks(){
  * Load tracks from spotify api result
  */ 
 function loadTracksFromSpotify(tracks, keepCurrentTrack){
+    const selectedTrack = store.getters.selectedTrack;
     store.commit('clearTrackList');
-    console.log("tracks: ", tracks);
     tracks.forEach((trackData) => {
         if(allTracks.has(trackData.id)){
             store.commit('addToTrackList', allTracks.get(trackData.id));
@@ -63,9 +66,10 @@ function loadTracksFromSpotify(tracks, keepCurrentTrack){
         }
     });
     if(keepCurrentTrack){
-        //vue.trackList.push(currentTrack());
+        store.commit('addToTrackListFront', selectedTrack);
+        store.commit('setSelectedIndex', 0);
     }else{
-        //selectTrack(vue.trackList[0]);
+        selectTrackAtIndex(0);
     }
 }
 
@@ -73,7 +77,9 @@ export async function getAnalysis(track){
     if(track.hasAnalysis()) return track.getAnalysis();
     return spotify.getAudioAnalysisForTrack( track.getId())
     .then((analysis)=>{
+        console.log("Got analysis from api");
         track.setAnalysis(analysis);
+        console.log("Track has done everything with analysis")
     }).catch((err) => {
         console.log(err);
     })

@@ -32,18 +32,29 @@ export default {
   components: {
       Album
   },
-  data: () => ({
-      selected: 0
-  }),
+  data(){
+      return {
+          selected: 0,
+      }
+  },
+  computed:{
+      selectedFromStore(){
+          return this.$store.getters.selectedIndex;
+      }
+  },
   watch: {
-      selected: 'selectedChanged'
+      selected: 'selectedChanged',
+      selectedFromStore: 'selectedFromStoreChanged'
   },
   mounted () {
   },
   methods:{
-      selectedChanged(newIndex, oldIndex){
-          app.selectTrackAtIndex(newIndex);
-      }
+        selectedChanged(newIndex, oldIndex){
+            app.selectTrackAtIndex(newIndex);
+        },
+        selectedFromStoreChanged(newIndex, oldIndex){
+            this.selected = newIndex;
+        }
   }
 };
 </script>

@@ -11,7 +11,8 @@
     "start": "node server/server",
     "server": "nodemon --watch server server/server.js",
     "client:build": "cd client && npm run build",
-    "client": "cd client && npm run serve"
+    "client": "cd client && npm run serve",
+    "test": "cd client && npm run test"
   },
   "repository": {
     "type": "git",
@@ -24,6 +25,7 @@
   },
   "homepage": "https://github.com/JobSavelsberg/music-structure#readme",
   "devDependencies": {
+    "@babel/plugin-proposal-class-properties": "^7.10.4",
     "nodemon": "^2.0.4"
   },
   "dependencies": {
@@ -33,6 +35,7 @@
     "connect-history-api-fallback": "^1.6.0",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
+    "eslint": "^7.8.1",
     "express": "^4.17.1",
     "morgan": "^1.10.0",
     "needle": "^2.5.0",
