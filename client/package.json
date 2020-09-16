@@ -16,7 +16,9 @@
     "d3": "^6.1.1",
     "dotenv": "^8.2.0",
     "fs": "0.0.1-security",
+    "skmeans": "^0.11.3",
     "spotify-web-api-js": "^1.5.0",
+    "tsne-js": "^1.0.3",
     "vue": "^2.6.11",
     "vue-router": "^3.2.0",
     "vuetify": "^2.2.11",
@@ -38,10 +40,12 @@
     "install": "^0.13.0",
     "mocha": "^8.1.3",
     "npm": "^6.14.8",
+    "promise-worker": "^2.0.1",
     "sass": "^1.19.0",
     "sass-loader": "^8.0.0",
     "vue-cli-plugin-vuetify": "~2.0.7",
     "vue-template-compiler": "^2.6.11",
-    "vuetify-loader": "^1.3.0"
+    "vuetify-loader": "^1.3.0",
+    "worker-loader": "^3.0.2"
   }
 }

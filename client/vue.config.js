@@ -8,5 +8,10 @@ module.exports = {
     plugins: [
       new Dotenv()
     ]
+  },
+  chainWebpack: config => {
+    config.output
+      .globalObject('this')
+    /* ... */
   }
 }

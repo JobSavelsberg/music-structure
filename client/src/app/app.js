@@ -1,6 +1,6 @@
 import * as SpotifyWebApi from 'spotify-web-api-js';
 import * as auth from './authentication'; 
-import Track from './track'
+import Track from './Track'
 import vue from "../views/Home"
 import store from './../store'; // path to your Vuex store
 import router from '../router'

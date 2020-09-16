@@ -194,7 +194,9 @@ export default {
             let y = 0;
 
             if(this.drawRawPitch){
-                vis.renderRawPitch(this.track, this.padding - xOffset, this.width, 0, 150, this.ctx)
+                vis.renderRawPitch(this.track, this.padding - xOffset, this.width, y, 150, this.ctx)
+                y += 155;
+                vis.renderProcessedPitch(this.track, this.padding - xOffset, this.width, y, 150, this.ctx)
                 y += 155;
             }
             if(this.drawRawTimbre){

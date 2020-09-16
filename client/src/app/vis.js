@@ -4,8 +4,9 @@ import * as audioUtil from './audioUtil'
 export const zeroOneColor = d3.scaleSequential().domain([0,1]).interpolator(d3.interpolateViridis);
 export const pitchColor = zeroOneColor;
 export const greyScaleColor = d3.scaleSequential().domain([1,0]).interpolator(d3.interpolateGreys);
-export const timbreColor = d3.scaleSequential().domain([-100,100]).interpolator(d3.interpolateViridis);
+export const timbreColor = d3.scaleSequential().domain([-1,1]).interpolator(d3.interpolateViridis);
 export const rainbowColor = d3.scaleSequential().domain([0, 11]).interpolator(d3.interpolateRainbow);
+export const diverging = d3.scaleDiverging().domain([-1, 0, 1]).interpolator(d3.interpolateRdBu);
 
 export function renderRawPitch(track, left, width, yOffset, height, ctx){
     const scale = width/track.getAnalysis().track.duration;
@@ -21,15 +22,29 @@ export function renderRawPitch(track, left, width, yOffset, height, ctx){
     })
 }
 
-export function renderRawTimbre(track, left, width, yOffset, height, ctx){
+export function renderProcessedPitch(track, left, width, yOffset, height, ctx){
     const scale = width/track.getAnalysis().track.duration;
-    track.getSegments().forEach((segment)=>{
+    track.getSegments().forEach((segment, segmentIndex)=>{
         for(let i = 0; i < 12; i++){
             const x=left+segment.start*scale;
             const segmentHeight=height/12-2;
             const y=yOffset+(11-i)*(segmentHeight+2);
             const segmentWidth=segment.duration*scale; 
-            ctx.fillStyle = timbreColor(segment.timbre[i]);
+            ctx.fillStyle = pitchColor(track.getProcessedPitch(segmentIndex)[i]);
+            ctx.fillRect(x, y, segmentWidth, segmentHeight);
+        }
+    })
+}
+
+export function renderRawTimbre(track, left, width, yOffset, height, ctx){
+    const scale = width/track.getAnalysis().track.duration;
+    track.getSegments().forEach((segment, segmentIndex)=>{
+        for(let i = 0; i < 12; i++){
+            const x=left+segment.start*scale;
+            const segmentHeight=height/12-2;
+            const y=yOffset+(11-i)*(segmentHeight+2);
+            const segmentWidth=segment.duration*scale; 
+            ctx.fillStyle = diverging(track.getProcessedTimbre(segmentIndex)[i]);
             ctx.fillRect(x, y, segmentWidth, segmentHeight);
         }
     })

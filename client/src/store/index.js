@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import Track from '../app/track'
+import Track from '../app/Track'
 
 Vue.use(Vuex)
 

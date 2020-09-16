@@ -47,3 +47,7 @@ export function loudness(db){
     return l*l;
 }
 
+
+export function logCompression(value, gamma=1){
+    return Math.log(1 + gamma * value);
+}

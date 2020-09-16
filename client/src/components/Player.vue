@@ -17,7 +17,7 @@
         </div>
         <div id="timeseeker" v-if="!$store.state.loadingTrack">
             <svg class="waveform" :height="verticalScale" @click="clickedSVG">
-                <rect v-for="(segment, index) in track.getAnalysis().segments"
+                <rect v-for="(segment, index) in track.getSegments()"
                     class="loudnessBlock"
                     :key="index"
                     :width="segment.duration*scale" 
@@ -49,7 +49,7 @@ import * as player from "../app/player"
 import * as app from "../app/app"
 import * as auth from '../app/authentication';
 import * as audioUtil from '../app/audioUtil'
-import Track from "../app/track"
+import Track from "../app/Track"
 import {spotify} from '../app/app';
 
 export default {
@@ -82,13 +82,13 @@ export default {
             return this.theme.isDark ? 'white' : 'black'
         },
         scale(){
-            return this.width/this.track.getAnalysis().track.duration;
+            return this.width/this.track.getAnalysisDuration();
         },
         width(){
             return this.windowWidth - this.padding*2;
         },
         duration(){
-            return Math.round(this.track.getAnalysis().track.duration*1000);
+            return Math.round(this.track.getAnalysisDuration()*1000);
         },
         playing(){
             return this.$store.getters.playing;
@@ -117,7 +117,7 @@ export default {
             if(!this.playing){
                 player.resume(this.seeker).then(() => {
                     this.$store.commit('setPlaying', true);
-                    this.interval = setInterval(() => this.$store.state.seeker+=33, 33);
+                    this.interval = setInterval(() => this.seekerTimer(33), 33);
                 });
             }
         },
@@ -151,6 +151,7 @@ export default {
             }
             this.lastTimePoll = now;
             this.seekTime+=elapsed;
+            this.$store.state.seeker+=elapsed;
         },
         loudness(db){
             return audioUtil.loudness(db);
