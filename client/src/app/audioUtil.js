@@ -19,25 +19,29 @@ var RADIANS_PER_DEGREE = Math.PI / 180;
 var TWO_PI = 2 * Math.PI;
 var OFFSET = 3*Math.PI/2;// full cycle is 2pi
 
-export function tonalVectorColor(pitches){
-    let angle = 0;
+export function tonality(pitches){
     let x = 0;
     let y = 0;
-    let radius = 0;
     let energy = 0;
     for(let i = 0; i < 12; i++){
-        angle = -circleOfFifths[i] / 12.0 * TWO_PI + OFFSET;
-        radius = pitches[i]; // Between 0 and 1
-        energy += radius;
+        const angle = -circleOfFifths[i] / 12.0 * TWO_PI + OFFSET;
+        const radius = pitches[i]; // Between 0 and 1
+        energy += radius/12;
         x += radius * Math.cos(angle);
         y += radius * Math.sin(angle)
     }
 
-    angle = (Math.atan2(x, y)+Math.PI)/TWO_PI;
-    radius = Math.sqrt(x*x+y*y)
+    const angle = (Math.atan2(x, y)+Math.PI)/TWO_PI;
+    const radius = Math.sqrt(x*x+y*y)
+    return [angle, radius, energy];
+}
+
+export function tonalVectorColor(pitches){
+    const [angle, radius, energy] = tonality(pitches);
+
     //const color = d3.color(d3.interpolateSinebow((angle+OFFSET)%1.0));
     const color = d3.hsl(noteColor(angle));
-    const saturation = Math.min(radius*3/energy,1); // 3 because chord usually minimally 3 tones
+    const saturation = Math.min(radius*3/(energy*12),1); // 3 because chord usually minimally 3 tones
     color.s = saturation;
     return color.hex();
 }

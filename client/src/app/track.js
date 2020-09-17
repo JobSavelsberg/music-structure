@@ -3,8 +3,10 @@ import * as sim from "./similarity"
 import * as clustering from "./clustering"
 import * as skmeans from "skmeans";
 import tsneWorker from './workers'
+import store from "../store";
 
 const GAMMA = 1.7;
+const CLUSTERAMOUNT = 10;
 
 export default class Track{
     trackData = null;
@@ -17,16 +19,23 @@ export default class Track{
 
     preprocessed = false;
 
+    pitchFeatures = [];
+    timbreFeatures = [];
+    tonalEnergyFeatures = [];
+    tonalRadiusFeatures = [];
+    tonalAngleFeatures = [];
     features = []
+
+    clusters = new Array(CLUSTERAMOUNT).fill([])
 
     process(){
         this.createSegmentObjects(); // create extended objects holding more info
         this.calculateMaxMin(); // calculate scaling coeficcients
         this.preprocesSegments(); // use max min to scale
         this.preprocessed = true;
-        this.calculateSSM();
-        this.cluster();
         this.tsne();
+        this.cluster();
+        this.calculateSSM();
     }
 
     createSegmentObjects(){
@@ -47,15 +56,25 @@ export default class Track{
         for(let i = 0; i < 12; i++){
             this.timbreBiggest[i] = Math.max(Math.abs(this.timbreMax[i]), Math.abs(this.timbreMin[i]));
         }
-        console.log(this.timbreBiggest);
     }
 
     preprocesSegments(){
         this.segmentObjects.forEach((s, i) => {
             s.processPitch(GAMMA);
             s.processTimbre(this.timbreMin, this.timbreMax, this.timbreBiggest);
-            this.features.push([...s.pitches, ...s.timbres]);
+            this.pitchFeatures.push(s.pitches);
+            this.timbreFeatures.push(s.timbres);
+            this.tonalEnergyFeatures.push(s.tonalityEnergy);
+            this.tonalRadiusFeatures.push(s.tonalityRadius);
+            this.tonalAngleFeatures.push(s.tonalityAngle);
         });
+        for(let i = 0; i < this.segmentObjects.length; i++){
+            if(i>0 && i< this.segmentObjects.length-1){
+                this.segmentObjects[i].processPitchSmooth(this.segmentObjects[i-1], this.segmentObjects[i+1])
+            }
+            this.features.push([...this.segmentObjects[i].pitches, ...this.segmentObjects[i].timbres, this.segmentObjects[i].tonalityEnergy, this.segmentObjects[i].tonalityRadius]);
+        }
+        console.log(this.features);
     }
 
 
@@ -84,26 +103,45 @@ export default class Track{
     }
     
     cluster(){
-        //clustering.kMeans(this.segmentObjects, 10);
-        console.log("kmeans processing...")
-        const res = skmeans(this.features, 10);
-        res.idxs.forEach((cluster, index) => {
+        const minK = 2;
+        const maxK = 15;
+        const tries = 8;
+        const data = [];
+        for (let i=0; i<this.segmentObjects.length; i++){
+            data.push([...this.timbreFeatures[i], this.tonalEnergyFeatures[i], this.tonalRadiusFeatures[i]]);
+        }
+        const result = clustering.kMeansSearch(data, minK, maxK, tries);
+        result.idxs.forEach((cluster, index) => {
             this.segmentObjects[index].setCluster(cluster);
+            this.clusters[cluster].push(this.segmentObjects[index]);
         })
         console.log("kmeans done")
-
     }
 
     tsne(){
         console.log("sending worker message");
         tsneWorker.terminate();
-        tsneWorker.send({features: this.features}).then((coords) => {
-            console.log(`GOT TSNE RESULTS BACK FROM ${this.trackData.name}`);
-            coords.forEach((coord, index)=>{
-                this.segmentObjects[index].setTSNECoord(coord);
-            });
+        const data = [];
+        for (let i=0; i<this.segmentObjects.length; i++){
+            data.push([...this.timbreFeatures[i], this.tonalEnergyFeatures[i], this.tonalRadiusFeatures[i]]);
+        }
+        tsneWorker.send({features: data}).then((result) => {
+            for(let i = 0; i < this.segmentObjects.length; i++){
+                this.segmentObjects[i].setTSNECoord(result[i]);
+            }
+            store.commit('tsneReady', true);
             // TODO: Save tsne
         })
+
+        tsneWorker.receive((result) => {
+            const self = this;
+            store.commit('tsneReady', false);
+            for(let i = 0; i < self.segmentObjects.length; i++){
+                self.segmentObjects[i].setTSNECoord(result[i]);
+            }
+            window.setTimeout(store.commit('tsneReady', true), 1);
+            
+          });
     }
 
     constructor(trackData){

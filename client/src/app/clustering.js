@@ -1,4 +1,49 @@
 import * as sim from "./similarity"
+import * as skmeans from "skmeans";
+
+export function kMeansSearch(features, minK, maxK, tries){
+    const results = []
+    const lowScores = [];
+    for(let k = minK; k < maxK; k++){
+        for(let i = 0; i < tries; i++){
+            console.log(`kmeans k=${k}, try=${i}`);
+            const result = skmeans(features, k);
+            const score = calculateScore(features, result);
+            if(score < lowScores[k-minK] || Infinity){
+                lowScores[k-minK] = score;
+                results[k-minK] = result;
+            }
+        }
+    }
+
+    // Find elbow point
+    const start = [minK, lowScores[0]];
+    const end = [maxK, lowScores[lowScores.length-1]];
+    const slope = (end[1] - start[1]) / (end[0] - start[0]);
+    const b = start[1] - slope*start[0];
+    const straightLine = (x) => { return slope*x + b }; 
+
+    let maxHeight = 0;
+    let bestResult = null;
+    for(let k = minK; k < maxK; k++){
+        const height = straightLine(k) - lowScores[k-minK];
+        if(height > maxHeight){
+            maxHeight = height;
+            bestResult = results[k-minK];
+        }
+    }
+
+    return bestResult;
+}
+
+function calculateScore(features, result){
+    let score = 0;
+    for(let i = 0; i < features.length; i++){
+        score += sim.squaredDistance(features[i], result.centroids[result.idxs[i]]);
+    }
+    return score;
+}
+
 
 /**
  * 

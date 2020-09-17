@@ -16,26 +16,43 @@ export function renderRawPitch(track, left, width, yOffset, height, ctx){
             const segmentHeight=height/12-2;
             const y=yOffset+(11-i)*(segmentHeight+2);
             const segmentWidth=segment.duration*scale; 
-            ctx.fillStyle = pitchColor(segment.pitches[i]);
+            ctx.fillStyle = pitchColor(segment.segment.pitches[i]);
             ctx.fillRect(x, y, segmentWidth, segmentHeight);
         }
+    })
+}
+
+export function renderPercussionPitch(track, left, width, yOffset, height, ctx){
+    const scale = width/track.getAnalysis().track.duration;
+    track.getSegments().forEach((segment, segmentIndex)=>{
+        const x=left+segment.start*scale;
+        const segmentHeight=height/3-2;
+        let y=yOffset+0*(segmentHeight+2);
+        const segmentWidth=segment.duration*scale; 
+        ctx.fillStyle = pitchColor(segment.tonalityEnergy*2-.5);
+        ctx.fillRect(x, y, segmentWidth, segmentHeight);
+        y=yOffset+1*(segmentHeight+2);
+        ctx.fillStyle = pitchColor(1-segment.tonalityRadius);
+        ctx.fillRect(x, y, segmentWidth, segmentHeight);
+        y=yOffset+2*(segmentHeight+2);
+        ctx.fillStyle = segment.duration > 0.15 ? pitchColor(0) : pitchColor(segment.percussiony);
+        ctx.fillRect(x, y, segmentWidth, segmentHeight);
     })
 }
 
 export function renderProcessedPitch(track, left, width, yOffset, height, ctx){
     const scale = width/track.getAnalysis().track.duration;
-    track.getSegments().forEach((segment, segmentIndex)=>{
+    track.getSegments().forEach((segment)=>{
         for(let i = 0; i < 12; i++){
             const x=left+segment.start*scale;
             const segmentHeight=height/12-2;
             const y=yOffset+(11-i)*(segmentHeight+2);
             const segmentWidth=segment.duration*scale; 
-            ctx.fillStyle = pitchColor(track.getProcessedPitch(segmentIndex)[i]);
+            ctx.fillStyle = pitchColor(segment.pitches[i]);
             ctx.fillRect(x, y, segmentWidth, segmentHeight);
         }
     })
 }
-
 export function renderRawTimbre(track, left, width, yOffset, height, ctx){
     const scale = width/track.getAnalysis().track.duration;
     track.getSegments().forEach((segment, segmentIndex)=>{

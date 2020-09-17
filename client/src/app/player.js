@@ -40,6 +40,15 @@ export async function seek(time){
     }
 }
 
+export async function playSegment(segment){
+    console.log("playing segment", segment)
+    resume(segment.start*1000).then(()=> {
+        window.setTimeout(()=>{
+            pause();
+        }, segment.duration*1000)
+    });
+}
+
 export async function deviceIdSet(){
     return new Promise((resolve, reject) => {
         let timeWas = new Date();

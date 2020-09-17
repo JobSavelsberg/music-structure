@@ -1,53 +1,61 @@
-import TSNE from 'tsne-js';
-import registerPromiseWorker from 'promise-worker/register'
+import { PWBWorker } from "promise-worker-bi";
 
-let counter = 0;
-let model = new TSNE({
-    dim: 2,
-    perplexity: 5.0,
-    earlyExaggeration: 2.0,
-    learningRate: 200.0,
-    nIter: 50,
-    metric: 'euclidean'
-});
-console.log("Created model")
+var promiseWorker = new PWBWorker();
+import tsneez from 'tsneez'
 
-registerPromiseWorker((message) => {
-    console.log("Worker got message hoor")
-    console.log(message);
-    counter++;
-    console.log(counter);
+// Hyper parameters
+let opt = {}
+opt.theta = 0.5 // theta
+opt.perplexity = 20 // perplexity
+const GRADIENT_STEPS = 500 
+
+let features = [];
+
+var model = new tsneez.TSNEEZ(opt) // create a tsneez instance
+
+promiseWorker.register((message) => {
     if (message.type === 'message') {
-        const features = message.message.features;
-        
+        features = message.message.features;
+        model.initData(features)
 
-        model.on('progressStatus', (status) => {
-            console.log(status);
-        })
-        // inputData is a nested array which can be converted into an ndarray
-        // alternatively, it can be an array of coordinates (second argument should be specified as 'sparse')
-        model.init({
-            data: features,
-            type: 'dense'
-        });
-        console.log("Initialized model")
+        let prevTime = new Date();
 
-        // `error`,  `iter`: final error and iteration number
-        // note: computation-heavy action happens here
-        console.log("Running model")
-
-        let [error, iter] = model.run();
-        console.log("Ran model")
-
-        // rerun without re-calculating pairwise distances, etc.
-        //let [error, iter] = model.rerun();
-        
-        // `output` is unpacked ndarray (regular nested javascript array)
-        //let output = model.getOutput();
-        
-        // `outputScaled` is `output` scaled to a range of [-1, 1]
-        let outputScaled = model.getOutputScaled();
-        return outputScaled;
+        for(var k = 0; k < GRADIENT_STEPS ; k++) {
+            model.step() // gradient update
+            console.log(`Step : ${k}`)
+            //check time passed
+            let currTime = new Date();
+            var timeDiff = currTime - prevTime; //in ms
+            if(timeDiff > 1000){
+                promiseWorker.postMessage(getResult(model));
+                prevTime = currTime;
+            }
+        }
+    
+        return getResult(model);
     }
 });
+
+function getResult(model){
+    var Y = model.Y 
+        
+    let result = [];
+    let max = 0;
+    for(let i = 0; i < features.length; i++){
+        const x = Y.data[i*2];
+        const y = Y.data[i*2+1];
+        result.push([x,y]);
+
+        max = Math.max(max, Math.abs(x), Math.abs(y));
+    }
+
+    // Scale to [-1,1]
+    for(let i = 0; i < features.length; i++){
+        result[i][0] /= max;
+        result[i][1] /= max;
+
+    }
+
+    return result;
+}
 

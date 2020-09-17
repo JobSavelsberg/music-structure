@@ -14,6 +14,7 @@ export default new Vuex.Store({
     loadingTrack: true,
     playerReady: false,
     playing: false,
+    tsneReady: false,
   },
   mutations: {
     setSeeker(state, time_ms){
@@ -53,6 +54,9 @@ export default new Vuex.Store({
     incrementSeeker(state, increment){
       state.seeker += increment;
     },
+    tsneReady(state, ready){
+      state.tsneReady = ready;
+    }
   },
   actions: {
 
@@ -81,6 +85,9 @@ export default new Vuex.Store({
     },
     playing(state){
       return state.playing;
+    },
+    tsneReady(state){
+      return state.tsneReady;
     }
   },
   modules: {

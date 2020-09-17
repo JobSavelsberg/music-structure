@@ -33,16 +33,20 @@ export function manhattan(a, b, range){
 
 
 export function euclidianDistance(a, b){
-    let dist = 0;
-    for(let i = 0; i < a.length; i++){
-        const diff = (a[i] - b[i]);
-        dist += diff*diff;
-    }
-    return Math.sqrt(dist);
+    return Math.sqrt(squaredDistance(a, b));
 }
 export function maxEuclidianDistance(length, range){
     return Math.sqrt(range*range*length);
 }
 export function euclidian(a, b, maxDist){
     return 1-euclidianDistance(a,b)/maxDist;
+}
+
+export function squaredDistance(a, b){
+    let dist = 0;
+    for(let i = 0; i < a.length; i++){
+        const diff = (a[i] - b[i]);
+        dist += diff*diff;
+    }
+    return dist;
 }

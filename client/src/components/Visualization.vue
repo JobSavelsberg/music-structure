@@ -58,7 +58,28 @@
                     fill="#ffffff"
                     :opacity="0.5"
                 />
+                <g v-if="drawClusters">
+                    <rect  v-for="(segment, index) in segments" :key="index"
+                    :x="padding+segment.start*scale"
+                    :y="clusterY+segment.cluster*10"
+                    :width="segment.duration*scale"
+                    :height="10"
+                    :fill="clusterColor(segment.cluster)"
+                    @click="clickedCluster(segment.cluster, segment)"
+                    />
+                </g>
             </svg>
+            <svg  v-if="!loadingTrack && $store.state.tsneReady" class="tsneContainer" >
+                <circle v-for="(segment, index) in segments" :key="index"
+                :class="playingSegment(segment) ? 'segmentCirclePlaying' : 'segmentCircle'"
+                :r="(3+segment.duration*3) * (playingSegment(segment) ? 3: 1)"
+                :cx="padding+(segment.tsneCoord[0]+1)*400"
+                :cy="tsneHeightOffset+(segment.tsneCoord[1]+1)*400"
+                :fill="playingSegment(segment)? 'white': clusterColor(segment.cluster)"
+                @click="clickedSegment(segment)"
+                />
+            </svg>
+
         </div>
     </div>
 </template>
@@ -70,8 +91,9 @@ import * as audioUtil from '../app/audioUtil'
 import * as player from '../app/player';
 import * as app from '../app/app';
 import * as vis from '../app/vis'
+import Segment from '../app/Segment';
 
-
+const d3ClusterColor = d3.scaleOrdinal(d3.schemeCategory10);
 export default {
     props:[
         'padding'
@@ -89,8 +111,11 @@ export default {
             drawSSM: false,
             drawTonality: true,
             drawRawRhythm: true,
+            drawClusters: true,
+            clusterY: 0,
             zoomed: false,
             scaleX: 4,
+
         }
     },
     computed: {
@@ -99,6 +124,9 @@ export default {
         },
         analysis(){
             return this.track.getAnalysis();
+        },
+        segments(){
+            return this.track.getSegments();
         },
         scale(){
             return this.width/this.analysis.track.duration;
@@ -120,7 +148,10 @@ export default {
         },
         seeker(){
             return this.$store.state.seeker;
-        }
+        },
+        tsneHeightOffset(){
+            return this.clusterY+100;
+        },
     },
     watch: { 
         loadingTrack: 'loadingTrackChanged',
@@ -136,10 +167,13 @@ export default {
     },
     methods: {
         clickedVis(event){
-            const posX = Math.min(Math.max(0,event.clientX-this.padding)/this.width, 1);
-            const ms = posX*this.duration;
-            this.$store.commit('setSeeker', ms);
-            player.seek(ms);
+            if(!event.clientY > this.clusterY && !event.clientY < this.clusterY+100){
+                const posX = Math.min(Math.max(0,event.clientX-this.padding)/this.width, 1);
+                const ms = posX*this.duration;
+                this.$store.commit('setSeeker', ms);
+                player.seek(ms);
+            }
+
         },
         loudness(db){
             return audioUtil.loudness(db);
@@ -152,6 +186,9 @@ export default {
         },
         rainbowColorRange(value){
             return vis.rainbowColor(value);
+        },
+        clusterColor(cluster){
+            return d3ClusterColor(cluster);
         },
         loadingTrackChanged(newVal, oldVal){
             if(this.loadingTrack === false){
@@ -196,6 +233,8 @@ export default {
             if(this.drawRawPitch){
                 vis.renderRawPitch(this.track, this.padding - xOffset, this.width, y, 150, this.ctx)
                 y += 155;
+                vis.renderPercussionPitch(this.track, this.padding - xOffset, this.width, y, 50, this.ctx)
+                y += 55;
                 vis.renderProcessedPitch(this.track, this.padding - xOffset, this.width, y, 150, this.ctx)
                 y += 155;
             }
@@ -210,6 +249,10 @@ export default {
             if(this.drawTonality){
                 vis.renderTonality(this.track, this.padding- xOffset, this.width, y, 25, this.ctx)
                 y += 30;
+            }
+            if(this.drawClusters){
+                this.clusterY = y;
+                y += 10*10;
             }
             if(this.drawSSM){
                 vis.renderSSM(this.track, this.padding- xOffset, this.width, y, this.width, this.ctx)
@@ -238,6 +281,24 @@ export default {
             this.ctx.scale(2, 2);
             this.ctx.drawImage(this.canvas, -this.width*0.5, -this.canvasHeight*0.5);
             this.ctx.restore();
+        },
+        clickedCluster(clusterIndex, segment){
+            console.log("playing cluster", clusterIndex);
+            let totalDuration = 0;
+            const clusterSize = this.track.clusters[clusterIndex].length;
+            const randomSegmentIndex = Math.floor(Math.random()*clusterSize);
+            const randomSegment = segment//this.track.clusters[clusterIndex][randomSegmentIndex];
+            console.log(randomSegment.start);
+            player.playSegment(randomSegment)
+            this.$store.commit('setSeeker', randomSegment.start*1000);
+
+        },
+        clickedSegment(segment){
+            player.playSegment(segment)
+            this.$store.commit('setSeeker', segment.start*1000);
+        },
+        playingSegment(segment){
+            return this.seeker/1000 >= segment.start && this.seeker/1000 < segment.start+segment.duration-0.01 
         }
     }
 }
@@ -263,5 +324,20 @@ export default {
     z-index: 2;
     height: 100%;
     width: 100%;
+}
+.tsneContainer{
+    position: absolute;
+    padding-top: 10px;
+    top: 0px;
+    left:0px;
+    z-index: 2;
+    height: 100%;
+    width: 100%;
+}
+.segmentCircle{
+    transition: r 1.5s ease-out, fill 1.5s ease-out;
+}
+.segmentCirclePlaying{
+    transition: r .15s ease-in, fill .15s ease-in;
 }
 </style>
