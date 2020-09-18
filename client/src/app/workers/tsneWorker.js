@@ -7,7 +7,7 @@ import tsneez from 'tsneez'
 let opt = {}
 opt.theta = 0.5 // theta
 opt.perplexity = 20 // perplexity
-const GRADIENT_STEPS = 500 
+const GRADIENT_STEPS = 10
 
 let features = [];
 
@@ -20,37 +20,37 @@ promiseWorker.register((message) => {
 
         let prevTime = new Date();
 
-        for(var k = 0; k < GRADIENT_STEPS ; k++) {
+        for (var k = 0; k < GRADIENT_STEPS; k++) {
             model.step() // gradient update
             console.log(`Step : ${k}`)
             //check time passed
             let currTime = new Date();
             var timeDiff = currTime - prevTime; //in ms
-            if(timeDiff > 1000){
+            if (timeDiff > 1000) {
                 promiseWorker.postMessage(getResult(model));
                 prevTime = currTime;
             }
         }
-    
+
         return getResult(model);
     }
 });
 
-function getResult(model){
-    var Y = model.Y 
-        
+function getResult(model) {
+    var Y = model.Y
+
     let result = [];
     let max = 0;
-    for(let i = 0; i < features.length; i++){
-        const x = Y.data[i*2];
-        const y = Y.data[i*2+1];
-        result.push([x,y]);
+    for (let i = 0; i < features.length; i++) {
+        const x = Y.data[i * 2];
+        const y = Y.data[i * 2 + 1];
+        result.push([x, y]);
 
         max = Math.max(max, Math.abs(x), Math.abs(y));
     }
 
     // Scale to [-1,1]
-    for(let i = 0; i < features.length; i++){
+    for (let i = 0; i < features.length; i++) {
         result[i][0] /= max;
         result[i][1] /= max;
 

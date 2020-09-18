@@ -1,4 +1,5 @@
-import {spotify} from '../app/app';
+import { spotify } from '../app/app';
+import store from "../store";
 
 export let deviceId = null;
 let playerRef;
@@ -7,53 +8,58 @@ let currentTrackURI = "";
 let nextTrackURI = "";
 let nexStartPosition = 0;
 
-export async function setTrack(trackUri, startPosition){
+export async function setTrack(trackUri, startPosition) {
     nextTrackURI = trackUri;
     nexStartPosition = startPosition;
 }
 
-export async function resume(position){
-    if(deviceId){
-        if(trackIsLoaded && nextTrackURI === ""){
+export async function resume(position) {
+    if (deviceId) {
+        if (trackIsLoaded && nextTrackURI === "") {
             seek(position);
-            return playerRef.resume().catch((err)=>{console.log(err)});
-        }else{ // Start new track
-            return spotify.play({device_id: deviceId, uris: [nextTrackURI], position_ms: position || nexStartPosition}).then(()=> {
+            return playerRef.resume().then(() => {
+                store.commit('setPlaying', true)
+            }).catch((err) => { console.log(err) });
+        } else { // Start new track
+            return spotify.play({ device_id: deviceId, uris: [nextTrackURI], position_ms: position || nexStartPosition }).then(() => {
                 trackIsLoaded = true;
                 currentTrackURI = nextTrackURI;
                 nextTrackURI = "";
                 nexStartPosition = 0;
-            }).catch((err)=>{console.log(err)});
+                store.commit('setPlaying', true)
+            }).catch((err) => { console.log(err) });
         }
     }
 }
 
-export async function pause(){
-    if(deviceId && trackIsLoaded){
-        return playerRef.pause().catch((err)=>{console.log(err)});
+export async function pause() {
+    if (deviceId && trackIsLoaded) {
+        return playerRef.pause().then(() => {
+            store.commit('setPlaying', false)
+        }).catch((err) => { console.log(err) });
     }
 }
 
-export async function seek(time){
-    if(deviceId && trackIsLoaded){
-        return playerRef.seek(time).catch((err)=>{console.log(err)})
+export async function seek(time) {
+    if (deviceId && trackIsLoaded) {
+        return playerRef.seek(time).catch((err) => { console.log(err) })
     }
 }
 
-export async function playSegment(segment){
+export async function playSegment(segment) {
     console.log("playing segment", segment)
-    resume(segment.start*1000).then(()=> {
-        window.setTimeout(()=>{
+    resume(segment.start * 1000).then(() => {
+        window.setTimeout(() => {
             pause();
-        }, segment.duration*1000)
+        }, segment.duration * 1000)
     });
 }
 
-export async function deviceIdSet(){
+export async function deviceIdSet() {
     return new Promise((resolve, reject) => {
         let timeWas = new Date();
-        let wait = setInterval(function() {
-            if (deviceId!==null) {
+        let wait = setInterval(function () {
+            if (deviceId !== null) {
                 console.log("resolved after", new Date() - timeWas, "ms");
                 clearInterval(wait);
                 resolve();
@@ -66,22 +72,22 @@ export async function deviceIdSet(){
     });
 }
 
-export function setVolume(volume){
-    if(playerRef){
+export function setVolume(volume) {
+    if (playerRef) {
         playerRef.setVolume(volume);
     }
 }
 
-async function waitForSpotifyWebPlaybackSDKToLoad () {
+async function waitForSpotifyWebPlaybackSDKToLoad() {
     console.log("waiting");
     return new Promise(resolve => {
-      if (window.Spotify) {
-        resolve(window.Spotify);
-      } else {
-        window.onSpotifyWebPlaybackSDKReady = () => {
-          resolve(window.Spotify);
+        if (window.Spotify) {
+            resolve(window.Spotify);
+        } else {
+            window.onSpotifyWebPlaybackSDKReady = () => {
+                resolve(window.Spotify);
+            }
         }
-      }
     });
 }
 
@@ -93,7 +99,7 @@ export async function initialize(token, stateChangedCallback) {
         getOAuthToken: cb => { cb(token); },
         volume: 0.5,
     });
-    
+
     // Error handling
     playerRef.addListener('initialization_error', ({ message }) => { console.error(message); });
     playerRef.addListener('authentication_error', ({ message }) => { console.error(message); });
@@ -104,21 +110,21 @@ export async function initialize(token, stateChangedCallback) {
         position,
         duration,
         track_window: { current_track }
-      }) => {
-        stateChangedCallback({current_track, position, duration});
-      });
-    
+    }) => {
+        stateChangedCallback({ current_track, position, duration });
+    });
+
     // Ready
     playerRef.addListener('ready', ({ device_id }) => {
         deviceId = device_id;
         console.log('Ready with Device ID', device_id);
     });
-    
+
     // Not Ready
     playerRef.addListener('not_ready', ({ device_id }) => {
         console.log('Device ID has gone offline', device_id);
     });
-    
+
     // Connect to the player!
     playerRef.connect().then(() => {
         console.log("Connected succesfully!!!");
