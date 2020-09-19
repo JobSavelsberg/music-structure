@@ -7,7 +7,7 @@ let trackIsLoaded = false;
 let currentTrackURI = "";
 let nextTrackURI = "";
 let nexStartPosition = 0;
-
+let playingSegment = null;
 export async function setTrack(trackUri, startPosition) {
     nextTrackURI = trackUri;
     nexStartPosition = startPosition;
@@ -49,8 +49,11 @@ export async function seek(time) {
 export async function playSegment(segment) {
     console.log("playing segment", segment)
     resume(segment.start * 1000).then(() => {
+        playingSegment = segment;
         window.setTimeout(() => {
-            pause();
+            if(playingSegment === segment){
+                pause();
+            }
         }, segment.duration * 1000)
     });
 }

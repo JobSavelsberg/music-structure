@@ -30,6 +30,8 @@ export async function initialize(){
 export async function selectTrackAtIndex(index){
     store.commit('loadingTrack', true);
     store.commit('tsneReady', false);
+    store.commit('clusterReady', false);
+    store.commit('ssmReady', false);
     return getAnalysis(store.getters.trackList[index]).then(()=>{
         console.log("Getting analysis and everything done, now setting selected index");
         store.commit('setSelectedIndex', index);

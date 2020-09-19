@@ -2,7 +2,10 @@ import Segment from "./Segment"
 import * as sim from "./similarity"
 import * as clustering from "./clustering"
 import * as skmeans from "skmeans";
-import tsneWorker from './workers'
+import tsneWorker from './workers/tsneWorker'
+import ssmWorker from './workers/ssmWorker'
+import clusterWorker from './workers/clusterWorker'
+
 import store from "../store";
 
 const GAMMA = 1.7;
@@ -16,7 +19,7 @@ export default class Track {
     timbreMax = new Array(12).fill(0);
     timbreMin = new Array(12).fill(0);
     timbreBiggest = new Array(12).fill(0);
-
+    timbreTotalBiggest = 0;
     preprocessed = false;
 
     pitchFeatures = [];
@@ -56,13 +59,14 @@ export default class Track {
         });
         for (let i = 0; i < 12; i++) {
             this.timbreBiggest[i] = Math.max(Math.abs(this.timbreMax[i]), Math.abs(this.timbreMin[i]));
+            this.timbreTotalBiggest = Math.max(this.timbreTotalBiggest, this.timbreBiggest[i]);
         }
     }
 
     preprocesSegments() {
         this.segmentObjects.forEach((s, i) => {
             s.processPitch(GAMMA);
-            s.processTimbre(this.timbreMin, this.timbreMax, this.timbreBiggest);
+            s.processTimbre(this.timbreMin, this.timbreMax, this.timbreBiggest, this.timbreTotalBiggest);
             this.pitchFeatures.push(s.pitches);
             this.timbreFeatures.push(s.timbres);
             this.tonalEnergyFeatures.push(s.tonalityEnergy);
@@ -74,9 +78,8 @@ export default class Track {
             if (i > 0 && i < this.segmentObjects.length - 1) {
                 this.segmentObjects[i].processPitchSmooth(this.segmentObjects[i - 1], this.segmentObjects[i + 1])
             }
-            this.features.push([...this.segmentObjects[i].pitches, ...this.segmentObjects[i].timbres, this.segmentObjects[i].tonalityEnergy, this.segmentObjects[i].tonalityRadius]);
+            this.features.push([...this.timbreFeatures[i], this.tonalEnergyFeatures[i], this.tonalRadiusFeatures[i], ...this.loudnessFeatures[i]]);
         }
-        console.log(this.features);
     }
 
 
@@ -84,59 +87,48 @@ export default class Track {
      * Self similarity matrix, takes a few seconds so async is needed
      */
     calculateSSM() {
-        console.log("Calculating SSM");
-        const size = this.segmentObjects.length;
-        //const pitchRange = 1*12;
-        //const timbreRange = 2*12;
-        //const maxEuclidianPitchRange = sim.maxEuclidianDistance(12, 1);
-        //const maxEuclidianRimbreRange = sim.maxEuclidianDistance(12, 2);
-        this.ssm = new Array(size);
-        for (let i = 0; i < size; i++) {
-            const SegmentI = this.segmentObjects[i];
-            this.ssm[i] = new Array(size - i);
-            for (let j = i; j < size; j++) {
-                this.ssm[i][j - i] = new Array(2);
-                this.ssm[i][j - i][0] = sim.cosine(SegmentI.getPitches(), this.segmentObjects[j].getPitches());
-                this.ssm[i][j - i][1] = sim.cosine(SegmentI.getTimbres(), this.segmentObjects[j].getTimbres());
-            }
-        }
-        console.log("Done calculating SSM!");
+        console.log("starting SSMWorker")
+        store.commit('ssmReady', false);
+        ssmWorker.terminate();
+        const self = this;
+        ssmWorker.send({ segmentObjects: this.segmentObjects}).then((result) => {
+            self.ssm = result;
+            store.commit('ssmReady', true);
+            console.log("ssm Done")
+            console.log(self.ssm);
+        })
 
     }
 
     cluster() {
-        const minK = 2;
-        const maxK = 15;
-        const tries = 8;
-        const data = [];
-        for (let i = 0; i < this.segmentObjects.length; i++) {
-            data.push([...this.timbreFeatures[i], this.tonalEnergyFeatures[i], this.tonalRadiusFeatures[i], ...this.loudnessFeatures[i]]);
-        }
-        const result = clustering.kMeansSearch(data, minK, maxK, tries);
-        result.idxs.forEach((cluster, index) => {
+        console.log("starting Clusterworker");
+        clusterWorker.terminate();
+        clusterWorker.send({ features: this.features, minK: 2, maxK: 10, tries: 4 }).then((result) => {
+            this.updateClusters(result);
+            console.log("clustering done")
+        })
+    }
+    updateClusters(clusterIndexes){
+        store.commit('clusterReady', false);
+        clusterIndexes.forEach((cluster, index) => {
             this.segmentObjects[index].setCluster(cluster);
             this.clusters[cluster].push(this.segmentObjects[index]);
         })
-        console.log("kmeans done")
+        window.setTimeout(store.commit('clusterReady', true), 1);
     }
 
     tsne() {
-        console.log("sending worker message");
+        console.log("starting tsneWorker");
         tsneWorker.terminate();
-        const data = [];
-        for (let i = 0; i < this.segmentObjects.length; i++) {
-            data.push([...this.timbreFeatures[i], this.tonalEnergyFeatures[i], this.tonalRadiusFeatures[i], ...this.loudnessFeatures[i]]);
-        }
-        tsneWorker.send({ features: data }).then((result) => {
+        tsneWorker.send({ features: this.features }).then((result) => {
             this.updateTSNECoords(result);
-            // TODO: Save tsne
         })
 
         tsneWorker.receive((result) => {
             this.updateTSNECoords(result);
         });
     }
-
+    //updateAmountPer100ms = 100;
     updateTSNECoords(coords) {
         store.commit('tsneReady', false);
         for (let i = 0; i < this.segmentObjects.length; i++) {
@@ -182,11 +174,12 @@ export default class Track {
     hasAnalysis() { return this.analysisData !== null && this.segmentObjects.length > 0 && this.preprocessed }
     getAnalysis() { return this.analysisData; }
     setAnalysis(analysis) {
-        if (this.hasAnalysis && this.ssm !== null) return;
-        this.analysisData = analysis;
-        console.log("processing");
-        this.process();
-        console.log("processed");
+        if(!this.preprocessed && !store.getters.tsneReady && !store.getters.clusterReady && !store.ssmReady){
+            this.analysisData = analysis;
+            console.log("processing");
+            this.process();
+            console.log("processed");
+        }
     }
     getName() { return this.trackData.name }
     getArtist() { return this.trackData.artist }

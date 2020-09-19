@@ -14,7 +14,11 @@ export default new Vuex.Store({
     loadingTrack: true,
     playerReady: false,
     playing: false,
+    // For every worker we need a global ready variable
     tsneReady: false,
+    ssmReady: false,
+    clusterReady: false,
+
   },
   mutations: {
     setSeeker(state, time_ms){
@@ -56,6 +60,12 @@ export default new Vuex.Store({
     },
     tsneReady(state, ready){
       state.tsneReady = ready;
+    },
+    clusterReady(state, ready){
+      state.clusterReady = ready;
+    },
+    ssmReady(state, ready){
+      state.ssmReady = ready;
     }
   },
   actions: {
@@ -88,6 +98,12 @@ export default new Vuex.Store({
     },
     tsneReady(state){
       return state.tsneReady;
+    },
+    clusterReady(state){
+      return state.clusterReady;
+    },
+    ssmReady(state){
+      return state.ssmReady;
     }
   },
   modules: {

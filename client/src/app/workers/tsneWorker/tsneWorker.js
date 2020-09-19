@@ -1,13 +1,13 @@
 import { PWBWorker } from "promise-worker-bi";
+import tsneez from 'tsneez'
 
 var promiseWorker = new PWBWorker();
-import tsneez from 'tsneez'
 
 // Hyper parameters
 let opt = {}
 opt.theta = 0.5 // theta
 opt.perplexity = 20 // perplexity
-const GRADIENT_STEPS = 10
+const GRADIENT_STEPS = 400
 
 let features = [];
 
@@ -22,7 +22,7 @@ promiseWorker.register((message) => {
 
         for (var k = 0; k < GRADIENT_STEPS; k++) {
             model.step() // gradient update
-            console.log(`Step : ${k}`)
+            //console.log(`Step : ${k}`)
             //check time passed
             let currTime = new Date();
             var timeDiff = currTime - prevTime; //in ms

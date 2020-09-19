@@ -6,7 +6,7 @@ export function kMeansSearch(features, minK, maxK, tries){
     const lowScores = [];
     for(let k = minK; k < maxK; k++){
         for(let i = 0; i < tries; i++){
-            console.log(`kmeans k=${k}, try=${i}`);
+            //console.log(`kmeans k=${k}, try=${i}`);
             const result = skmeans(features, k);
             const score = calculateScore(features, result);
             if(score < lowScores[k-minK] || Infinity){
@@ -15,7 +15,7 @@ export function kMeansSearch(features, minK, maxK, tries){
             }
         }
     }
-
+    console.log("Finding elbow point")
     // Find elbow point
     const start = [minK, lowScores[0]];
     const end = [maxK, lowScores[lowScores.length-1]];

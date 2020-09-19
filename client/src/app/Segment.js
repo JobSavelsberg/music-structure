@@ -50,9 +50,9 @@ export default class Segment {
         }
     }
 
-    processTimbre(min, max, biggest) {
+    processTimbre(min, max, biggest, totalBiggest) {
         this.segment.timbre.forEach((timbre, i) => {
-            this.timbres.push(timbre / biggest[i]);
+            this.timbres.push(timbre / totalBiggest);
         });
     }
 

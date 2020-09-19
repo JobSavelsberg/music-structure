@@ -8,35 +8,30 @@
             label="Raw Pitch Data"
             class="mx-5"
             hide-details
-            @change="draw"
           ></v-switch>
           <v-switch
             v-model="canvasVis.rawTimbre.draw"
             label="Raw Timbre Data"
             class="mx-5"
             hide-details
-            @change="draw"
           ></v-switch>
           <v-switch
             v-model="canvasVis.rawRhythm.draw"
             label="Rhythm Data"
             class="mx-5"
             hide-details
-            @change="draw"
           ></v-switch>
           <v-switch
             v-model="canvasVis.tonality.draw"
             label="Tonality"
             class="mx-5"
             hide-details
-            @change="draw"
           ></v-switch>
           <v-switch
             v-model="canvasVis.ssm.draw"
             label="Similarity Matrix"
             class="mx-5"
             hide-details
-            @change="draw"
           ></v-switch>
         </v-layout>
         <v-spacer />
@@ -122,7 +117,7 @@ export default {
           function: vis.renderPercussionPitch,
         },
         rawTimbre: { draw: true, height: 150, function: vis.renderRawTimbre },
-        ssm: { draw: false, height: this.width, function: vis.renderSSM },
+        ssm: { draw: false, height: window.innerWidth- this.padding * 2, function: vis.renderSSM },
         tonality: { draw: true, height: 25, function: vis.renderTonality },
         rawRhythm: { draw: true, height: 30, function: vis.renderRawRhythm },
       },
@@ -173,6 +168,10 @@ export default {
     loadingTrack: "loadingTrackChanged",
     seeker: "seekerChanged",
     canvasHeight: "canvasHeightChanged",
+    canvasVis: {
+      deep: true,
+      handler(newVis, oldVis){this.canvasVisChanged(newVis, oldVis);}
+    }
   },
   mounted() {
     window.addEventListener("resize", () => {
@@ -209,8 +208,11 @@ export default {
       return d3ClusterColor(cluster);
     },
     loadingTrackChanged(newVal, oldVal) {
-      if (this.loadingTrack === false) {
+      if(this.loadingTrack){
+        this.canvasVis.ssm.draw = false;
+      }else{
         this.draw(0);
+
       }
     },
     setupCanvas(canvas) {
@@ -295,7 +297,6 @@ export default {
       const clusterSize = this.track.clusters[clusterIndex].length;
       const randomSegmentIndex = Math.floor(Math.random() * clusterSize);
       const randomSegment = segment; //this.track.clusters[clusterIndex][randomSegmentIndex];
-      console.log(randomSegment.start);
       player.playSegment(randomSegment);
       this.$store.commit("setSeeker", randomSegment.start * 1000);
     },
@@ -304,12 +305,9 @@ export default {
       this.$store.commit("setSeeker", segment.start * 1000);
     },
     clickedTSNE(event) {
-      console.log(event);
       const x = (event.offsetX / this.tsneSize) * 2 - 1;
       const y = (event.offsetY / this.tsneSize) * 2 - 1;
-      console.log(x, y);
       const segment = this.track.getClosestSegment([x, y]);
-      console.log(segment.tsneCoord[0], segment.tsneCoord[1]);
       this.clickedSegment(segment);
     },
     playingSegment(segment) {
@@ -321,9 +319,13 @@ export default {
     },
     canvasHeightChanged(newHeight, oldHeight) {
       console.log("CanvasHeight change");
-      this.setupCanvas(this.canvas);
-      this.draw(0);
+      //this.setupCanvas(this.canvas);
+      //this.draw(0);
     },
+    canvasVisChanged(){
+      this.setupCanvas(this.canvas);
+      this.draw(0)
+    }
   },
 };
 </script>
@@ -364,8 +366,9 @@ export default {
   width: 100%;
   overflow: visible;
 }
+
 .segmentCircle {
-  transition: r 1.5s ease-out, fill 1.5s ease-out, cx 1s ease, cy 1s ease;
+  transition: r 1.5s ease-out, fill 1.5s ease-out/*, cx 1s ease, cy 1s ease;*/
 }
 .segmentCirclePlaying {
   transition: r 0.1s ease-in, fill 0.1s ease-in;
