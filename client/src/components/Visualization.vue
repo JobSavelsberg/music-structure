@@ -41,8 +41,7 @@
       </v-row>
     </div>
     <div class="vis" @click="clickedVis">
-      <canvas v-show="!loadingTrack" id="visCanvas" ref="visCanvas" class="visCanvas pa-0 ma-0"></canvas>
-      <svg v-if="!loadingTrack" class="svgContainer">
+      <svg v-if="!loadingTrack" class="visSeeker">
         <rect
           :x="this.zoomed ? this.padding + this.canvasWidth/2 : padding+((this.seeker/1000.0)*scale)-1"
           :y="0"
@@ -51,6 +50,9 @@
           fill="#ffffff"
           :opacity="0.5"
         />
+      </svg>
+      <canvas v-show="!loadingTrack" id="visCanvas" ref="visCanvas" class="visCanvas pa-0 ma-0"></canvas>
+      <svg v-if="!loadingTrack" class="svgContainer">
         <g v-if="drawClusters">
           <rect
             v-for="(segment, index) in segments"
@@ -68,7 +70,7 @@
         v-if="!loadingTrack && $store.state.tsneReady"
         class="tsneContainer"
         @click="clickedTSNE"
-        :style="`height: ${tsneSize}px; left: ${padding}`"
+        :style="`height: ${tsneSize+padding}px; left: ${padding}`"
       >
         <circle
           v-for="(segment, index) in segments"
@@ -111,11 +113,7 @@ export default {
       drawClusters: true,
       canvasVis: {
         rawPitch: { draw: true, height: 150, function: vis.renderRawPitch },
-        percussionPitch: {
-          draw: false,
-          height: 30,
-          function: vis.renderPercussionPitch,
-        },
+        percussionPitch: { draw: false, height: 30, function: vis.renderPercussionPitch},
         rawTimbre: { draw: true, height: 150, function: vis.renderRawTimbre },
         ssm: { draw: false, height: window.innerWidth- this.padding * 2, function: vis.renderSSM },
         tonality: { draw: true, height: 25, function: vis.renderTonality },
@@ -177,11 +175,14 @@ export default {
     window.addEventListener("resize", () => {
       this.windowWidth = window.innerWidth;
       this.setupCanvas(document.getElementById("visCanvas"));
+      this.draw(0);
     });
     this.setupCanvas(document.getElementById("visCanvas"));
+    this.draw(0);
   },
   methods: {
     clickedVis(event) {
+      console.log(event)
       if(event.srcElement.id === "visCanvas" && event.offsetY <= this.canvasHeight){
         const posX = Math.min(
           Math.max(0, event.clientX - this.padding) / this.width,
@@ -245,6 +246,7 @@ export default {
       //this.draw();
     },
     draw(xOffset) {
+      console.log("draw", xOffset)
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
       let y = 0;
@@ -341,6 +343,12 @@ export default {
   image-rendering: -o-crisp-edges;
   image-rendering: crisp-edges;
   -ms-interpolation-mode: nearest-neighbor;
+}
+.visSeeker{
+  position: absolute;
+  z-index: 3;
+  width: 100%;
+  overflow: visible;
 }
 .svgContainer {
   position: relative;

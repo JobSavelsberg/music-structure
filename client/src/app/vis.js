@@ -106,7 +106,6 @@ export function renderTonality(track, left, width, yOffset, height, ctx){
 export function renderSSM(track, left, width, yOffset, height, ctx){
     console.log("Rendering ssm...")
     const scale = height/track.getAnalysis().track.duration;
-    console.log(height);
     const size = track.getSegments().length;
     for(let i = 0; i < size; i++){
         for(let j = i; j < size; j++){
@@ -123,13 +122,11 @@ export function renderSSM(track, left, width, yOffset, height, ctx){
             const y=yOffset+segmentB.start*scale;
             const segmentHeight=segmentB.duration*scale;
             if(!segmentHeight){
-                console.log(segmentB);
                 return;
             }
             ctx.fillRect(x, y, segmentWidth, segmentHeight);
 
             const timbre = track.getSSM()[i][j-i][1];
-            //console.log(pitch, timbre);
 
             ctx.fillStyle = greyScaleColor(Math.pow(timbre,5));
             ctx.fillRect(y+left-yOffset, x-left+yOffset, segmentHeight, segmentWidth);

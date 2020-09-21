@@ -12,7 +12,7 @@ const allTracks = new Map();
 
 // Initialize spotify access, load tracks from local storage, get user data
 export async function initialize(){
-    loadAllTracks();
+    //loadAllTracks();
     console.log("Got tracks from local storage: ", allTracks);
 
     spotify.setAccessToken(auth.token);
@@ -34,8 +34,8 @@ export async function selectTrackAtIndex(index){
     store.commit('ssmReady', false);
     return getAnalysis(store.getters.trackList[index]).then(()=>{
         console.log("Getting analysis and everything done, now setting selected index");
-        store.commit('setSelectedIndex', index);
         store.commit('loadingTrack', false);
+        store.commit('setSelectedIndex', index);
     })
 }
 
@@ -49,7 +49,7 @@ export function loadAllTracks(){
     if(localStorage.allTracks){
         const allTracksArray = JSON.parse(localStorage.allTracks);
         allTracksArray.forEach((trackArray) => {
-            const track = new Track(trackArray[1].trackData, trackArray[1].analysisData)
+            const track = Track.createWithAnalysis(trackArray[1].trackData, trackArray[1].analysisData)
             allTracks.set(trackArray[0], track);
         })
     }

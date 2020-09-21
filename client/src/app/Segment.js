@@ -11,6 +11,7 @@ export default class Segment {
 
     pitches = [];
     timbres = [];
+    timbresScaled = [];
 
     cluster = -1;
     tsneCoord = [0, 0];
@@ -53,6 +54,9 @@ export default class Segment {
     processTimbre(min, max, biggest, totalBiggest) {
         this.segment.timbre.forEach((timbre, i) => {
             this.timbres.push(timbre / totalBiggest);
+        });
+        this.segment.timbre.forEach((timbre, i) => {
+            this.timbresScaled.push(timbre / biggest[i]);
         });
     }
 

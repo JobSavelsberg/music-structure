@@ -15,6 +15,7 @@ export function kMeansSearch(features, minK, maxK, tries){
             }
         }
     }
+
     console.log("Finding elbow point")
     // Find elbow point
     const start = [minK, lowScores[0]];

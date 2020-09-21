@@ -82,12 +82,18 @@ export default {
             return this.theme.isDark ? 'white' : 'black'
         },
         scale(){
+            if(this.$store.getters.loadingTrack){
+                return 0;
+            }
             return this.width/this.track.getAnalysisDuration();
         },
         width(){
             return this.windowWidth - this.padding*2;
         },
         duration(){
+            if(this.$store.getters.loadingTrack){
+                return 0;
+            }
             return Math.round(this.track.getAnalysisDuration()*1000);
         },
         playing(){

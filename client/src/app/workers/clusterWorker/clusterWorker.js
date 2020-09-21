@@ -10,7 +10,6 @@ promiseWorker.register((message) => {
         const minK = message.message.minK;
         const maxK = message.message.maxK;
         const tries = message.message.tries;
-
         const result = clustering.kMeansSearch(features, minK, maxK, tries);
         return result.idxs;
     }

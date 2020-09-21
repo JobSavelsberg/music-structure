@@ -53,5 +53,5 @@ export function loudness(db){
 
 
 export function logCompression(value, gamma=1){
-    return Math.log(1 + gamma * value);
+    return Math.log(1 + gamma * value)/Math.log(gamma);
 }

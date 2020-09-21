@@ -20,7 +20,6 @@ export default class Track {
     timbreMin = new Array(12).fill(0);
     timbreBiggest = new Array(12).fill(0);
     timbreTotalBiggest = 0;
-    preprocessed = false;
 
     pitchFeatures = [];
     timbreFeatures = [];
@@ -29,6 +28,7 @@ export default class Track {
     tonalRadiusFeatures = [];
     tonalAngleFeatures = [];
     features = []
+    processed = false;
 
     clusters = new Array(CLUSTERAMOUNT).fill([])
 
@@ -36,10 +36,10 @@ export default class Track {
         this.createSegmentObjects(); // create extended objects holding more info
         this.calculateMaxMin(); // calculate scaling coeficcients
         this.preprocesSegments(); // use max min to scale
-        this.preprocessed = true;
         this.tsne();
         this.cluster();
         this.calculateSSM();
+        this.processed = true;
     }
 
     createSegmentObjects() {
@@ -95,7 +95,6 @@ export default class Track {
             self.ssm = result;
             store.commit('ssmReady', true);
             console.log("ssm Done")
-            console.log(self.ssm);
         })
 
     }
@@ -155,7 +154,8 @@ export default class Track {
     }
     static createWithAnalysis(trackData, analysisData) {
         const track = new Track(trackData)
-        this.setAnalysis(analysisData);
+        track.setAnalysis(analysisData);
+        return track;
     }
 
     static fromJSON(json) {
@@ -171,10 +171,10 @@ export default class Track {
     }
 
     getId() { return this.trackData.id }
-    hasAnalysis() { return this.analysisData !== null && this.segmentObjects.length > 0 && this.preprocessed }
+    hasAnalysis() { return this.analysisData !== null && this.segmentObjects.length > 0 }
     getAnalysis() { return this.analysisData; }
     setAnalysis(analysis) {
-        if(!this.preprocessed && !store.getters.tsneReady && !store.getters.clusterReady && !store.ssmReady){
+        if(!this.processed){
             this.analysisData = analysis;
             console.log("processing");
             this.process();
