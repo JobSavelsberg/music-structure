@@ -5,7 +5,7 @@ import * as skmeans from "skmeans";
 import tsneWorker from './workers/tsneWorker'
 import ssmWorker from './workers/ssmWorker'
 import clusterWorker from './workers/clusterWorker'
-
+import * as SSM from './SSM'
 import store from "../store";
 
 const GAMMA = 1.7;
