@@ -96,42 +96,44 @@ async function waitForSpotifyWebPlaybackSDKToLoad() {
 
 
 export async function initialize(token, stateChangedCallback) {
-    await waitForSpotifyWebPlaybackSDKToLoad();
-    playerRef = new window.Spotify.Player({
-        name: 'Music Structure Visualizer',
-        getOAuthToken: cb => { cb(token); },
-        volume: 0.5,
-    });
-
-    // Error handling
-    playerRef.addListener('initialization_error', ({ message }) => { console.error(message); });
-    playerRef.addListener('authentication_error', ({ message }) => { console.error(message); });
-    playerRef.addListener('account_error', ({ message }) => { console.error(message); });
-    playerRef.addListener('playback_error', ({ message }) => { console.error(message); });
-    // Playback status updates
-    playerRef.addListener('player_state_changed', ({
-        position,
-        duration,
-        track_window: { current_track }
-    }) => {
-        stateChangedCallback({ current_track, position, duration });
-    });
-
-    // Ready
-    playerRef.addListener('ready', ({ device_id }) => {
-        deviceId = device_id;
-        console.log('Ready with Device ID', device_id);
-    });
-
-    // Not Ready
-    playerRef.addListener('not_ready', ({ device_id }) => {
-        console.log('Device ID has gone offline', device_id);
-    });
-
-    // Connect to the player!
-    playerRef.connect().then(() => {
-        console.log("Connected succesfully!!!");
-    }).catch((err) => {
-        console.log("Could not connect");
+    waitForSpotifyWebPlaybackSDKToLoad().then(() => {
+        playerRef = new window.Spotify.Player({
+            name: 'Music Structure Visualizer',
+            getOAuthToken: cb => { cb(token); },
+            volume: 0.5,
+        });
+    
+        // Error handling
+        playerRef.addListener('initialization_error', ({ message }) => { console.error(message); });
+        playerRef.addListener('authentication_error', ({ message }) => { console.error(message); });
+        playerRef.addListener('account_error', ({ message }) => { console.error(message); });
+        playerRef.addListener('playback_error', ({ message }) => { console.error(message); });
+        // Playback status updates
+        playerRef.addListener('player_state_changed', ({
+            position,
+            duration,
+            track_window: { current_track }
+        }) => {
+            stateChangedCallback({ current_track, position, duration });
+        });
+    
+        // Ready
+        playerRef.addListener('ready', ({ device_id }) => {
+            deviceId = device_id;
+            console.log('Ready with Device ID', device_id);
+        });
+    
+        // Not Ready
+        playerRef.addListener('not_ready', ({ device_id }) => {
+            console.log('Device ID has gone offline', device_id);
+        });
+    
+        // Connect to the player!
+        playerRef.connect().then(() => {
+            console.log("Connected succesfully!!!");
+        }).catch((err) => {
+            console.log("Could not connect");
+        })
     })
+
 }

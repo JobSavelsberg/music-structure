@@ -94,6 +94,7 @@ export default {
     Player,
   },
   beforeCreate() {
+    console.log("Initializing app")
     app.initialize();
   },
   methods: {

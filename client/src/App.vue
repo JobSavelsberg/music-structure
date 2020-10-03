@@ -10,7 +10,12 @@ export default {
 
   components: {
   },
-
+  beforeCreate(){
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      console.log("The Web Playback SDK is ready. We have access to Spotify.Player");
+      console.log(window.Spotify.Player);
+    };
+  },
   data: () => ({
     //
   }),

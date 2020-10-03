@@ -1,5 +1,8 @@
 .DS_Store
 client/node_modules
+client/src/app/wasm/Cargo.lock
+client/src/app/wasm/target
+client/src/app/wasm/pkg
 node_modules
 node
 /dist
