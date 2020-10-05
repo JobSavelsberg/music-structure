@@ -1,4 +1,10 @@
-import { PWBWorker } from "promise-worker-bi";
+addEventListener("message", (event) => {
+    console.log(event.data);
+    console.log("Hi from tsneWorker");
+});
+
+/**
+ * import { PWBWorker } from "promise-worker-bi";
 import tsneez from 'tsneez'
 
 var promiseWorker = new PWBWorker();
@@ -59,3 +65,5 @@ function getResult(model) {
     return result;
 }
 
+
+ */

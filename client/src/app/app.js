@@ -3,6 +3,7 @@ import * as auth from "./authentication";
 import Track from "./Track";
 import store from "./../store"; // path to your Vuex store
 import router from "../router";
+import * as workers from "./workers/workers";
 
 export const spotify = new SpotifyWebApi();
 
@@ -10,7 +11,9 @@ const allTracks = new Map();
 
 // Initialize spotify access, load tracks from local storage, get user data
 export async function initialize() {
-    Track.initWorkers();
+    workers.init().then(() => console.log("Initialized Workers!"));
+
+    //Track.initWorkers();
     //loadAllTracks();
     console.log("Got tracks from local storage: ", allTracks);
 

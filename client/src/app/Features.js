@@ -6,8 +6,17 @@ export default class Features {
 
     segments;
     raw = { pitches: [], timbres: [], loudness: [] };
-    processed = { pitches: [], timbres: [], loudness: [], tonalEnergy: [], tonalRadius: [], tonalAngle: [] };
+    processed = {
+        pitches: [],
+        pitchesFlat: [],
+        timbres: [],
+        loudness: [],
+        tonalEnergy: [],
+        tonalRadius: [],
+        tonalAngle: [],
+    };
 
+    ssmSelection = [];
     clusterSelection = [];
     tsneSelection = [];
 
@@ -50,6 +59,9 @@ export default class Features {
             s.processPitch();
             s.processTimbre(this.timbreMin, this.timbreMax, this.timbreBiggest, this.timbreTotalBiggest);
             this.processed.pitches.push(s.pitches);
+            for (const pitch of s.pitches) {
+                this.processed.pitchesFlat.push(pitch);
+            }
             this.processed.timbres.push(s.timbres);
             this.processed.tonalEnergy.push(s.tonalityEnergy);
             this.processed.tonalRadius.push(s.tonalityRadius);

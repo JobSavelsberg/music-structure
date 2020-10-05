@@ -1,15 +1,9 @@
 import Segment from "./Segment";
 import * as sim from "./similarity";
-import tsneWorker from "./workers/tsneWorker";
-import ssmWorker from "./workers/ssmWorker";
-import clusterWorker from "./workers/clusterWorker";
 import store from "../store";
 import Features from "./Features";
-
-import("./wasm/pkg").then((lib) => {
-    console.log(`707 + 707 = ${lib.add(707, 707)}`);
-});
-
+import * as workers from "./workers/workers";
+import * as SSM from "./SSM";
 const GAMMA = 1.7;
 const CLUSTERAMOUNT = 10;
 const sampleRate = 1; // 1 sample per second
@@ -28,7 +22,6 @@ export default class Track {
     process() {
         this.createSegmentObjects(); // create extended objects holding more info
         this.features = new Features(this.segments, 1, this.getAnalysisDuration());
-
         this.tsne();
         this.cluster();
         this.calculateSSM();
@@ -47,25 +40,31 @@ export default class Track {
      * Self similarity matrix, takes a few seconds so async is needed
      */
     calculateSSM() {
+        const beforessmtime = new Date();
+        const ssm = SSM.calculate(this.segments, false).then(() => {
+            console.log(ssm);
+            const finishTime = new Date() - beforessmtime;
+            console.log("Time it took to finish JS", finishTime);
+        });
+        console.log("Ello");
+
         console.log("starting SSMWorker");
         store.commit("ssmReady", false);
-        ssmWorker.terminate();
-        const self = this;
-        console.log(this.segments[0]);
-        ssmWorker.send({ segmentObjects: this.segments }).then((result) => {
-            self.ssm = result;
+        /* workers.startSSM(this, this.features.processed.pitchesFlat, 12, { useSampled: false }).then((result) => {
+            console.log(result);
+            this.ssm = ssm;
             store.commit("ssmReady", true);
             console.log("ssm Done");
-        });
+        });*/
     }
 
     cluster() {
         console.log("starting Clusterworker");
-        clusterWorker.terminate();
+        /*clusterWorker.terminate();
         clusterWorker.send({ features: this.features.clusterSelection, minK: 2, maxK: 10, tries: 4 }).then((result) => {
             this.updateClusters(result);
             console.log("clustering done");
-        });
+        });*/
     }
     updateClusters(clusterIndexes) {
         store.commit("clusterReady", false);
@@ -78,14 +77,14 @@ export default class Track {
 
     tsne() {
         console.log("starting tsneWorker");
-        tsneWorker.terminate();
+        /*tsneWorker.terminate();
         tsneWorker.send({ features: this.features.tsneSelection }).then((result) => {
             this.updateTSNECoords(result);
         });
 
         tsneWorker.receive((result) => {
             this.updateTSNECoords(result);
-        });
+        });*/
     }
     //updateAmountPer100ms = 100;
     updateTSNECoords(coords) {
@@ -191,11 +190,5 @@ export default class Track {
     }
     getAnalysisDuration() {
         return this.analysisData.track.duration;
-    }
-
-    static initWorkers() {
-        tsneWorker.init();
-        ssmWorker.init();
-        clusterWorker.init();
     }
 }

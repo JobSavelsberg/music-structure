@@ -1,11 +1,11 @@
-import * as sim from "./similarity"
+import * as sim from "./similarity";
 import * as audioUtil from "./audioUtil";
 
-export function calculate(segmentObjects, allPitches){
+export async function calculate(segmentObjects, allPitches) {
     const size = segmentObjects.length;
     const ssm = new Array(12);
-    const pitchAmount = allPitches ? 12 : 1
-    for(let p = 0; p < pitchAmount; p++){
+    const pitchAmount = allPitches ? 12 : 1;
+    for (let p = 0; p < pitchAmount; p++) {
         ssm[p] = new Array(size);
         for (let i = 0; i < size; i++) {
             const SegmentI = segmentObjects[i];
@@ -21,93 +21,97 @@ export function calculate(segmentObjects, allPitches){
     return ssm;
 }
 
-export function enhance(segmentObjects, ssm, blurTime){
-    if(blurTime === 0){
+export function enhance(segmentObjects, ssm, blurTime) {
+    if (blurTime === 0) {
         return ssm;
     }
     //const tempoDifferences = [.66, .81, 1, 1.22, 1.5];
     const tempoDifferences = [1];
     const size = segmentObjects.length;
-    const ssmCollection = []
-    for(const tempoDifference of tempoDifferences){
-        ssmCollection.push(enhanceOneDirection(segmentObjects, ssm, blurTime, 1, tempoDifference))
-        ssmCollection.push(enhanceOneDirection(segmentObjects, ssm, blurTime, -1, tempoDifference))
+    const ssmCollection = [];
+    for (const tempoDifference of tempoDifferences) {
+        ssmCollection.push(enhanceOneDirection(segmentObjects, ssm, blurTime, 1, tempoDifference));
+        ssmCollection.push(enhanceOneDirection(segmentObjects, ssm, blurTime, -1, tempoDifference));
     }
 
     const maxSSM = new Array(size);
     for (let i = 0; i < size; i++) {
         maxSSM[i] = new Array(size - i);
         for (let j = i; j < size; j++) {
-            const ssmCollectionValuesPitch = []
-            const ssmCollectionValuesTimbre = []
-            ssmCollection.forEach(ssm => {
-                ssmCollectionValuesPitch.push(ssm[i][j-i][0]);
-                ssmCollectionValuesTimbre.push(ssm[i][j-i][1])
-            })
-            maxSSM[i][j-i] = new Array(2);
-            maxSSM[i][j-i][0] = Math.max.apply(Math, ssmCollectionValuesPitch);
-            maxSSM[i][j-i][1] = Math.max.apply(Math, ssmCollectionValuesTimbre);
+            const ssmCollectionValuesPitch = [];
+            const ssmCollectionValuesTimbre = [];
+            ssmCollection.forEach((ssm) => {
+                ssmCollectionValuesPitch.push(ssm[i][j - i][0]);
+                ssmCollectionValuesTimbre.push(ssm[i][j - i][1]);
+            });
+            maxSSM[i][j - i] = new Array(2);
+            maxSSM[i][j - i][0] = Math.max.apply(Math, ssmCollectionValuesPitch);
+            maxSSM[i][j - i][1] = Math.max.apply(Math, ssmCollectionValuesTimbre);
         }
     }
     return maxSSM;
 }
 
-export function enhanceOneDirection(segmentObjects, ssm, blurTime, direction, tempoDifference){
+export function enhanceOneDirection(segmentObjects, ssm, blurTime, direction, tempoDifference) {
     const size = segmentObjects.length;
     const enhancedSSM = new Array(size);
-    const iStart = direction > 0 ? 0 : size-1;
-    const iEnd = direction > 0 ? size: -1;
-    for (let i = iStart; i !== iEnd; i+=direction) {
+    const iStart = direction > 0 ? 0 : size - 1;
+    const iEnd = direction > 0 ? size : -1;
+    for (let i = iStart; i !== iEnd; i += direction) {
         enhancedSSM[i] = new Array(size - i);
-        const jStart = direction > 0 ? i : size-1;
-        const jEnd = direction > 0 ? size : i-1;
-        for (let j = jStart; j !== jEnd; j+=direction) {
-            enhancedSSM[i][j-i] = new Array(2);
-            enhancedSSM[i][j-i][0] = 0;
-            enhancedSSM[i][j-i][1] = 0;
+        const jStart = direction > 0 ? i : size - 1;
+        const jEnd = direction > 0 ? size : i - 1;
+        for (let j = jStart; j !== jEnd; j += direction) {
+            enhancedSSM[i][j - i] = new Array(2);
+            enhancedSSM[i][j - i][0] = 0;
+            enhancedSSM[i][j - i][1] = 0;
 
-            let timeLeft = blurTime 
-            let scorePitch = 0
+            let timeLeft = blurTime;
+            let scorePitch = 0;
             let scoreTimbre = 0;
-            let offsetI = 0
-            let offsetJ = 0
+            let offsetI = 0;
+            let offsetJ = 0;
             let pathI = i;
             let pathJ = j;
-            while(timeLeft > 0){
+            while (timeLeft > 0) {
                 const iRemain = segmentObjects[pathI].duration - offsetI;
-                const jRemain = segmentObjects[pathJ].duration*tempoDifference - offsetJ;
+                const jRemain = segmentObjects[pathJ].duration * tempoDifference - offsetJ;
                 const duration = Math.min(iRemain, jRemain);
 
-                timeLeft -= duration
+                timeLeft -= duration;
 
-                scorePitch +=  duration * ssm[pathI][pathJ-pathI][0]
-                scoreTimbre +=  duration * ssm[pathI][pathJ-pathI][1]
-                
-                if(iRemain < jRemain){ // Going to cell on right
-                    pathI+=direction;
-                    if(pathI >= size || pathI < 0 || pathJ - pathI < 0){
-                        break;	
+                scorePitch += duration * ssm[pathI][pathJ - pathI][0];
+                scoreTimbre += duration * ssm[pathI][pathJ - pathI][1];
+
+                if (iRemain < jRemain) {
+                    // Going to cell on right
+                    pathI += direction;
+                    if (pathI >= size || pathI < 0 || pathJ - pathI < 0) {
+                        break;
                     }
                     offsetJ += iRemain;
                     offsetI = 0;
-                }else if(jRemain < iRemain){ // Going to cell on bottom
-                    pathJ+=direction;
-                    if(pathJ >= size || pathJ < 0 || pathJ - pathI < 0){
-                        break;	
+                } else if (jRemain < iRemain) {
+                    // Going to cell on bottom
+                    pathJ += direction;
+                    if (pathJ >= size || pathJ < 0 || pathJ - pathI < 0) {
+                        break;
                     }
                     offsetI += jRemain;
                     offsetJ = 0;
-                }else{ // Going to bottom-right diagonal cell
-                    pathI+=direction; pathJ+=direction;
-                    if(pathI >= size || pathJ >= size || pathI < 0 || pathJ < 0 ||  pathJ - pathI < 0){
-                        break;	
+                } else {
+                    // Going to bottom-right diagonal cell
+                    pathI += direction;
+                    pathJ += direction;
+                    if (pathI >= size || pathJ >= size || pathI < 0 || pathJ < 0 || pathJ - pathI < 0) {
+                        break;
                     }
                     offsetI = 0;
                     offsetJ = 0;
                 }
             }
-            enhancedSSM[i][j-i][0] = scorePitch / (blurTime-timeLeft)
-            enhancedSSM[i][j-i][1] = scoreTimbre / (blurTime-timeLeft)
+            enhancedSSM[i][j - i][0] = scorePitch / (blurTime - timeLeft);
+            enhancedSSM[i][j - i][1] = scoreTimbre / (blurTime - timeLeft);
         }
     }
     return enhancedSSM;
@@ -169,16 +173,21 @@ export function enhance(segmentObjects, ssm, blurTime){
 
 }*/
 
-
-export function threshold(ssm, threshold){
+export function threshold(ssm, threshold) {
     const size = ssm.length;
     const thresholdSSM = new Array(size);
     for (let i = 0; i < size; i++) {
         thresholdSSM[i] = new Array(size - i);
         for (let j = i; j < size; j++) {
-            thresholdSSM[i][j-i] = new Array(2);
-            thresholdSSM[i][j-i][0] = audioUtil.logCompression(Math.max(ssm[i][j-i][0] - threshold, 0) / (1-threshold), 10);
-            thresholdSSM[i][j-i][1] = audioUtil.logCompression(Math.max(ssm[i][j-i][1] - threshold, 0) / (1-threshold), 10);
+            thresholdSSM[i][j - i] = new Array(2);
+            thresholdSSM[i][j - i][0] = audioUtil.logCompression(
+                Math.max(ssm[i][j - i][0] - threshold, 0) / (1 - threshold),
+                10
+            );
+            thresholdSSM[i][j - i][1] = audioUtil.logCompression(
+                Math.max(ssm[i][j - i][1] - threshold, 0) / (1 - threshold),
+                10
+            );
         }
     }
     return thresholdSSM;
