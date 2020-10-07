@@ -1,3 +1,4 @@
+import * as log from "../dev/log";
 let gl;
 let program;
 let bufferSize = 0;
@@ -5,7 +6,7 @@ export function init(canvas) {
     gl = canvas.getContext("webgl2");
 
     if (!gl) {
-        console.log("WebGL not supported, falling back on experimental WebGL");
+        log.warn("WebGL not supported, falling back on experimental WebGL");
         gl = canvas.getContext("experimental-webgl2");
         if (!gl) alert("Your browser does not support WebGL");
     }
@@ -21,12 +22,12 @@ export function init(canvas) {
 
     gl.compileShader(vertexShader);
     if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-        console.error("ERROR compiling vertex shader!", gl.getShaderInfoLog(vertexShader));
+        log.error("ERROR compiling vertex shader!", gl.getShaderInfoLog(vertexShader));
         return;
     }
     gl.compileShader(fragmentShader);
     if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
-        console.error("ERROR compiling fragment shader!", gl.getShaderInfoLog(fragmentShader));
+        log.error("ERROR compiling fragment shader!", gl.getShaderInfoLog(fragmentShader));
         return;
     }
 
@@ -44,53 +45,6 @@ export function init(canvas) {
         console.error("ERROR validating program!", gl.getProgramInfoLog(program));
         return;
     }
-
-    const size = 10;
-    const ssmVertices = [];
-    for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-            ssmVertices.push(x * 0.1, y * 0.1, (y * size + x) / (size * size));
-        }
-        ssmVertices.push(size * 0.1, y * 0.1, 0); // .1 is duration of segment(i)
-    }
-    for (let x = 0; x < size; x++) {
-        ssmVertices.push(x * 0.1, size * 0.1, 0); // size * 0.1 in reality is segment(size-1).start + segment(size-1).duration
-    }
-    ssmVertices.push(size * 0.1, size * 0.1, 0); // size * 0.1 in reality is segment(size-1).start + segment(size-1).duration
-
-    // Fill the current element array buffer with data
-    const ssmIndeces = [];
-    for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-            // 1 rect = 2 triangles counterclockwise divided by backward slash \
-            const topleft = y * (size + 1) + x;
-            const bottomleft = (y + 1) * (size + 1) + x;
-            ssmIndeces.push(bottomleft, bottomleft + 1, topleft);
-            ssmIndeces.push(bottomleft + 1, topleft + 1, topleft);
-        }
-    }
-    // create the buffer
-    const indexBuffer = gl.createBuffer();
-    // make this buffer the current 'ELEMENT_ARRAY_BUFFER'
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(ssmIndeces), gl.STATIC_DRAW);
-
-    const rectangleVertexBufferObject = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, rectangleVertexBufferObject);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ssmVertices), gl.STATIC_DRAW);
-
-    const vertAttribLocation = gl.getAttribLocation(program, "vert");
-    gl.vertexAttribPointer(
-        vertAttribLocation,
-        3, // Number of elements per attribute (x, y, value)
-        gl.FLOAT, // Type of element
-        gl.FALSE, // data normalized
-        3 * Float32Array.BYTES_PER_ELEMENT, // Size of one vertex
-        0 // Offset from beginning of single vertex
-    );
-    gl.enableVertexAttribArray(vertAttribLocation);
-
-    bufferSize = size * size * 6;
 }
 
 export function clear() {
@@ -98,10 +52,9 @@ export function clear() {
 }
 
 export function setSSMDataArray(track) {
-    const segments = track.segmentObjects;
+    const segments = track.getSegments();
     const ssm = track.ssm;
     const size = segments.length;
-    console.log("Number of segments: ", size);
 
     const halfDuration = track.getAnalysisDuration() / 2;
     function st(pos) {
@@ -111,8 +64,9 @@ export function setSSMDataArray(track) {
     const ssmVertices = [];
 
     for (let y = 0; y < size; y++) {
+        const cellsBefore = y * y + y;
         for (let x = 0; x < size; x++) {
-            const value = Math.pow(y >= x ? ssm[x][y - x][0] : ssm[y][x - y - 1][1], 4);
+            const value = Math.pow(y >= x ? ssm[cellsBefore + x * 2] / 255.0 : 0, 4); //ssm[cellsBefore + x * 2][0]/255.0 : 0, 4);
             const left = st(segments[x].start);
             const top = -st(segments[y].start);
             const right = st(segments[x].start + segments[x].duration);
@@ -155,14 +109,13 @@ export function setSSMDataArray(track) {
     );
     gl.enableVertexAttribArray(vertAttribLocation);
     bufferSize = size * size * 6;
-    console.log("Created buffer of size:", bufferSize);
+    log.debug("Created buffer of size:", bufferSize);
 }
 
 export function setSSMData(track) {
     const segments = track.segmentObjects;
     const ssm = track.ssm;
     const size = segments.length;
-    console.log("Number of segments: ", size);
 
     const halfDuration = track.getAnalysisDuration() / 2;
     function st(pos) {
@@ -173,8 +126,9 @@ export function setSSMData(track) {
     const ssmVertices = [];
 
     for (let y = 0; y < size; y++) {
+        const cellsBefore = y * y + y;
         for (let x = 0; x < size; x++) {
-            const value = Math.min(1, x >= y ? ssm[y][x - y][0] : 0);
+            const value = Math.min(1, x >= y ? ssm[cellsBefore + x * 2][0] : 0);
             ssmVertices.push(st(segments[x].start), st(segments[y].start), 1);
         }
         ssmVertices.push(end, st(segments[y].start), 0); // .1 is duration of segment(i)

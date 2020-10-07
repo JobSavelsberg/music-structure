@@ -1,3 +1,4 @@
+import * as log from "../dev/log";
 import * as audioUtil from "./audioUtil";
 
 export default class Segment {
@@ -31,6 +32,7 @@ export default class Segment {
         this.loudness_max = segment.loudness_max;
         this.loudness_max_time = segment.loudness_max_time;
         this.loudness_end = segment.loudness_end;
+        this.processPitch();
     }
 
     processedPitch = false;

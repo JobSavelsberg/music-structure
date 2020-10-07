@@ -3,16 +3,19 @@ import * as auth from "./authentication";
 import Track from "./Track";
 import store from "./../store"; // path to your Vuex store
 import router from "../router";
-
+import * as workers from "./workers/workers";
+import * as log from "../dev/log";
 export const spotify = new SpotifyWebApi();
 
 const allTracks = new Map();
 
 // Initialize spotify access, load tracks from local storage, get user data
 export async function initialize() {
-    Track.initWorkers();
+    log.info("Initializing App");
+
+    workers.init().then(() => log.info("Initialized Workers!"));
+
     //loadAllTracks();
-    console.log("Got tracks from local storage: ", allTracks);
 
     spotify.setAccessToken(auth.token);
     spotify
@@ -23,13 +26,19 @@ export async function initialize() {
         .catch((err) => {
             router.push("/");
         });
-    spotify
+    /*spotify
         .getMyTopTracks({ limit: 50, offset: 0 })
         .then((tracks) => {
             loadTracksFromSpotify(tracks.items, false);
             selectTrackAtIndex(0);
         })
-        .catch((err) => console.log(err));
+        .catch((err) => log.error(err));*/
+    spotify.getPlaylistTracks("34wIIW2zm3vw5ZRqO8dHi0", {}, (error, result) => {
+        if (error) log.error(error);
+        const tracks = result.items.map((item) => item.track);
+        loadTracksFromSpotify(tracks, false);
+        selectTrackAtIndex(0);
+    });
 }
 
 export async function selectTrackAtIndex(index) {
@@ -38,10 +47,23 @@ export async function selectTrackAtIndex(index) {
     store.commit("clusterReady", false);
     store.commit("ssmReady", false);
     return getAnalysis(store.getters.trackList[index]).then(() => {
-        console.log("Getting analysis and everything done, now setting selected index");
-        store.commit("loadingTrack", false);
         store.commit("setSelectedIndex", index);
+        store.commit("loadingTrack", false);
     });
+}
+export async function getAnalysis(track) {
+    if (track.hasAnalysis()) {
+        track.reload();
+        return track.getAnalysis();
+    }
+    return spotify
+        .getAudioAnalysisForTrack(track.getID())
+        .then((analysis) => {
+            track.setAnalysis(analysis);
+        })
+        .catch((err) => {
+            log.error(err);
+        });
 }
 
 // Save tracks to local storage
@@ -84,20 +106,6 @@ function loadTracksFromSpotify(tracks, keepCurrentTrack) {
     }
 }
 
-export async function getAnalysis(track) {
-    if (track.hasAnalysis()) return track.getAnalysis();
-    return spotify
-        .getAudioAnalysisForTrack(track.getId())
-        .then((analysis) => {
-            console.log("Got analysis from api");
-            track.setAnalysis(analysis);
-            console.log("Track has done everything with analysis");
-        })
-        .catch((err) => {
-            console.log(err);
-        });
-}
-
 export async function search(query) {
     spotify
         .search(query, ["track"])
@@ -105,6 +113,6 @@ export async function search(query) {
             loadTracksFromSpotify(results.tracks.items, true);
         })
         .catch((err) => {
-            console.log(err);
+            log.error(err);
         });
 }

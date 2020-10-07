@@ -1,139 +1,207 @@
-import { spotify } from '../app/app';
+import * as log from "../dev/log";
+import { spotify } from "./app";
 import store from "../store";
 
 export let deviceId = null;
-let playerRef;
-let trackIsLoaded = false;
-let currentTrackURI = "";
-let nextTrackURI = "";
-let nexStartPosition = 0;
-let playingSegment = null;
-export async function setTrack(trackUri, startPosition) {
-    nextTrackURI = trackUri;
-    nexStartPosition = startPosition;
-}
+let player = null;
 
-export async function resume(position) {
-    if (deviceId) {
-        if (trackIsLoaded && nextTrackURI === "") {
-            seek(position);
-            return playerRef.resume().then(() => {
-                store.commit('setPlaying', true)
-            }).catch((err) => { console.log(err) });
-        } else { // Start new track
-            return spotify.play({ device_id: deviceId, uris: [nextTrackURI], position_ms: position || nexStartPosition }).then(() => {
-                trackIsLoaded = true;
-                currentTrackURI = nextTrackURI;
-                nextTrackURI = "";
-                nexStartPosition = 0;
-                store.commit('setPlaying', true)
-            }).catch((err) => { console.log(err) });
-        }
+let playedTrackBefore = false;
+let trackURI = null;
+
+export async function loadTrack(track) {
+    if (!store.state.playerReady) {
+        log.warn("Trying to load track while player not ready");
+        return;
     }
+    pause();
+    seekMS(0);
+    pause();
+    trackURI = track.getURI();
+    playedTrackBefore = false;
+    store.commit("setSeeker", 0);
+    store.commit("setPlaying", false);
 }
 
-export async function pause() {
-    if (deviceId && trackIsLoaded) {
-        return playerRef.pause().then(() => {
-            store.commit('setPlaying', false)
-        }).catch((err) => { console.log(err) });
-    }
-}
-
-export async function seek(time) {
-    if (deviceId && trackIsLoaded) {
-        return playerRef.seek(time).catch((err) => { console.log(err) })
-    }
-}
-
-export async function playSegment(segment) {
-    console.log("playing segment", segment)
-    resume(segment.start * 1000).then(() => {
-        playingSegment = segment;
-        window.setTimeout(() => {
-            if(playingSegment === segment){
-                pause();
-            }
-        }, segment.duration * 1000)
+async function play() {
+    spotify.play({ uris: [trackURI], position_ms: store.state.seeker }, (err, result) => {
+        playedTrackBefore = true;
+        log.debug("Playing from", store.state.seeker);
+        store.commit("setPlaying", true);
     });
 }
 
-export async function deviceIdSet() {
-    return new Promise((resolve, reject) => {
-        let timeWas = new Date();
-        let wait = setInterval(function () {
-            if (deviceId !== null) {
-                console.log("resolved after", new Date() - timeWas, "ms");
-                clearInterval(wait);
-                resolve();
-            } else if (new Date() - timeWas > 10000) { // Timeout
-                console.log("rejected after", new Date() - timeWas, "ms");
-                clearInterval(wait);
-                reject();
+/**
+ * Resume playback,
+ * If track is loaded, starts playback from time 0
+ */
+let locallyResumed = false;
+export async function resume() {
+    if (playedTrackBefore) {
+        player.resume().then(() => {
+            locallyResumed = true;
+            store.commit("setPlaying", true);
+        });
+    } else {
+        play();
+    }
+}
+
+let locallyPaused = false;
+export async function pause() {
+    if (playedTrackBefore) {
+        player.pause().then(() => {
+            locallyPaused = true;
+            store.commit("setPlaying", false);
+        });
+    }
+}
+/**
+ * Go to a specific time in the track
+ * Playing state will not be affected
+ * @param {*} time_ms in ms
+ */
+export async function seekMS(time_ms) {
+    // Seek
+    player.seek(time_ms);
+    store.commit("setSeeker", time_ms);
+}
+export async function seekS(time_seconds) {
+    return seekMS(time_seconds * 1000);
+}
+
+let playingSegment = null;
+export async function playSegment(segment) {
+    store.commit("setSeeker", segment.start * 1000);
+    resume().then(() => {
+        playingSegment = segment;
+        window.setTimeout(() => {
+            if (playingSegment === segment) {
+                pause();
             }
-        }, 20);
+        }, segment.duration * 1000);
     });
 }
 
 export function setVolume(volume) {
-    if (playerRef) {
-        playerRef.setVolume(volume);
+    if (player) {
+        player.setVolume(volume);
     }
 }
 
+async function stateChangedCallback(newState) {
+    if (!playedTrackBefore) return;
+    const { current_track, position, duration } = newState;
+    store.commit("setSeeker", position);
+
+    const time = performance.now();
+    spotify.getMyCurrentPlaybackState().then((result) => {
+        if (locallyPaused || locallyResumed) {
+            if (locallyPaused && !result.is_playing) {
+                locallyPaused = false;
+            }
+            if (locallyResumed && result.is_playing) {
+                locallyResumed = false;
+            }
+        } else {
+            store.commit("setPlaying", result.is_playing);
+        }
+    });
+}
+
+store.watch(
+    (state) => state.seeker,
+    (newSeeker, oldSeeker) => {
+        //log.debug("Vuex Seeker: ", newSeeker);
+    }
+);
+
+store.watch(
+    (state) => state.playing,
+    (newPlaying, oldPlaying) => {
+        //log.debug("Vuex Playing: ", newPlaying);
+    }
+);
+
+function startSeekerInterval() {
+    lastSeekerIntervalPoll = new Date();
+    setInterval(() => incrementSeeker(33), 33);
+}
+let lastSeekerIntervalPoll;
+function incrementSeeker() {
+    if (store.state.playing) {
+        const now = new Date();
+        const elapsed = now - lastSeekerIntervalPoll;
+        lastSeekerIntervalPoll = now;
+        store.commit("incrementSeeker", elapsed);
+    } else {
+        lastSeekerIntervalPoll = new Date();
+    }
+}
+
+export async function initialize(token) {
+    waitForSpotifyWebPlaybackSDKToLoad().then(() => {
+        player = new window.Spotify.Player({
+            name: "Music Structure Visualizer",
+            getOAuthToken: (cb) => {
+                cb(token);
+            },
+            volume: 0.5,
+        });
+
+        // Error handling
+        player.addListener("initialization_error", ({ message }) => {
+            log.error(message);
+        });
+        player.addListener("authentication_error", ({ message }) => {
+            log.error(message);
+        });
+        player.addListener("account_error", ({ message }) => {
+            log.error(message);
+        });
+        player.addListener("playback_error", ({ message }) => {
+            log.error(message);
+        });
+        // Playback status updates
+        player.addListener("player_state_changed", ({ position, duration, track_window: { current_track } }) => {
+            stateChangedCallback({ current_track, position, duration });
+        });
+
+        // Ready
+        player.addListener("ready", ({ device_id }) => {
+            deviceId = device_id;
+            log.info("Ready with Device ID", device_id);
+            const deviceIdArray = [deviceId];
+            spotify.transferMyPlayback(deviceIdArray).then((err, result) => {
+                window.setTimeout(store.commit("playerReady", true), 1);
+                startSeekerInterval();
+            });
+        });
+
+        // Not Ready
+        player.addListener("not_ready", ({ device_id }) => {
+            log.warn("Device ID has gone offline", device_id);
+        });
+
+        // Connect to the player!
+        player
+            .connect()
+            .then(() => {
+                log.info("Connected succesfully!!!");
+            })
+            .catch((err) => {
+                log.error("Could not connect");
+            });
+    });
+}
+
 async function waitForSpotifyWebPlaybackSDKToLoad() {
-    console.log("waiting");
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
         if (window.Spotify) {
             resolve(window.Spotify);
         } else {
             window.onSpotifyWebPlaybackSDKReady = () => {
                 resolve(window.Spotify);
-            }
+            };
         }
     });
-}
-
-
-export async function initialize(token, stateChangedCallback) {
-    waitForSpotifyWebPlaybackSDKToLoad().then(() => {
-        playerRef = new window.Spotify.Player({
-            name: 'Music Structure Visualizer',
-            getOAuthToken: cb => { cb(token); },
-            volume: 0.5,
-        });
-    
-        // Error handling
-        playerRef.addListener('initialization_error', ({ message }) => { console.error(message); });
-        playerRef.addListener('authentication_error', ({ message }) => { console.error(message); });
-        playerRef.addListener('account_error', ({ message }) => { console.error(message); });
-        playerRef.addListener('playback_error', ({ message }) => { console.error(message); });
-        // Playback status updates
-        playerRef.addListener('player_state_changed', ({
-            position,
-            duration,
-            track_window: { current_track }
-        }) => {
-            stateChangedCallback({ current_track, position, duration });
-        });
-    
-        // Ready
-        playerRef.addListener('ready', ({ device_id }) => {
-            deviceId = device_id;
-            console.log('Ready with Device ID', device_id);
-        });
-    
-        // Not Ready
-        playerRef.addListener('not_ready', ({ device_id }) => {
-            console.log('Device ID has gone offline', device_id);
-        });
-    
-        // Connect to the player!
-        playerRef.connect().then(() => {
-            console.log("Connected succesfully!!!");
-        }).catch((err) => {
-            console.log("Could not connect");
-        })
-    })
-
 }

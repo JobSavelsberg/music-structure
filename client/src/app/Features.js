@@ -1,10 +1,16 @@
+import * as log from "../dev/log";
+import Segment from "./Segment";
+
 export default class Features {
     timbreMax = new Array(12).fill(0);
     timbreMin = new Array(12).fill(0);
     timbreBiggest = new Array(12).fill(0);
     timbreTotalBiggest = 0;
 
-    segments;
+    duration = 0;
+    length = 0;
+    segments = [];
+    segmentStartDuration = [];
     raw = { pitches: [], timbres: [], loudness: [] };
     processed = { pitches: [], timbres: [], loudness: [], tonalEnergy: [], tonalRadius: [], tonalAngle: [] };
 
@@ -15,12 +21,16 @@ export default class Features {
     sampleAmount = 0;
     sampled = {};
 
-    constructor(segments, sampleRate, duration) {
-        this.segments = segments;
+    constructor(analysisData, sampleRate) {
+        analysisData.segments.forEach((segment) => {
+            this.segments.push(new Segment(segment));
+            this.segmentStartDuration.push([segment.start, segment.duration]);
+        });
+        this.length = this.segments.length;
         this.sampleDuration = 1 / sampleRate;
-        this.duration = duration;
-        this.sampleAmount = Math.ceil(duration / sampleRate);
-        console.log("Sample amount:", this.sampleAmount);
+        this.duration = analysisData.track.duration;
+        this.sampleAmount = Math.ceil(analysisData.track.duration / sampleRate);
+        log.info("Reducing segments, sample amount:", this.sampleAmount);
         this.calculateMaxMin();
         this.processSegments();
         this.sampleFeatures();
@@ -83,7 +93,6 @@ export default class Features {
      * Turn processed features into evenly discretized features int
      */
     sampleFeatures() {
-        console.log("sampling features");
         let sample = 0;
         let timeLeft = this.sampleDuration;
         // moving to next sample

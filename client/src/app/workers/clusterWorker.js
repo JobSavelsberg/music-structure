@@ -1,0 +1,14 @@
+import * as log from "../../dev/log";
+addEventListener("message", (event) => {
+    log.debug(event.data);
+    log.debug("Hi from clusterWorker");
+});
+
+/**
+ *         const features = message.message.features;
+        const minK = message.message.minK;
+        const maxK = message.message.maxK;
+        const tries = message.message.tries;
+        const result = clustering.kMeansSearch(features, minK, maxK, tries);
+        return result.idxs;
+ */

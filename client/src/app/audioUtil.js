@@ -1,3 +1,5 @@
+import * as log from "../dev/log";
+
 const d3 = require("d3");
 export const circleOfFifths = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5]; // Starting from C=0
 export const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];

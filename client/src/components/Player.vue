@@ -1,198 +1,163 @@
 <template>
     <div class="player">
+        <!-- Play Button -->
         <div class="d-flex justify-center pa-4">
-            <div v-if="$store.state.playerReady" >
-                <v-hover v-slot:default="{ hover }" >
-                    <v-btn :elevation="hover ? 5 : 0" outlined fab @click="playPause" >
-                        <v-icon large>mdi-{{playing ? 'pause' : 'play'}}</v-icon>
+            <div v-if="playerReady">
+                <v-hover v-slot:default="{ hover }">
+                    <v-btn :elevation="hover ? 5 : 0" outlined fab @click="playPause">
+                        <v-icon large>mdi-{{ playing ? "pause" : "play" }}</v-icon>
                     </v-btn>
                 </v-hover>
             </div>
-            <div v-if="!$store.state.playerReady">
-                <v-progress-circular
-                    indeterminate
-                    size=56
-                ></v-progress-circular>
+            <div v-if="!playerReady">
+                <v-progress-circular indeterminate size="56"></v-progress-circular>
             </div>
         </div>
-        <div id="timeseeker" v-if="!$store.state.loadingTrack">
-            <svg class="waveform" :height="verticalScale" @click="clickedSVG">
-                <rect v-for="(segment, index) in track.getSegments()"
-                    class="loudnessBlock"
-                    :key="index"
-                    :width="segment.duration*scale" 
-                    :height="(loudness(segment.loudness_max))*verticalScale"
-                    :x="padding+segment.start*scale"
-                    :y="verticalScale-loudness(segment.loudness_max)*verticalScale"
-                    :fill="segment.start+segment.duration/2 < $store.state.seeker/1000 ? 'grey' : baseColor"
-                />
+
+        <!-- Waveform -->
+        <div v-show="!loadingTrack" class="waveformWrapper" @click="clickedWaveform">
+            <canvas id="waveform" :height="height" class="waveform pa-0 ma-0"></canvas>
+            <svg
+                v-if="!loadingTrack"
+                :height="height"
+                :width="width"
+                class="seekerSVG"
+                :style="`transform: translate(${-width}px, 0px);`"
+            >
                 <rect
-                    :x="padding+((seeker/1000.0)*scale)-1"
+                    :x="0"
                     :y="0"
-                    :width="2"
-                    :height="verticalScale"
-                    fill="#1DB954"
-                />
+                    :width="seekerNormalized * width"
+                    :height="height"
+                    :fill="'#121212'"
+                    class="darkenWaveform"
+                ></rect>
+                <rect :x="seekerNormalized * width - 1.25" :y="0" :width="2.5" :height="height" fill="#1DB954"></rect>
             </svg>
         </div>
-        <div v-if="$store.state.loadingTrack">
-            <v-progress-linear
-                indeterminate
-                color="success"
-            ></v-progress-linear>
-         </div>
+        <div v-if="loadingTrack">
+            <v-progress-linear indeterminate color="success"></v-progress-linear>
+        </div>
     </div>
 </template>
 
 <script>
-import * as player from "../app/player"
-import * as app from "../app/app"
-import * as auth from '../app/authentication';
-import * as audioUtil from '../app/audioUtil'
-import Track from "../app/Track"
-import {spotify} from '../app/app';
+import * as log from "../dev/log";
+import * as player from "../app/player";
+import * as auth from "../app/authentication";
+import * as vis from "../app/vis";
 
 export default {
-    inject: ['theme'],
-    props:[
-        'padding',
-    ],
-    data () {
+    props: ["width"],
+    data() {
         return {
-            verticalScale: 50,
-            windowWidth: window.innerWidth,
-            hover: 0,
-            ending: false,
-        }
-    },
-    beforeCreate () {
-        player.initialize(auth.token, (newState) => this.stateChanged(newState));
-        player.deviceIdSet().then(()=>{ 
-            this.$store.commit('playerReady', true);
-        })
-    },
-    mounted(){
-        
+            height: 50,
+            canvas: null,
+            ctx: null,
+        };
     },
     computed: {
-        track(){
+        track() {
             return this.$store.getters.selectedTrack;
         },
-        baseColor(){
-            return this.theme.isDark ? 'white' : 'black'
+        loadingTrack() {
+            return this.$store.state.loadingTrack;
         },
-        scale(){
-            if(this.$store.getters.loadingTrack){
-                return 0;
-            }
-            return this.width/this.track.getAnalysisDuration();
-        },
-        width(){
-            return this.windowWidth - this.padding*2;
-        },
-        duration(){
-            if(this.$store.getters.loadingTrack){
-                return 0;
-            }
-            return Math.round(this.track.getAnalysisDuration()*1000);
-        },
-        playing(){
+        playing() {
             return this.$store.getters.playing;
         },
-        seeker(){
-            return this.$store.getters.seeker;
-        }
+        seekerNormalized() {
+            return this.$store.getters.seeker / (this.track.getAnalysisDuration() * 1000);
+        },
+        playerReady() {
+            return this.$store.getters.playerReady;
+        },
     },
     watch: {
-        track: 'trackChanged',
+        width() {
+            this.setupCanvas();
+            this.drawWaveform();
+        },
+        loadingTrack(loading) {
+            if (!loading) {
+                this.drawWaveform();
+                if (this.playerReady) {
+                    this.loadTrackToPlayer();
+                }
+            }
+        },
+        playerReady(ready) {
+            if (ready && !this.loadingTrack) {
+                this.loadTrackToPlayer();
+            }
+        },
+    },
+    beforeCreate() {
+        player.initialize(auth.token);
+    },
+    mounted() {
+        this.setupCanvas();
     },
     methods: {
-        clickedSVG(event){
-            const posX = Math.min(Math.max(0,event.clientX-this.padding)/this.width, 1);
-            const ms = posX*this.duration;
-            this.$store.commit('setSeeker', ms);
-            player.seek(this.seeker);
-        },
-        trackChanged(newTrack, oldTrack){
-            this.reset().then(()=>{
-                player.setTrack(this.track.getUri(), 0);
-                this.$store.commit('setSeeker', 0);
-            });
-        },
-        resume () {
-            if(!this.playing){
-                player.resume(this.seeker).then(() => {
-                    this.$store.commit('setPlaying', true);
-                    this.interval = setInterval(() => this.seekerTimer(33), 33);
-                });
+        setupCanvas() {
+            this.canvas = document.getElementById("waveform");
+            if (!this.canvas) {
+                log.warn("canvas not ready: ");
+                return;
             }
+            this.canvas.width = this.width;
+            this.ctx = this.canvas.getContext("2d");
         },
-        pause () {
-            if(this.playing){
-                player.pause();
-                this.$store.commit('setPlaying', false);
-                clearInterval(this.interval);
+        loadTrackToPlayer() {
+            player.loadTrack(this.track);
+        },
+        drawWaveform() {
+            if (!this.canvas) {
+                log.error("Can't draw waveform; canvas is not created");
+                return;
             }
-        },
-        playPause () {
-            this.playing ? this.pause() : this.resume();
-        },
-        async reset(){
-            this.ending = false;
-            return player.pause().then(() => {
-                this.$store.commit('setSeeker', 0);
-                clearInterval(this.interval);
-                this.$store.commit('setPlaying', false);
-            }).catch((err) => console.log(err));
-        },
-        clickedTimeSeeker () {
-            player.seek(this.seekTime);
-        
-        },
-        seekerTimer(increment){
-            const now = new Date();
-            let elapsed = increment
-            if(this.lastTimePoll){
-                elapsed = now-this.lastTimePoll;
+            if (!this.ctx) {
+                log.error("Can't draw waveform; canvas context is not created");
+                return;
             }
-            this.lastTimePoll = now;
-            this.seekTime+=elapsed;
-            this.$store.state.seeker+=elapsed;
+            this.ctx.clearRect(0, 0, this.width, this.height);
+            vis.renderWaveform(this.ctx, this.width, this.height, this.track);
         },
-        loudness(db){
-            return audioUtil.loudness(db);
+        playPause() {
+            this.playing ? player.pause() : player.resume();
         },
-        stateChanged(state){
-            if(this.playing){
-                const {current_track, position, duration} = state;
-                this.$store.commit('setSeeker', position);
-
-                // if state gotten at the end, assume it is a stop and reset when next state position is 0
-                if(this.ending && state.position === 0){
-                    this.reset();
-                }
-                if(!this.ending && (state.duration - state.position) < 500){
-                    this.ending = true;
-                }
-                
+        clickedWaveform(event) {
+            let xNormalized = 0;
+            if (this.$store.state.browser === "Firefox") {
+                xNormalized = event.layerX / this.width;
+            } else {
+                xNormalized = event.offsetX / this.width;
             }
-
-        }
+            player.seekS(xNormalized * this.track.getAnalysisDuration());
+        },
     },
-    components:{
-    }
-}
+};
 </script>
 
 <style>
-.waveform{
-  overflow: visible;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
+.player {
+    height: 100%;
 }
-.loudnessBlock{
-    transition: fill 200ms ease;
-    cursor: pointer
+.waveFormWrapper {
+    position: relative;
+    color: white;
+}
+
+.waveform {
+    z-index: 1;
+}
+.darkenWaveform {
+    background: #121212;
+    z-index: 5;
+    opacity: 0.5;
+}
+.seekerSVG {
+    position: absolute;
+    z-index: 10;
 }
 </style>
