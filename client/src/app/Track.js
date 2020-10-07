@@ -38,7 +38,11 @@ export default class Track {
                 this.getID(),
                 this.features.processed.pitches,
                 this.features.processed.timbres,
-                this.features.segmentStartDuration
+                this.features.segmentStartDuration,
+                {
+                    blurTime: 4,
+                    threshold: 0.3,
+                }
             )
             .then((result) => {
                 const diff = new Date() - time;

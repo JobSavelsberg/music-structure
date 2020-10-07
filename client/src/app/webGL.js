@@ -2,6 +2,9 @@ import * as log from "../dev/log";
 let gl;
 let program;
 let bufferSize = 0;
+
+let translateLoc;
+let scaleLoc;
 export function init(canvas) {
     gl = canvas.getContext("webgl2");
 
@@ -66,7 +69,13 @@ export function setSSMDataArray(track) {
     for (let y = 0; y < size; y++) {
         const cellsBefore = y * y + y;
         for (let x = 0; x < size; x++) {
-            const value = Math.pow(y >= x ? ssm[cellsBefore + x * 2] / 255.0 : 0, 4); //ssm[cellsBefore + x * 2][0]/255.0 : 0, 4);
+            if (ssm[cellsBefore + x * 2] / 255.0 > 1) {
+                log.warn(ssm[cellsBefore + x * 2]);
+            }
+            if (ssm[x * x + x + y * 2 + 1] / 255.0 > 1) {
+                log.warn(ssm[x * x + x + y * 2 + 1]);
+            }
+            const value = y >= x ? ssm[cellsBefore + x * 2] / 255.0 : ssm[x * x + x + y * 2 + 1] / 255.0;
             const left = st(segments[x].start);
             const top = -st(segments[y].start);
             const right = st(segments[x].start + segments[x].duration);
@@ -110,6 +119,9 @@ export function setSSMDataArray(track) {
     gl.enableVertexAttribArray(vertAttribLocation);
     bufferSize = size * size * 6;
     log.debug("Created buffer of size:", bufferSize);
+
+    translateLoc = gl.getUniformLocation(program, "translate");
+    scaleLoc = gl.getUniformLocation(program, "scale");
 }
 
 export function setSSMData(track) {
@@ -172,10 +184,12 @@ export function setSSMData(track) {
     bufferSize = size * size * 6;
 }
 
-export function drawSSM() {
+export function drawSSM(xCenterPositionNormalized, scale) {
     //Main render loop
 
     gl.useProgram(program);
+    gl.uniform2f(translateLoc, 1 - xCenterPositionNormalized * 2, 0);
+    gl.uniform1f(scaleLoc, scale);
     //gl.drawElements(gl.TRIANGLES, bufferSize, gl.UNSIGNED_SHORT, 0);
     gl.drawArrays(gl.TRIANGLES, 0, bufferSize);
 }
@@ -183,13 +197,14 @@ export function drawSSM() {
 const vertexShaderText = [
     "#version 300 es",
     "precision mediump float;",
-    "",
+    "uniform vec2 translate;",
+    "uniform float scale;",
     "in vec3 vert;",
     "flat out float color;",
     "",
     "void main()",
     "{",
-    " gl_Position = vec4(vert.xy, 0.0, 1.0);",
+    " gl_Position = vec4((vert.x + translate.x)*scale, (vert.y+translate.y)*scale, 0.0, 1.0);",
     " color = vert.z;",
     "}",
 ].join("\n");

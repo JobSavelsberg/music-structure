@@ -34,8 +34,8 @@ export async function calculatePitchTimbreToIntArray(pitchFeatures, timbreFeatur
         const iTimbreFeatures = timbreFeatures[i];
         const cellsBefore = i * i + i; // (i*i+i) / 2 * 2, cancels out since we have two values
         for (let j = 0; j < i + 1; j++) {
-            ssm[cellsBefore + j * 2] = sim.cosine(iPitchFeatures, pitchFeatures[j]) * 255;
-            ssm[cellsBefore + j * 2 + 1] = sim.cosine(iTimbreFeatures, timbreFeatures[j]) * 255;
+            ssm[cellsBefore + j * 2] = Math.pow(sim.cosine(iPitchFeatures, pitchFeatures[j]), 3) * 255;
+            ssm[cellsBefore + j * 2 + 1] = Math.pow((sim.cosine(iTimbreFeatures, timbreFeatures[j]) + 1) / 2, 3) * 255;
         }
     }
     return ssm;
@@ -62,6 +62,112 @@ export async function calculateAllPitches(features, segmentStartDurations) {
     }
 
     return ssm;
+}
+
+export function enhanceIntArray(segmentStartDuration, ssm, blurTime) {
+    if (blurTime === 0) {
+        return ssm;
+    }
+    //const tempoDifferences = [.66, .81, 1, 1.22, 1.5];
+    const tempoRatios = [1];
+    const ssmCollection = [];
+    for (const tempoRatio of tempoRatios) {
+        ssmCollection.push(enhanceOneDirectionIntArray(segmentStartDuration, ssm, blurTime, 1, tempoRatio));
+        ssmCollection.push(enhanceOneDirectionIntArray(segmentStartDuration, ssm, blurTime, -1, tempoRatio));
+    }
+
+    const maxSSM = new Uint8Array(ssm.length);
+    for (let i = 0; i < ssm.length; i += 2) {
+        const ssmCollectionValuesPitch = [];
+        const ssmCollectionValuesTimbre = [];
+        ssmCollection.forEach((ssm) => {
+            ssmCollectionValuesPitch.push(ssm[i]);
+            ssmCollectionValuesTimbre.push(ssm[i + 1]);
+        });
+        maxSSM[i] = Math.max.apply(Math, ssmCollectionValuesPitch);
+        maxSSM[i + 1] = Math.max.apply(Math, ssmCollectionValuesTimbre);
+    }
+    return maxSSM;
+}
+
+/**
+ * Defined as
+ *      |\
+ *   y  | \
+ *      |__\
+ *        x
+ * @param {*} segmentStartDuration
+ * @param {*} ssm
+ * @param {*} blurTime
+ * @param {*} direction
+ * @param {*} tempoRatio
+ */
+export function enhanceOneDirectionIntArray(segmentStartDuration, ssm, blurTime, direction, tempoRatio) {
+    const size = segmentStartDuration.length;
+    log.debug("size", size, "blurTime", blurTime, "direction", direction, "tempoRatio", tempoRatio);
+    const enhancedSSM = new Uint8Array(ssm.length);
+    const yStart = direction > 0 ? 0 : size - 1;
+    const yEnd = direction > 0 ? size : -1;
+
+    for (let y = yStart; y !== yEnd; y += direction) {
+        const cellsBefore = y * y + y; // (y*y+y) / 2 * 2, cancels out since we have two values
+        const xStart = direction > 0 ? 0 : y;
+        const xEnd = direction > 0 ? y + 1 : -1;
+        for (let x = xStart; x !== xEnd; x += direction) {
+            let timeLeft = blurTime;
+            let scorePitch = 0;
+            let scoreTimbre = 0;
+            let offsetY = 0;
+            let offsetX = 0;
+            let pathY = y;
+            let pathX = x;
+            while (timeLeft > 0) {
+                const yRemain = segmentStartDuration[pathY][1] - offsetY; // [1] is duration
+                const xRemain = segmentStartDuration[pathX][1] * tempoRatio - offsetX;
+                let duration = Math.min(yRemain, xRemain);
+
+                if (timeLeft < duration) {
+                    duration = timeLeft;
+                }
+
+                timeLeft -= duration;
+
+                let pathCellsBefore = pathY * pathY + pathY;
+                scorePitch += duration * ssm[pathCellsBefore + pathX * 2];
+                scoreTimbre += duration * ssm[pathCellsBefore + pathX * 2 + 1];
+
+                if (xRemain < yRemain) {
+                    // Going to cell on right
+                    pathX += direction;
+                    if (pathX >= size || pathX < 0 || pathX > pathY) {
+                        break;
+                    }
+                    offsetX = 0;
+                    offsetY += xRemain;
+                } else if (yRemain < xRemain) {
+                    // Going to cell on bottom
+                    pathY += direction;
+                    if (pathY >= size || pathY < 0 || pathX > pathY) {
+                        break;
+                    }
+                    offsetY = 0;
+                    offsetX += yRemain;
+                } else {
+                    // Going to bottom-right diagonal cell
+                    pathX += direction;
+                    pathY += direction;
+                    if (pathY >= size || pathX >= size || pathY < 0 || pathX < 0 || pathX > pathY) {
+                        break;
+                    }
+                    offsetY = 0;
+                    offsetX = 0;
+                }
+            }
+            enhancedSSM[cellsBefore + x * 2] = scorePitch / (blurTime - timeLeft);
+            enhancedSSM[cellsBefore + x * 2 + 1] = scoreTimbre / (blurTime - timeLeft);
+        }
+    }
+    return enhancedSSM;
 }
 
 export function enhance(segmentObjects, ssm, blurTime) {
@@ -215,6 +321,14 @@ export function enhance(segmentObjects, ssm, blurTime){
     }
 
 }*/
+
+export function thresholdIntArray(ssm, threshold) {
+    const thresholdSSM = new Uint8Array(ssm.length);
+    for (let i = 0; i < ssm.length; i++) {
+        thresholdSSM[i] = Math.min(Math.max(ssm[i] / 255.0 - threshold, 0) / (1 - threshold), 1) * 255;
+    }
+    return thresholdSSM;
+}
 
 export function threshold(ssm, threshold) {
     const size = ssm.length;

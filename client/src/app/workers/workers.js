@@ -8,12 +8,19 @@ export async function init() {
     cluster = new Worker("./clusterWorker.js", { type: "module" });
 }
 
+/**
+ *
+ * @param {*} trackId
+ * @param {*} pitchFeatures
+ * @param {*} timbreFeatures
+ * @param {*} segmentStartDuration
+ * @param {*} options {blurTime 4, threshold: 0.5, allPitches: false }
+ */
 export async function startSSM(trackId, pitchFeatures, timbreFeatures, segmentStartDuration, options = {}) {
     return new Promise((resolve) => {
-        const sampled = options.useSampled | false;
-        const blurTime = options.blurTime | 4;
-        const threshold = options.threshold | 0.5;
-        const allPitches = options.allPitches | false;
+        const blurTime = options.blurTime || 4;
+        const threshold = options.threshold || 0.5;
+        const allPitches = options.allPitches || false;
         ssm.postMessage({
             pitchFeatures,
             timbreFeatures,
@@ -21,7 +28,6 @@ export async function startSSM(trackId, pitchFeatures, timbreFeatures, segmentSt
             id: trackId,
             timestamp: new Date(),
             allPitches,
-            sampled,
             blurTime,
             threshold,
         });

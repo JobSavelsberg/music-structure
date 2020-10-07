@@ -1,5 +1,12 @@
 <template>
     <div class="visualization">
+        <div class="d-flex pa-2">
+            <v-row>
+                <v-btn color="primary" fab dark small class="mr-10" @click="zoomed = !zoomed">
+                    <v-icon>mdi-magnify-plus-outline</v-icon>
+                </v-btn>
+            </v-row>
+        </div>
         <canvas id="gl-canvas" :height="width" :width="width" class="glCanvas pa-0 ma-0"></canvas>
         <svg
             v-if="!loadingTrack"
@@ -9,7 +16,13 @@
             :style="`transform: translate(${-width}px, 0px);`"
             @click="clickedSVG"
         >
-            <rect :x="seekerNormalized * width - 1.25" :y="0" :width="2.5" :height="height" fill="#1DB954"></rect>
+            <rect
+                :x="(zoomed ? 0.5 : seekerNormalized) * width - 1.25"
+                :y="0"
+                :width="2.5"
+                :height="height"
+                fill="#1DB954"
+            ></rect>
         </svg>
     </div>
 </template>
@@ -22,7 +35,7 @@ import * as player from "../app/player";
 export default {
     props: ["width"],
     data() {
-        return { glCanvas: null };
+        return { glCanvas: null, drawLoop: null, zoomed: false };
     },
     computed: {
         loadingTrack() {
@@ -40,6 +53,13 @@ export default {
         height() {
             return this.width;
         },
+        xCenterPositionNormalized() {
+            if (this.zoomed) {
+                return this.seekerNormalized;
+            } else {
+                return 0.5;
+            }
+        },
     },
     watch: {
         loadingTrack() {
@@ -49,8 +69,12 @@ export default {
         },
         ssmReady() {
             if (this.ssmReady) {
-                this.drawSSM();
+                this.setSSM();
+                this.applyRenderMode();
             }
+        },
+        zoomed() {
+            this.applyRenderMode();
         },
     },
     mounted() {
@@ -68,16 +92,16 @@ export default {
             this.glCanvas.height = this.width;
             webGL.init(this.glCanvas);
         },
-        drawSSM() {
-            log.debug("drawSSM()");
+        setSSM() {
             if (this.glCanvas) {
-                log.info("Drawing SSM");
-                webGL.clear();
                 webGL.setSSMDataArray(this.track);
-                webGL.drawSSM();
             } else {
-                log.warn("Trying to draw when canvas is not created");
+                log.warn("No canvas");
             }
+        },
+        drawSSM() {
+            webGL.clear();
+            webGL.drawSSM(this.xCenterPositionNormalized, this.zoomed ? 2 : 1);
         },
         clickedSVG(event) {
             let xNormalized = 0;
@@ -87,6 +111,14 @@ export default {
                 xNormalized = event.offsetX / this.width;
             }
             player.seekS(xNormalized * this.track.getAnalysisDuration());
+        },
+        applyRenderMode() {
+            clearInterval(this.drawLoop);
+            if (this.zoomed) {
+                this.drawLoop = setInterval(this.drawSSM, 33);
+            } else {
+                this.drawSSM();
+            }
         },
     },
 };
@@ -99,7 +131,6 @@ export default {
 }
 .seekerSVGWrapper {
     position: relative;
-    color: white;
 }
 .seekerSVG {
     position: absolute;
