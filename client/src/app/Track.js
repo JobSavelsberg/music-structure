@@ -7,20 +7,29 @@ import * as log from "../dev/log";
 import * as SSM from "./SSM";
 const GAMMA = 1.7;
 const CLUSTERAMOUNT = 10;
-const sampleRate = 1; // 1 sample per second
+const samples = 200;
+const sampleDuration = 0.5;
+const sampleBlur = 2; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
 export default class Track {
     trackData = null;
     analysisData = null;
-    ssm = null;
+
+    rawSSM = null;
+    enhancedSSM = null;
 
     features;
 
     processed = false;
+    useSampled = true;
 
     clusters = new Array(CLUSTERAMOUNT).fill([]);
 
     process() {
-        this.features = new Features(this.analysisData, 1);
+        this.features = new Features(this.analysisData, {
+            //samples: samples,
+            sampleDuration: sampleDuration,
+            sampleBlur: sampleBlur,
+        });
         //this.tsne();
         //this.cluster();
         this.calculateSSM();
@@ -33,23 +42,24 @@ export default class Track {
     calculateSSM() {
         store.commit("ssmReady", false);
         const time = new Date();
+
+        let features = this.features.processed;
+        if (this.useSampled) {
+            features = this.features.sampled;
+        }
+
         workers
-            .startSSM(
-                this.getID(),
-                this.features.processed.pitches,
-                this.features.processed.timbres,
-                this.features.segmentStartDuration,
-                {
-                    blurTime: 4,
-                    threshold: 0.3,
-                }
-            )
+            .startSSM(this.getID(), features.pitches, features.timbres, this.getSegmentStartDuration(), {
+                blurTime: 4,
+                threshold: 0.7,
+            })
             .then((result) => {
                 const diff = new Date() - time;
                 const diffBack = new Date() - result.timestamp;
                 log.info("workerSSM outside", diff);
                 log.info("workerSSM sending back", diffBack);
-                this.ssm = result.ssm;
+                this.rawSSM = result.rawSSM;
+                this.enhancedSSM = result.enhancedSSM;
                 store.commit("ssmReady", true);
             });
 
@@ -138,7 +148,7 @@ export default class Track {
     }
     reload() {
         log.debug("Reloading track");
-        if (this.ssm) {
+        if (this.rawSSM) {
             window.setTimeout(() => store.commit("ssmReady", true), 0);
         }
     }
@@ -165,6 +175,13 @@ export default class Track {
     }
     getSegment(i) {
         return this.features.segments[i];
+    }
+    getSegmentStartDuration() {
+        if (this.useSampled) {
+            return this.features.sampleStartDuration;
+        } else {
+            return this.features.segmentStartDuration;
+        }
     }
     getSSM() {
         return this.ssm;

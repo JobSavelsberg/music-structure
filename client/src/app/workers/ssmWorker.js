@@ -17,6 +17,6 @@ addEventListener("message", (event) => {
         log.debug("SSM enhance time", performance.now() - time);
         const thresholdSSM = SSM.thresholdIntArray(enhancedSSM, data.threshold);
 
-        postMessage({ ssm: thresholdSSM.buffer, id: data.id, timestamp: new Date() });
+        postMessage({ rawSSM: ssm.buffer, enhancedSSM: enhancedSSM.buffer, id: data.id, timestamp: new Date() });
     });
 });

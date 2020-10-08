@@ -20,16 +20,19 @@ export default class Features {
     sampleDuration = 0;
     sampleAmount = 0;
     sampled = {};
+    sampleStartDuration = [];
+    sampleBlur = 0; // in proportion to duration (<1 is no blur, 2 is blur of twice duration)
 
-    constructor(analysisData, sampleRate) {
+    constructor(analysisData, options = {}) {
+        this.duration = analysisData.track.duration;
         analysisData.segments.forEach((segment) => {
             this.segments.push(new Segment(segment));
             this.segmentStartDuration.push([segment.start, segment.duration]);
         });
         this.length = this.segments.length;
-        this.sampleDuration = 1 / sampleRate;
-        this.duration = analysisData.track.duration;
-        this.sampleAmount = Math.ceil(analysisData.track.duration / sampleRate);
+        this.sampleAmount = options.samples || Math.ceil(this.duration / options.sampleDuration) || 1000;
+        this.sampleDuration = analysisData.track.duration / this.sampleAmount;
+        this.sampleBlur = options.sampleBlur || 1;
         log.info("Reducing segments, sample amount:", this.sampleAmount);
         this.calculateMaxMin();
         this.processSegments();
@@ -93,84 +96,122 @@ export default class Features {
      * Turn processed features into evenly discretized features int
      */
     sampleFeatures() {
-        let sample = 0;
-        let timeLeft = this.sampleDuration;
-        // moving to next sample
-        this.initSampleFeatures();
-        for (let i = 0; i < this.segments.length; i++) {
-            const segment = this.segments[i];
-            let duration = segment.duration;
-
-            this.addFeaturesScaled(sample, i, duration);
-
-            if (duration > timeLeft) {
-                // Add remaining segment and divide
-                this.addFeaturesScaled(sample, i, timeLeft);
-                this.divideFeatures(sample, this.sampleDuration - timeLeft);
-
-                // If we reached the end of all samples we quit
-                if (sample + 1 >= this.sampleAmount) {
-                    break;
-                }
-                // Start next sample with remaining segment, and subtract remaining segment duration from timeLeft
-
-                sample++;
-                const remainingSegmentDuration = duration - timeLeft;
-                this.addFeaturesScaled(sample, i, remainingSegmentDuration);
-                timeLeft = this.sampleDuration - remainingSegmentDuration;
-            } else {
-                // If the segment fits in the sample
-                this.setFeaturesScaled(sample, i, duration);
-                timeLeft -= duration;
-            }
+        // Fill sample start duration
+        for (let i = 0; i < this.sampleAmount - 1; i++) {
+            this.sampleStartDuration.push([i * this.sampleDuration, this.sampleDuration]);
         }
+        // Last sample is shorter
+        const lastSampleStart = (this.sampleAmount - 1) * this.sampleDuration;
+        this.sampleStartDuration.push([lastSampleStart, this.duration - lastSampleStart]);
 
-        this.divideFeatures(sample, this.sampleDuration - timeLeft);
+        this.initSampleFeatures();
+
+        const blurDuration = this.sampleBlur * this.sampleDuration;
+
+        const blurOutsideSampleDuration = (blurDuration - this.sampleDuration) / 2;
+
+        this.segments.forEach((segment, segmentIndex) => {
+            const segmentEnd = segment.start + segment.duration;
+
+            // calculate range of samples e.g. [2,6] clip by 0 and size
+            const sampleRangeStartIndex = Math.max(
+                0,
+                Math.floor((segment.start - blurOutsideSampleDuration) / this.sampleDuration)
+            );
+            const sampleRangeEndIndex = Math.min(
+                this.sampleAmount - 1,
+                Math.floor((segmentEnd + blurOutsideSampleDuration) / this.sampleDuration)
+            );
+
+            // first sample in range
+            const firstSample = this.sampleStartDuration[sampleRangeStartIndex];
+            const sampleBlurEnd = firstSample[0] + firstSample[1] + blurOutsideSampleDuration;
+            const firstSampleOverlap = sampleBlurEnd - segment.start;
+            // firstSampleValue += firstSampleOverlap*segment.value;
+            this.addFeaturesScaled(sampleRangeStartIndex, segmentIndex, firstSampleOverlap);
+
+            // last sample in range
+            const sampleBlurStart = this.sampleStartDuration[sampleRangeEndIndex][0] - blurOutsideSampleDuration;
+            const lastSampleOverlap = segmentEnd - sampleBlurStart;
+            //lastSampleValue += lastSampleOverlap*segment.value;
+            this.addFeaturesScaled(sampleRangeEndIndex, segmentIndex, lastSampleOverlap);
+
+            // every middle sample
+            for (let i = sampleRangeStartIndex + 1; i < sampleRangeEndIndex; i++) {
+                //sampleValue += segment.duration*segment.value
+                this.addFeaturesScaled(i, segmentIndex, segment.duration);
+            }
+        });
+
+        // First sample has only blur on right
+        //this.samples[0] /= this.sampleDuration + blurOutsideSampleDuration;
+        this.divideFeatures(0, this.sampleDuration + blurOutsideSampleDuration);
+
+        // Last sample has shorter duration and only blur on left
+        //this.samples[this.sampleAmount-1] /= this.sampleStartDuration[this.sampleAmount-1].duration + blurOutsideSampleDuration;
+        this.divideFeatures(
+            this.sampleAmount - 1,
+            this.sampleStartDuration[this.sampleAmount - 1][1] + blurOutsideSampleDuration
+        );
+
+        for (let i = 1; i < this.sampleAmount - 1; i++) {
+            //this.samples[i] /= blurDuration
+            this.divideFeatures(i, blurDuration);
+        }
     }
 
     initSampleFeatures() {
         for (const featureName in this.processed) {
             this.sampled[featureName] = new Array(this.sampleAmount).fill(0);
-            if (this.processed[featureName][0].length) {
+            const featureSize = this.processed[featureName][0].length;
+
+            if (featureSize) {
                 for (let s = 0; s < this.sampleAmount; s++) {
                     this.sampled[featureName][s] = new Array(this.processed[featureName][0].length).fill(0);
                 }
+            } else {
+                for (let s = 0; s < this.sampleAmount; s++) {
+                    this.sampled[featureName][s] = 0;
+                }
             }
         }
     }
 
-    setFeaturesScaled(sample, index, scalar) {
+    setFeaturesScaled(sampleIndex, segmentIndex, scalar) {
         for (const featureName in this.processed) {
-            if (this.processed[featureName][sample].length) {
-                for (let i = 0; i < this.processed[featureName][sample].length; i++) {
-                    this.sampled[featureName][sample][i] = this.processed[featureName][index][i] * scalar;
+            const featureSize = this.processed[featureName][0].length;
+            if (featureSize) {
+                for (let i = 0; i < featureSize; i++) {
+                    this.sampled[featureName][sampleIndex][i] = this.processed[featureName][segmentIndex][i] * scalar;
                 }
             } else {
-                this.sampled[featureName][sample] = this.processed[featureName][index] * scalar;
+                this.sampled[featureName][sampleIndex] = this.processed[featureName][segmentIndex] * scalar;
             }
         }
     }
 
-    addFeaturesScaled(sample, index, scalar) {
+    addFeaturesScaled(sampleIndex, segmentIndex, scalar) {
         for (const featureName in this.processed) {
-            if (this.processed[featureName][sample].length) {
-                for (let i = 0; i < this.processed[featureName][sample].length; i++) {
-                    this.sampled[featureName][sample][i] += this.processed[featureName][index][i] * scalar;
+            const featureSize = this.processed[featureName][0].length;
+            if (featureSize) {
+                for (let i = 0; i < featureSize; i++) {
+                    this.sampled[featureName][sampleIndex][i] += this.processed[featureName][segmentIndex][i] * scalar;
                 }
             } else {
-                this.sampled[featureName][sample] += this.processed[featureName][index] * scalar;
+                this.sampled[featureName][sampleIndex] += this.processed[featureName][segmentIndex] * scalar;
             }
         }
     }
 
-    divideFeatures(sample, divisor) {
+    divideFeatures(sampleIndex, divisor) {
         for (const featureName in this.sampled) {
-            if (this.sampled[featureName][sample].length) {
-                for (let i = 0; i < this.sampled[featureName][sample].length; i++) {
-                    this.sampled[featureName][sample][i] /= divisor;
+            const featureSize = this.processed[featureName][0].length;
+            if (featureSize) {
+                for (let i = 0; i < featureSize; i++) {
+                    this.sampled[featureName][sampleIndex][i] /= divisor;
                 }
             } else {
-                this.sampled[featureName][sample] /= divisor;
+                this.sampled[featureName][sampleIndex] /= divisor;
             }
         }
     }

@@ -34,7 +34,8 @@ export async function startSSM(trackId, pitchFeatures, timbreFeatures, segmentSt
         ssm.onmessage = (event) => {
             const result = event.data;
             if (result.id === trackId) {
-                result.ssm = new Uint8Array(result.ssm);
+                result.rawSSM = new Uint8Array(result.rawSSM);
+                result.enhancedSSM = new Uint8Array(result.enhancedSSM);
                 resolve(result);
             }
         };

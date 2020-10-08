@@ -1,11 +1,14 @@
 <template>
     <div class="visualization">
-        <div class="d-flex pa-2">
-            <v-row>
-                <v-btn color="primary" fab dark small class="mr-10" @click="zoomed = !zoomed">
+        <div class="d-flex">
+            <v-tabs v-model="selectedTab" dark>
+                <v-tab>Raw SSM</v-tab>
+                <v-tab>Enhanced SSM</v-tab>
+                <v-spacer />
+                <v-btn color="primary" fab dark small class="mr-2" @click="zoomed = !zoomed">
                     <v-icon>mdi-magnify-plus-outline</v-icon>
-                </v-btn>
-            </v-row>
+                </v-btn></v-tabs
+            >
         </div>
         <canvas id="gl-canvas" :height="width" :width="width" class="glCanvas pa-0 ma-0"></canvas>
         <svg
@@ -32,10 +35,20 @@ import * as log from "../dev/log";
 import * as webGL from "../app/webGL";
 import * as player from "../app/player";
 
+const RAWSSM = 0;
+const ENHANCEDSSM = 1;
+
 export default {
     props: ["width"],
     data() {
-        return { glCanvas: null, drawLoop: null, zoomed: false };
+        return {
+            glCanvas: null,
+            drawLoop: null,
+            zoomed: false,
+            selectedTab: null,
+            rawSSMBuffer: null,
+            enhancedSSMBuffer: null,
+        };
     },
     computed: {
         loadingTrack() {
@@ -65,16 +78,43 @@ export default {
         loadingTrack() {
             if (!this.loadingTrack) {
                 webGL.clear();
+                this.rawSSMBuffer = null;
+                this.enhancedSSMBuffer = null;
             }
         },
         ssmReady() {
+            log.debug("Ssm ready?", this.ssmReady);
+
             if (this.ssmReady) {
+                if (this.selectedTab === RAWSSM) {
+                    log.debug("Setting raw ssm");
+                    this.rawSSMBuffer = webGL.createSSMDataArray(this.track, this.track.rawSSM);
+                } else if (this.selectedTab === ENHANCEDSSM) {
+                    log.debug("Setting enhanced ssm");
+                    this.enhancedSSMBuffer = webGL.createSSMDataArray(this.track, this.track.enhancedSSM);
+                }
                 this.setSSM();
                 this.applyRenderMode();
+                setTimeout(() => {
+                    if (!this.rawSSMBuffer) {
+                        log.debug("Setting raw ssm");
+                        this.rawSSMBuffer = webGL.createSSMDataArray(this.track, this.track.rawSSM);
+                    }
+                    if (!this.enhancedSSMBuffer) {
+                        log.debug("Setting enhanced ssm");
+                        this.enhancedSSMBuffer = webGL.createSSMDataArray(this.track, this.track.enhancedSSM);
+                    }
+                }, 0);
             }
         },
         zoomed() {
             this.applyRenderMode();
+        },
+        selectedTab() {
+            if (this.ssmReady) {
+                this.setSSM();
+                this.drawSSM();
+            }
         },
     },
     mounted() {
@@ -92,17 +132,25 @@ export default {
             this.glCanvas.height = this.width;
             webGL.init(this.glCanvas);
         },
+        visChanged(newVis, oldVis) {},
+
         setSSM() {
             if (this.glCanvas) {
-                webGL.setSSMDataArray(this.track);
+                if (this.selectedTab === RAWSSM) {
+                    webGL.setSSMDataArray(this.rawSSMBuffer);
+                } else if (this.selectedTab === ENHANCEDSSM) {
+                    webGL.setSSMDataArray(this.enhancedSSMBuffer);
+                }
             } else {
                 log.warn("No canvas");
             }
         },
+
         drawSSM() {
             webGL.clear();
             webGL.drawSSM(this.xCenterPositionNormalized, this.zoomed ? 2 : 1);
         },
+
         clickedSVG(event) {
             let xNormalized = 0;
             if (this.$store.state.browser === "Firefox") {
@@ -112,6 +160,7 @@ export default {
             }
             player.seekS(xNormalized * this.track.getAnalysisDuration());
         },
+
         applyRenderMode() {
             clearInterval(this.drawLoop);
             if (this.zoomed) {

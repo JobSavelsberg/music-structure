@@ -48,16 +48,42 @@ export function init(canvas) {
         console.error("ERROR validating program!", gl.getProgramInfoLog(program));
         return;
     }
+
+    translateLoc = gl.getUniformLocation(program, "translate");
+    scaleLoc = gl.getUniformLocation(program, "scale");
+
+    const rectangleVertexBufferObject = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, rectangleVertexBufferObject);
+
+    const vertAttribLocation = gl.getAttribLocation(program, "vert");
+    gl.vertexAttribPointer(
+        vertAttribLocation,
+        3, // Number of elements per attribute (x, y, value)
+        gl.FLOAT, // Type of element
+        gl.FALSE, // data normalized
+        3 * Float32Array.BYTES_PER_ELEMENT, // Size of one vertex
+        0 // Offset from beginning of single vertex
+    );
+    gl.enableVertexAttribArray(vertAttribLocation);
 }
 
 export function clear() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 }
+export function setSSMDataArray(vertices) {
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+}
 
-export function setSSMDataArray(track) {
-    const segments = track.getSegments();
-    const ssm = track.ssm;
-    const size = segments.length;
+export function createSSMDataArray(track, ssm) {
+    const segmentStartDuration = track.getSegmentStartDuration();
+    const size = segmentStartDuration.length;
+
+    bufferSize = size * size * 6;
+    if (bufferSize > 22e6) {
+        log.error("Buffer OVERFLOW with size", bufferSize);
+    } else {
+        log.debug("Buffer size", bufferSize);
+    }
 
     const halfDuration = track.getAnalysisDuration() / 2;
     function st(pos) {
@@ -76,10 +102,10 @@ export function setSSMDataArray(track) {
                 log.warn(ssm[x * x + x + y * 2 + 1]);
             }
             const value = y >= x ? ssm[cellsBefore + x * 2] / 255.0 : ssm[x * x + x + y * 2 + 1] / 255.0;
-            const left = st(segments[x].start);
-            const top = -st(segments[y].start);
-            const right = st(segments[x].start + segments[x].duration);
-            const bottom = -st(segments[y].start + segments[y].duration);
+            const left = st(segmentStartDuration[x][0]);
+            const top = -st(segmentStartDuration[y][0]);
+            const right = st(segmentStartDuration[x][0] + segmentStartDuration[x][1]);
+            const bottom = -st(segmentStartDuration[y][0] + segmentStartDuration[y][1]);
             ssmVertices.push(
                 left,
                 top,
@@ -103,31 +129,19 @@ export function setSSMDataArray(track) {
         }
     }
 
-    const rectangleVertexBufferObject = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, rectangleVertexBufferObject);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ssmVertices), gl.STATIC_DRAW);
-
-    const vertAttribLocation = gl.getAttribLocation(program, "vert");
-    gl.vertexAttribPointer(
-        vertAttribLocation,
-        3, // Number of elements per attribute (x, y, value)
-        gl.FLOAT, // Type of element
-        gl.FALSE, // data normalized
-        3 * Float32Array.BYTES_PER_ELEMENT, // Size of one vertex
-        0 // Offset from beginning of single vertex
-    );
-    gl.enableVertexAttribArray(vertAttribLocation);
-    bufferSize = size * size * 6;
-    log.debug("Created buffer of size:", bufferSize);
-
-    translateLoc = gl.getUniformLocation(program, "translate");
-    scaleLoc = gl.getUniformLocation(program, "scale");
+    return new Float32Array(ssmVertices);
 }
 
 export function setSSMData(track) {
     const segments = track.segmentObjects;
     const ssm = track.ssm;
     const size = segments.length;
+    bufferSize = size * size * 6;
+    if (bufferSize > Math.pow(2, 32)) {
+        log.error("Buffer OVERFLOW with size", bufferSize);
+    } else {
+        log.debug("Buffer size", bufferSize);
+    }
 
     const halfDuration = track.getAnalysisDuration() / 2;
     function st(pos) {
@@ -181,7 +195,6 @@ export function setSSMData(track) {
         0 // Offset from beginning of single vertex
     );
     gl.enableVertexAttribArray(vertAttribLocation);
-    bufferSize = size * size * 6;
 }
 
 export function drawSSM(xCenterPositionNormalized, scale) {
