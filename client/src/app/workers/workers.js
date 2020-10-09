@@ -1,6 +1,6 @@
-export let ssm;
-export let cluster;
-export let tsne;
+let ssm;
+let cluster;
+let tsne;
 
 export async function init() {
     ssm = new Worker("./ssmWorker.js", { type: "module" });
@@ -21,6 +21,7 @@ export async function startSSM(trackId, pitchFeatures, timbreFeatures, segmentSt
         const blurTime = options.blurTime || 4;
         const threshold = options.threshold || 0.5;
         const allPitches = options.allPitches || false;
+        const tempoRatios = options.tempoRatios || [1];
         ssm.postMessage({
             pitchFeatures,
             timbreFeatures,
@@ -29,6 +30,7 @@ export async function startSSM(trackId, pitchFeatures, timbreFeatures, segmentSt
             timestamp: new Date(),
             allPitches,
             blurTime,
+            tempoRatios,
             threshold,
         });
         ssm.onmessage = (event) => {

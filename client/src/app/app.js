@@ -43,9 +43,6 @@ export async function initialize() {
 
 export async function selectTrackAtIndex(index) {
     store.commit("loadingTrack", true);
-    store.commit("tsneReady", false);
-    store.commit("clusterReady", false);
-    store.commit("ssmReady", false);
     return getAnalysis(store.getters.trackList[index]).then(() => {
         store.commit("setSelectedIndex", index);
         store.commit("loadingTrack", false);

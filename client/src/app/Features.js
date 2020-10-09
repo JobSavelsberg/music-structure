@@ -12,7 +12,14 @@ export default class Features {
     segments = [];
     segmentStartDuration = [];
     raw = { pitches: [], timbres: [], loudness: [] };
-    processed = { pitches: [], timbres: [], loudness: [], tonalEnergy: [], tonalRadius: [], tonalAngle: [] };
+    processed = {
+        pitches: [],
+        timbres: [],
+        loudness: [],
+        tonalEnergy: [],
+        tonalRadius: [],
+        tonalAngle: [],
+    };
 
     clusterSelection = [];
     tsneSelection = [];
@@ -69,7 +76,6 @@ export default class Features {
             this.processed.tonalAngle.push(s.tonalityAngle);
             this.processed.loudness.push(s.getLoudnessFeatures());
         });
-
         for (let i = 0; i < this.segments.length; i++) {
             // Try to remove percussion from pitch features
             if (i > 0 && i < this.segments.length - 1) {

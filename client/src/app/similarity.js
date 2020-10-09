@@ -19,6 +19,21 @@ export function cosine(a, b) {
     return adotv / (amag * bmag);
 }
 
+export function cosineTransposed(a, b, p) {
+    var adotv = 0;
+    var amag = 0;
+    var bmag = 0;
+    for (var i = 0; i < a.length; i++) {
+        let transposedI = (i + p) % 12;
+        adotv += a[i] * b[transposedI];
+        amag += a[i] * a[i];
+        bmag += b[transposedI] * b[transposedI];
+    }
+    amag = Math.sqrt(amag);
+    bmag = Math.sqrt(bmag);
+    return adotv / (amag * bmag);
+}
+
 export function manhattanDistance(a, b) {
     let dist = 0;
     for (let i = 0; i < a.length; i++) {

@@ -11,7 +11,6 @@ export default class Segment {
     loudness_end = 0;
 
     pitches = [];
-    pitchesTransposed = [];
     timbres = [];
     timbresScaled = [];
 
@@ -48,7 +47,6 @@ export default class Segment {
         const decay = 0.5;
         const shortness = this.duration < minDuration ? 1 : decay - (this.duration - 0.15);
         this.percussiony = Math.min(1, (1 - this.tonalityRadius) * this.tonalityEnergy * 2) * shortness;
-        this.calculateTransposedPitches();
         this.processedPitch = true;
     }
 
@@ -75,15 +73,6 @@ export default class Segment {
             this.timbresScaled.push(timbre / biggest[i]);
         });
         this.processedTimbre = true;
-    }
-
-    calculateTransposedPitches() {
-        for (let p = 0; p < 12; p++) {
-            this.pitchesTransposed.push(new Array(12));
-            for (let i = 0; i < 12; i++) {
-                this.pitchesTransposed[p][i] = this.pitches[(i + p) % 12];
-            }
-        }
     }
 
     getPitches() {

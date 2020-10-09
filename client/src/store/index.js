@@ -16,10 +16,6 @@ export default new Vuex.Store({
         playerReady: false,
         playing: false,
         seeker: 0,
-        // For every worker we need a global ready variable
-        tsneReady: false,
-        ssmReady: false,
-        clusterReady: false,
     },
     mutations: {
         setSeeker(state, time_ms) {
@@ -58,15 +54,6 @@ export default new Vuex.Store({
         incrementSeeker(state, increment) {
             state.seeker += increment;
         },
-        tsneReady(state, ready) {
-            state.tsneReady = ready;
-        },
-        clusterReady(state, ready) {
-            state.clusterReady = ready;
-        },
-        ssmReady(state, ready) {
-            state.ssmReady = ready;
-        },
     },
     actions: {},
     getters: {
@@ -96,15 +83,6 @@ export default new Vuex.Store({
         },
         playing(state) {
             return state.playing;
-        },
-        tsneReady(state) {
-            return state.tsneReady;
-        },
-        clusterReady(state) {
-            return state.clusterReady;
-        },
-        ssmReady(state) {
-            return state.ssmReady;
         },
     },
     modules: {},

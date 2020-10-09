@@ -7,9 +7,9 @@ import * as log from "../dev/log";
 import * as SSM from "./SSM";
 const GAMMA = 1.7;
 const CLUSTERAMOUNT = 10;
-const samples = 200;
-const sampleDuration = 0.5;
-const sampleBlur = 2; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
+const samples = 500;
+const sampleDuration = 0.3;
+const sampleBlur = 1.5; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
 export default class Track {
     trackData = null;
     analysisData = null;
@@ -26,8 +26,8 @@ export default class Track {
 
     process() {
         this.features = new Features(this.analysisData, {
-            //samples: samples,
-            sampleDuration: sampleDuration,
+            samples: samples,
+            //sampleDuration: sampleDuration,
             sampleBlur: sampleBlur,
         });
         //this.tsne();
@@ -40,7 +40,6 @@ export default class Track {
      * Self similarity matrix, takes a few seconds so async is needed
      */
     calculateSSM() {
-        store.commit("ssmReady", false);
         const time = new Date();
 
         let features = this.features.processed;
@@ -51,7 +50,10 @@ export default class Track {
         workers
             .startSSM(this.getID(), features.pitches, features.timbres, this.getSegmentStartDuration(), {
                 blurTime: 4,
-                threshold: 0.7,
+                threshold: 0.6,
+                //tempoRatios: [0.66, 0.81, 1, 1.22, 1.5],
+                tempoRatios: [1],
+                allPitches: true,
             })
             .then((result) => {
                 const diff = new Date() - time;
@@ -60,7 +62,7 @@ export default class Track {
                 log.info("workerSSM sending back", diffBack);
                 this.rawSSM = result.rawSSM;
                 this.enhancedSSM = result.enhancedSSM;
-                store.commit("ssmReady", true);
+                window.eventBus.$emit("ssmDone");
             });
 
         /*const nonworkerTime = performance.now();
@@ -149,7 +151,7 @@ export default class Track {
     reload() {
         log.debug("Reloading track");
         if (this.rawSSM) {
-            window.setTimeout(() => store.commit("ssmReady", true), 0);
+            window.setTimeout(() => window.eventBus.$emit("ssmDone"), 0);
         }
     }
     setAnalysis(analysis) {

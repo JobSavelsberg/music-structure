@@ -46,6 +46,7 @@ export default {
             drawLoop: null,
             zoomed: false,
             selectedTab: null,
+            ssmReady: false,
             rawSSMBuffer: null,
             enhancedSSMBuffer: null,
         };
@@ -56,9 +57,6 @@ export default {
         },
         track() {
             return this.$store.getters.selectedTrack;
-        },
-        ssmReady() {
-            return this.$store.state.ssmReady;
         },
         seekerNormalized() {
             return this.$store.getters.seeker / (this.track.getAnalysisDuration() * 1000);
@@ -82,31 +80,6 @@ export default {
                 this.enhancedSSMBuffer = null;
             }
         },
-        ssmReady() {
-            log.debug("Ssm ready?", this.ssmReady);
-
-            if (this.ssmReady) {
-                if (this.selectedTab === RAWSSM) {
-                    log.debug("Setting raw ssm");
-                    this.rawSSMBuffer = webGL.createSSMDataArray(this.track, this.track.rawSSM);
-                } else if (this.selectedTab === ENHANCEDSSM) {
-                    log.debug("Setting enhanced ssm");
-                    this.enhancedSSMBuffer = webGL.createSSMDataArray(this.track, this.track.enhancedSSM);
-                }
-                this.setSSM();
-                this.applyRenderMode();
-                setTimeout(() => {
-                    if (!this.rawSSMBuffer) {
-                        log.debug("Setting raw ssm");
-                        this.rawSSMBuffer = webGL.createSSMDataArray(this.track, this.track.rawSSM);
-                    }
-                    if (!this.enhancedSSMBuffer) {
-                        log.debug("Setting enhanced ssm");
-                        this.enhancedSSMBuffer = webGL.createSSMDataArray(this.track, this.track.enhancedSSM);
-                    }
-                }, 0);
-            }
-        },
         zoomed() {
             this.applyRenderMode();
         },
@@ -120,6 +93,29 @@ export default {
     mounted() {
         this.webGLSetup();
         log.debug("SET UP WEBGL");
+        window.eventBus.$on("ssmDone", () => {
+            this.ssmReady = true;
+
+            if (this.selectedTab === RAWSSM) {
+                log.debug("Setting raw ssm");
+                this.rawSSMBuffer = webGL.createSSMDataArray(this.track, this.track.rawSSM);
+            } else if (this.selectedTab === ENHANCEDSSM) {
+                log.debug("Setting enhanced ssm");
+                this.enhancedSSMBuffer = webGL.createSSMDataArray(this.track, this.track.enhancedSSM);
+            }
+            this.setSSM();
+            this.applyRenderMode();
+            setTimeout(() => {
+                if (!this.rawSSMBuffer) {
+                    log.debug("Setting raw ssm");
+                    this.rawSSMBuffer = webGL.createSSMDataArray(this.track, this.track.rawSSM);
+                }
+                if (!this.enhancedSSMBuffer) {
+                    log.debug("Setting enhanced ssm");
+                    this.enhancedSSMBuffer = webGL.createSSMDataArray(this.track, this.track.enhancedSSM);
+                }
+            }, 0);
+        });
     },
     methods: {
         webGLSetup() {
