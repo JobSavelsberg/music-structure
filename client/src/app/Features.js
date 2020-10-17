@@ -37,7 +37,7 @@ export default class Features {
             this.segmentStartDuration.push([segment.start, segment.duration]);
         });
         this.length = this.segments.length;
-        this.sampleAmount = options.samples || Math.ceil(this.duration / options.sampleDuration) || 1000;
+        this.sampleAmount = options.samples || Math.ceil(this.duration / options.sampleDuration) || 200;
         this.sampleDuration = analysisData.track.duration / this.sampleAmount;
         this.sampleBlur = options.sampleBlur || 1;
         log.info("Reducing segments, sample amount:", this.sampleAmount);
@@ -109,7 +109,6 @@ export default class Features {
         // Last sample is shorter
         const lastSampleStart = (this.sampleAmount - 1) * this.sampleDuration;
         this.sampleStartDuration.push([lastSampleStart, this.duration - lastSampleStart]);
-
         this.initSampleFeatures();
 
         const blurDuration = this.sampleBlur * this.sampleDuration;

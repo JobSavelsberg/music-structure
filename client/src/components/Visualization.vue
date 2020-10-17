@@ -1,9 +1,9 @@
 <template>
     <div class="visualization">
         <div class="d-flex">
-            <v-tabs v-model="selectedTab" dark>
-                <v-tab>Raw SSM</v-tab>
-                <v-tab>Enhanced SSM</v-tab>
+            <v-tabs v-if="this.track && this.track.SSMs.length > 0" v-model="selectedTab" dark>
+                <v-tab v-for="ssm in this.track.SSMs" :key="ssm.name">{{ ssm.name }}</v-tab>
+                <v-tab>Score Matrix</v-tab>
                 <v-spacer />
                 <v-btn color="primary" fab dark small class="mr-2" @click="zoomed = !zoomed">
                     <v-icon>mdi-magnify-plus-outline</v-icon>
@@ -27,6 +27,14 @@
                 fill="#1DB954"
             ></rect>
         </svg>
+        <canvas
+            v-show="!loadingTrack"
+            id="scapePlotCanvas"
+            ref="scapePlotCanvas"
+            class="scapePlotCanvas pa-0 ma-0"
+            :height="width"
+            :width="width"
+        ></canvas>
     </div>
 </template>
 
@@ -34,6 +42,7 @@
 import * as log from "../dev/log";
 import * as webGL from "../app/webGL";
 import * as player from "../app/player";
+import * as vis from "../app/vis";
 
 const RAWSSM = 0;
 const ENHANCEDSSM = 1;
@@ -45,10 +54,10 @@ export default {
             glCanvas: null,
             drawLoop: null,
             zoomed: false,
-            selectedTab: null,
+            selectedTab: 0,
             ssmReady: false,
-            rawSSMBuffer: null,
-            enhancedSSMBuffer: null,
+
+            ssmBuffers: null,
         };
     },
     computed: {
@@ -76,8 +85,7 @@ export default {
         loadingTrack() {
             if (!this.loadingTrack) {
                 webGL.clear();
-                this.rawSSMBuffer = null;
-                this.enhancedSSMBuffer = null;
+                this.ssmBuffers = null;
             }
         },
         zoomed() {
@@ -94,27 +102,39 @@ export default {
         this.webGLSetup();
         log.debug("SET UP WEBGL");
         window.eventBus.$on("ssmDone", () => {
+            if (!this.track) log.error("SSM done but track does not exist");
+
+            this.ssmBuffers = new Array(this.track.SSMs.length + 1);
+
+            this.track.SSMs.forEach((ssm, index) => {
+                if (index === this.selectedTab) {
+                    this.ssmBuffers[index] = webGL.createSSMDataArray(this.track, ssm.ssm);
+                } else {
+                    setTimeout(() => {
+                        this.ssmBuffers[index] = webGL.createSSMDataArray(this.track, ssm.ssm);
+                    }, 0);
+                }
+            });
+            if (this.selectedTab === this.track.SSMs.length) {
+                this.ssmBuffers[this.track.SSMs.length] = webGL.createScoreMatrixDataArray(
+                    this.track,
+                    this.track.scoreMatrix
+                );
+            } else {
+                setTimeout(() => {
+                    this.ssmBuffers[this.track.SSMs.length] = webGL.createScoreMatrixDataArray(
+                        this.track,
+                        this.track.scoreMatrix
+                    );
+                }, 0);
+            }
+
             this.ssmReady = true;
 
-            if (this.selectedTab === RAWSSM) {
-                log.debug("Setting raw ssm");
-                this.rawSSMBuffer = webGL.createSSMDataArray(this.track, this.track.rawSSM);
-            } else if (this.selectedTab === ENHANCEDSSM) {
-                log.debug("Setting enhanced ssm");
-                this.enhancedSSMBuffer = webGL.createSSMDataArray(this.track, this.track.enhancedSSM);
-            }
             this.setSSM();
             this.applyRenderMode();
-            setTimeout(() => {
-                if (!this.rawSSMBuffer) {
-                    log.debug("Setting raw ssm");
-                    this.rawSSMBuffer = webGL.createSSMDataArray(this.track, this.track.rawSSM);
-                }
-                if (!this.enhancedSSMBuffer) {
-                    log.debug("Setting enhanced ssm");
-                    this.enhancedSSMBuffer = webGL.createSSMDataArray(this.track, this.track.enhancedSSM);
-                }
-            }, 0);
+
+            this.makeScapePlot();
         });
     },
     methods: {
@@ -132,11 +152,7 @@ export default {
 
         setSSM() {
             if (this.glCanvas) {
-                if (this.selectedTab === RAWSSM) {
-                    webGL.setSSMDataArray(this.rawSSMBuffer);
-                } else if (this.selectedTab === ENHANCEDSSM) {
-                    webGL.setSSMDataArray(this.enhancedSSMBuffer);
-                }
+                webGL.setSSMDataArray(this.ssmBuffers[this.selectedTab]);
             } else {
                 log.warn("No canvas");
             }
@@ -165,6 +181,18 @@ export default {
                 this.drawSSM();
             }
         },
+        makeScapePlot() {
+            const canvas = document.getElementById("scapePlotCanvas");
+
+            if (!canvas) {
+                log.debug("scapePlotCanvas not ready");
+                return;
+            }
+            log.debug("scapePlotCanvas ready: draw()");
+            const ctx = canvas.getContext("2d");
+
+            vis.drawScapePlot(this.track, ctx);
+        },
     },
 };
 </script>
@@ -180,5 +208,10 @@ export default {
 .seekerSVG {
     position: absolute;
     z-index: 10;
+}
+.scapePlotCanvas {
+    background-color: "white";
+    width: 100%;
+    height: 100%;
 }
 </style>

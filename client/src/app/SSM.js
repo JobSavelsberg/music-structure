@@ -66,7 +66,7 @@ export function calculateTranspositionInvariant(ssmAllPitches) {
     const cells = ssmAllPitches.length / 13;
     const size = cells * 2; // pitch and timbre
     const transpositionInvariantSSM = new Uint8Array(size);
-    const pitchValueSSM = new Uint8Array(size);
+    const intervalSSM = new Uint8Array(size);
     for (let i = 0; i < size; i++) {
         let max = 0;
         let maxPitch = -1;
@@ -78,11 +78,11 @@ export function calculateTranspositionInvariant(ssmAllPitches) {
             }
         }
         transpositionInvariantSSM[i * 2] = max;
-        pitchValueSSM[i] = maxPitch;
+        intervalSSM[i] = maxPitch;
         transpositionInvariantSSM[i * 2 + 1] = ssmAllPitches[i * 13 + 12];
     }
 
-    return { transpositionInvariantSSM, pitchValueSSM };
+    return { transpositionInvariantSSM, intervalSSM };
 }
 
 export function enhance(segmentStartDuration, ssm, blurTime, tempoRatios = [1], allPitches = false) {
@@ -214,4 +214,26 @@ export function threshold(ssm, threshold) {
         thresholdSSM[i] = Math.min(Math.max(ssm[i] / 255.0 - threshold, 0) / (1 - threshold), 1) * 255;
     }
     return thresholdSSM;
+}
+
+export function penalizeThreshold(ssm, threshold) {
+    const thresholdSSM = new Int16Array(ssm.length);
+    for (let i = 0; i < ssm.length; i++) {
+        thresholdSSM[i] = Math.min(Math.max(ssm[i] / 255.0 - threshold, 0) / (1 - threshold), 1) * 255;
+    }
+    return thresholdSSM;
+}
+
+export function getFullPitchSSM(ssm, sampleAmount) {
+    const fullSSM = new Uint8Array(sampleAmount * sampleAmount);
+
+    for (let y = 0; y < sampleAmount; y++) {
+        const cellsBefore = y * y - y;
+        for (let x = 0; x <= y; x++) {
+            const value = ssm[cellsBefore + x * 2];
+            fullSSM[y * sampleAmount + x] = value;
+            fullSSM[x * sampleAmount + y] = value;
+        }
+    }
+    return fullSSM;
 }

@@ -1,6 +1,7 @@
 import * as log from "../dev/log";
 import * as d3 from "d3";
 import * as audioUtil from "./audioUtil";
+import * as Track from "./Track";
 
 export const zeroOneColor = d3
     .scaleSequential()
@@ -177,5 +178,32 @@ export function renderWaveform(ctx, width, height, track, options = {}) {
                 -audioUtil.loudness(segment.loudness_max) * height
             );
         });
+    }
+}
+
+export function drawScapePlot(track, ctx) {
+    const scale = 2;
+    const scapePlot = track.scapePlot;
+    const minSize = Track.SPminSize;
+    const stepSize = Track.SPstepSize;
+    const sampleAmount = track.features.sampleAmount;
+
+    const size = Math.ceil((sampleAmount - minSize) / stepSize);
+    const sqrt2 = Math.sqrt(2);
+    let currentCell = 0;
+    log.debug(scapePlot);
+
+    for (let size = minSize; size < sampleAmount; size += stepSize) {
+        for (let start = 0; start < sampleAmount - size; start += stepSize) {
+            const value = scapePlot[currentCell] / 255.0;
+            ctx.fillStyle = zeroOneColor(value);
+            currentCell++;
+
+            const x = start + size / 2;
+            const y = sampleAmount - size;
+            const width = stepSize;
+            const height = stepSize;
+            ctx.fillRect(x * scale, y * scale, width * scale, height * scale);
+        }
     }
 }

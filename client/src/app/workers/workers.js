@@ -22,6 +22,9 @@ export async function startSSM(trackId, pitchFeatures, timbreFeatures, segmentSt
         const threshold = options.threshold || 0.5;
         const allPitches = options.allPitches || false;
         const tempoRatios = options.tempoRatios || [1];
+        const SPminSize = options.SPminSize || 4;
+        const SPstepSize = options.SPstepSize || 1;
+
         ssm.postMessage({
             pitchFeatures,
             timbreFeatures,
@@ -32,12 +35,20 @@ export async function startSSM(trackId, pitchFeatures, timbreFeatures, segmentSt
             blurTime,
             tempoRatios,
             threshold,
+            SPminSize,
+            SPstepSize,
         });
         ssm.onmessage = (event) => {
             const result = event.data;
             if (result.id === trackId) {
                 result.rawSSM = new Uint8Array(result.rawSSM);
                 result.enhancedSSM = new Uint8Array(result.enhancedSSM);
+                if (options.allPitches) {
+                    result.transpositionInvariantSSM = new Uint8Array(result.transpositionInvariantSSM);
+                    result.intervalSSM = new Uint8Array(result.intervalSSM);
+                    result.scoreMatrix = new Float32Array(result.scoreMatrix);
+                    result.scapePlot = new Uint8Array(result.scapePlot);
+                }
                 resolve(result);
             }
         };

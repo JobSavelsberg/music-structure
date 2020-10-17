@@ -71,7 +71,70 @@ export function clear() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 }
 export function setSSMDataArray(vertices) {
+    bufferSize = vertices.length / 3;
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+}
+
+export function createScoreMatrixDataArray(track, scoreMatrix) {
+    const duration = track.getSegmentStartDuration()[0][1]; // get duration of first element
+    const size = track.getSegmentStartDuration().length / 2;
+    const timechunkWidth = scoreMatrix.length / size;
+    let maxValue = 0;
+    let minValue = 0;
+    for (let i = 0; i < scoreMatrix.length; i++) {
+        if (scoreMatrix[i] > maxValue) {
+            maxValue = scoreMatrix[i];
+        }
+        if (scoreMatrix[i] < minValue) {
+            minValue = scoreMatrix[i];
+        }
+    }
+    log.debug(size, timechunkWidth, duration, maxValue);
+    bufferSize = size * timechunkWidth * 6;
+    if (bufferSize > 22e6) {
+        log.error("Buffer OVERFLOW with size", bufferSize);
+    } else {
+        log.debug("Buffer size", bufferSize);
+    }
+
+    const halfDuration = (size * duration) / 2;
+    function st(pos) {
+        return pos / halfDuration - 1;
+    } // Scale and translate
+
+    const ssmVertices = [];
+
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < timechunkWidth; x++) {
+            const value = scoreMatrix[y * timechunkWidth + x] / maxValue;
+            const left = st(x * duration);
+            const top = st(y * duration);
+            const right = st(x * duration + duration);
+            const bottom = st(y * duration + duration);
+            ssmVertices.push(
+                left,
+                top,
+                value,
+                left,
+                bottom,
+                value,
+                right,
+                top,
+                value,
+                right,
+                top,
+                value,
+                left,
+                bottom,
+                value,
+                right,
+                bottom,
+                value
+            );
+        }
+    }
+    log.debug(ssmVertices.length);
+    return new Float32Array(ssmVertices);
 }
 
 export function createSSMDataArray(track, ssm) {

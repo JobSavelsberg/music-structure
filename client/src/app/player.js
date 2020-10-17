@@ -171,10 +171,10 @@ export async function initialize(token) {
             deviceId = device_id;
             log.info("Ready with Device ID", device_id);
             const deviceIdArray = [deviceId];
-            spotify.transferMyPlayback(deviceIdArray).then((err, result) => {
-                window.setTimeout(store.commit("playerReady", true), 1);
-                startSeekerInterval();
-            });
+            //spotify.transferMyPlayback(deviceIdArray).then((err, result) => {
+            window.setTimeout(store.commit("playerReady", true), 1);
+            startSeekerInterval();
+            //});
         });
 
         // Not Ready

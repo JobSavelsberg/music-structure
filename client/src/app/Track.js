@@ -7,20 +7,26 @@ import * as log from "../dev/log";
 import * as SSM from "./SSM";
 const GAMMA = 1.7;
 const CLUSTERAMOUNT = 10;
-const samples = 500;
-const sampleDuration = 0.3;
+const samples = 350;
+const sampleDuration = 0.5;
 const sampleBlur = 1.5; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
+export const SPminSize = 1; // Minimal size of segment in scape plot
+export const SPstepSize = 3; // Size of the step between segment start and size in scape plot
+
 export default class Track {
     trackData = null;
     analysisData = null;
 
-    rawSSM = null;
-    enhancedSSM = null;
+    SSMs = []; // {name, ssm}
+    intervalSSM = null;
+    scoreMatrix = null;
+    scapePlot = null;
 
     features;
 
     processed = false;
     useSampled = true;
+    allPitches = true;
 
     clusters = new Array(CLUSTERAMOUNT).fill([]);
 
@@ -50,18 +56,26 @@ export default class Track {
         workers
             .startSSM(this.getID(), features.pitches, features.timbres, this.getSegmentStartDuration(), {
                 blurTime: 4,
-                threshold: 0.6,
+                threshold: 0.65,
                 //tempoRatios: [0.66, 0.81, 1, 1.22, 1.5],
                 tempoRatios: [1],
-                allPitches: true,
+                allPitches: this.allPitches,
+                SPminSize: SPminSize,
+                SPstepSize: SPstepSize,
             })
             .then((result) => {
                 const diff = new Date() - time;
                 const diffBack = new Date() - result.timestamp;
                 log.info("workerSSM outside", diff);
                 log.info("workerSSM sending back", diffBack);
-                this.rawSSM = result.rawSSM;
-                this.enhancedSSM = result.enhancedSSM;
+                this.SSMs.push({ name: "Raw SSM", ssm: result.rawSSM });
+                this.SSMs.push({ name: "Enhanced SSM", ssm: result.enhancedSSM });
+                if (this.allPitches) {
+                    this.SSMs.push({ name: "Transposition Invariant SSM", ssm: result.transpositionInvariantSSM });
+                    //this.SSMs.push({ name: "Interval SSM", ssm: result.intervalSSM, color: true });
+                    this.scoreMatrix = result.scoreMatrix;
+                    this.scapePlot = result.scapePlot;
+                }
                 window.eventBus.$emit("ssmDone");
             });
 
@@ -150,7 +164,7 @@ export default class Track {
     }
     reload() {
         log.debug("Reloading track");
-        if (this.rawSSM) {
+        if (this.SSMs.rawSSM) {
             window.setTimeout(() => window.eventBus.$emit("ssmDone"), 0);
         }
     }
@@ -186,7 +200,7 @@ export default class Track {
         }
     }
     getSSM() {
-        return this.ssm;
+        return this.SSMs.transpositionInvariantSSM;
     }
     getBars() {
         return this.analysisData.bars;
