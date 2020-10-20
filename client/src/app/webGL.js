@@ -75,68 +75,6 @@ export function setSSMDataArray(vertices) {
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 }
 
-export function createScoreMatrixDataArray(track, scoreMatrix) {
-    const duration = track.getSegmentStartDuration()[0][1]; // get duration of first element
-    const size = track.getSegmentStartDuration().length / 2;
-    const timechunkWidth = scoreMatrix.length / size;
-    let maxValue = 0;
-    let minValue = 0;
-    for (let i = 0; i < scoreMatrix.length; i++) {
-        if (scoreMatrix[i] > maxValue) {
-            maxValue = scoreMatrix[i];
-        }
-        if (scoreMatrix[i] < minValue) {
-            minValue = scoreMatrix[i];
-        }
-    }
-    log.debug(size, timechunkWidth, duration, maxValue);
-    bufferSize = size * timechunkWidth * 6;
-    if (bufferSize > 22e6) {
-        log.error("Buffer OVERFLOW with size", bufferSize);
-    } else {
-        log.debug("Buffer size", bufferSize);
-    }
-
-    const halfDuration = (size * duration) / 2;
-    function st(pos) {
-        return pos / halfDuration - 1;
-    } // Scale and translate
-
-    const ssmVertices = [];
-
-    for (let y = 0; y < size; y++) {
-        for (let x = 0; x < timechunkWidth; x++) {
-            const value = scoreMatrix[y * timechunkWidth + x] / maxValue;
-            const left = st(x * duration);
-            const top = st(y * duration);
-            const right = st(x * duration + duration);
-            const bottom = st(y * duration + duration);
-            ssmVertices.push(
-                left,
-                top,
-                value,
-                left,
-                bottom,
-                value,
-                right,
-                top,
-                value,
-                right,
-                top,
-                value,
-                left,
-                bottom,
-                value,
-                right,
-                bottom,
-                value
-            );
-        }
-    }
-    log.debug(ssmVertices.length);
-    return new Float32Array(ssmVertices);
-}
-
 export function createSSMDataArray(track, ssm) {
     const segmentStartDuration = track.getSegmentStartDuration();
     const size = segmentStartDuration.length;
@@ -156,15 +94,8 @@ export function createSSMDataArray(track, ssm) {
     const ssmVertices = [];
 
     for (let y = 0; y < size; y++) {
-        const cellsBefore = y * y + y;
         for (let x = 0; x < size; x++) {
-            if (ssm[cellsBefore + x * 2] / 255.0 > 1) {
-                log.warn(ssm[cellsBefore + x * 2]);
-            }
-            if (ssm[x * x + x + y * 2 + 1] / 255.0 > 1) {
-                log.warn(ssm[x * x + x + y * 2 + 1]);
-            }
-            const value = y >= x ? ssm[cellsBefore + x * 2] / 255.0 : ssm[x * x + x + y * 2 + 1] / 255.0;
+            const value = ssm.getValueNormalizedMirrored(x, y);
             const left = st(segmentStartDuration[x][0]);
             const top = -st(segmentStartDuration[y][0]);
             const right = st(segmentStartDuration[x][0] + segmentStartDuration[x][1]);
@@ -193,71 +124,6 @@ export function createSSMDataArray(track, ssm) {
     }
 
     return new Float32Array(ssmVertices);
-}
-
-export function setSSMData(track) {
-    const segments = track.segmentObjects;
-    const ssm = track.ssm;
-    const size = segments.length;
-    bufferSize = size * size * 6;
-    if (bufferSize > Math.pow(2, 32)) {
-        log.error("Buffer OVERFLOW with size", bufferSize);
-    } else {
-        log.debug("Buffer size", bufferSize);
-    }
-
-    const halfDuration = track.getAnalysisDuration() / 2;
-    function st(pos) {
-        return pos / halfDuration - 1;
-    } // Scale and translate
-
-    const end = st(segments[size - 1].start + segments[size - 1].duration);
-    const ssmVertices = [];
-
-    for (let y = 0; y < size; y++) {
-        const cellsBefore = y * y + y;
-        for (let x = 0; x < size; x++) {
-            const value = Math.min(1, x >= y ? ssm[cellsBefore + x * 2][0] : 0);
-            ssmVertices.push(st(segments[x].start), st(segments[y].start), 1);
-        }
-        ssmVertices.push(end, st(segments[y].start), 0); // .1 is duration of segment(i)
-    }
-    for (let x = 0; x < size; x++) {
-        ssmVertices.push(st(segments[x].start), end, 0); // size * 0.1 in reality is segment(size-1).start + segment(size-1).duration
-    }
-    ssmVertices.push(end, end, 0); // size * 0.1 in reality is segment(size-1).start + segment(size-1).duration
-
-    // Fill the current element array buffer with data
-    const ssmIndeces = [];
-    for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-            // 1 rect = 2 triangles counterclockwise divided by backward slash \
-            const topleft = y * (size + 1) + x;
-            const bottomleft = (y + 1) * (size + 1) + x;
-            ssmIndeces.push(bottomleft, bottomleft + 1, topleft);
-            ssmIndeces.push(bottomleft + 1, topleft + 1, topleft);
-        }
-    }
-    // create the buffer
-    const indexBuffer = gl.createBuffer();
-    // make this buffer the current 'ELEMENT_ARRAY_BUFFER'
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(ssmIndeces), gl.STATIC_DRAW);
-
-    const rectangleVertexBufferObject = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, rectangleVertexBufferObject);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ssmVertices), gl.STATIC_DRAW);
-
-    const vertAttribLocation = gl.getAttribLocation(program, "vert");
-    gl.vertexAttribPointer(
-        vertAttribLocation,
-        3, // Number of elements per attribute (x, y, value)
-        gl.FLOAT, // Type of element
-        gl.FALSE, // data normalized
-        3 * Float32Array.BYTES_PER_ELEMENT, // Size of one vertex
-        0 // Offset from beginning of single vertex
-    );
-    gl.enableVertexAttribArray(vertAttribLocation);
 }
 
 export function drawSSM(xCenterPositionNormalized, scale) {

@@ -1,9 +1,8 @@
 <template>
     <div class="visualization">
         <div class="d-flex">
-            <v-tabs v-if="this.track && this.track.SSMs.length > 0" v-model="selectedTab" dark>
-                <v-tab v-for="ssm in this.track.SSMs" :key="ssm.name">{{ ssm.name }}</v-tab>
-                <v-tab>Score Matrix</v-tab>
+            <v-tabs v-if="this.track && this.track.matrixes.length > 0" v-model="selectedTab" dark>
+                <v-tab v-for="ssm in this.track.matrixes" :key="ssm.name">{{ ssm.name }}</v-tab>
                 <v-spacer />
                 <v-btn color="primary" fab dark small class="mr-2" @click="zoomed = !zoomed">
                     <v-icon>mdi-magnify-plus-outline</v-icon>
@@ -13,7 +12,7 @@
         <canvas id="gl-canvas" :height="width" :width="width" class="glCanvas pa-0 ma-0"></canvas>
         <svg
             v-if="!loadingTrack"
-            :height="height"
+            :height="height * 2"
             :width="width"
             class="seekerSVG"
             :style="`transform: translate(${-width}px, 0px);`"
@@ -23,7 +22,7 @@
                 :x="(zoomed ? 0.5 : seekerNormalized) * width - 1.25"
                 :y="0"
                 :width="2.5"
-                :height="height"
+                :height="height * 2"
                 fill="#1DB954"
             ></rect>
         </svg>
@@ -104,9 +103,9 @@ export default {
         window.eventBus.$on("ssmDone", () => {
             if (!this.track) log.error("SSM done but track does not exist");
 
-            this.ssmBuffers = new Array(this.track.SSMs.length + 1);
+            this.ssmBuffers = new Array(this.track.matrixes.length + 1);
 
-            this.track.SSMs.forEach((ssm, index) => {
+            this.track.matrixes.forEach((ssm, index) => {
                 if (index === this.selectedTab) {
                     this.ssmBuffers[index] = webGL.createSSMDataArray(this.track, ssm.ssm);
                 } else {
@@ -115,19 +114,6 @@ export default {
                     }, 0);
                 }
             });
-            if (this.selectedTab === this.track.SSMs.length) {
-                this.ssmBuffers[this.track.SSMs.length] = webGL.createScoreMatrixDataArray(
-                    this.track,
-                    this.track.scoreMatrix
-                );
-            } else {
-                setTimeout(() => {
-                    this.ssmBuffers[this.track.SSMs.length] = webGL.createScoreMatrixDataArray(
-                        this.track,
-                        this.track.scoreMatrix
-                    );
-                }, 0);
-            }
 
             this.ssmReady = true;
 
@@ -165,11 +151,22 @@ export default {
 
         clickedSVG(event) {
             let xNormalized = 0;
+            let yNormalized = 0;
             if (this.$store.state.browser === "Firefox") {
                 xNormalized = event.layerX / this.width;
+                yNormalized = event.layerY / this.height;
             } else {
                 xNormalized = event.offsetX / this.width;
+                yNormalized = event.layerY / this.height;
             }
+            if (yNormalized > 1) {
+                const size = Math.floor(Math.min(Math.max(0, 2 - yNormalized), 1) * this.track.features.sampleAmount);
+                const start = Math.round(xNormalized * this.track.features.sampleAmount - size / 2);
+
+                this.track.updateScoreMatrix(size, start);
+            }
+            log.debug(xNormalized, yNormalized);
+
             player.seekS(xNormalized * this.track.getAnalysisDuration());
         },
 
@@ -191,7 +188,7 @@ export default {
             log.debug("scapePlotCanvas ready: draw()");
             const ctx = canvas.getContext("2d");
 
-            vis.drawScapePlot(this.track, ctx);
+            vis.drawScapePlot(this.track, ctx, this.width);
         },
     },
 };

@@ -5,6 +5,8 @@ export const measures = {
     COSINE: "cosine",
 };
 
+const maxEuclidianPitchDistance = Math.sqrt(12);
+
 export function cosine(a, b) {
     var adotv = 0;
     var amag = 0;
@@ -49,6 +51,10 @@ export function manhattan(a, b, range) {
 export function euclidianDistance(a, b) {
     return Math.sqrt(squaredDistance(a, b));
 }
+
+export function euclidianDistanceTransposed(a, b, p) {
+    return Math.sqrt(squaredDistanceTransposed(a, b, p));
+}
 export function maxEuclidianDistance(length, range) {
     return Math.sqrt(range * range * length);
 }
@@ -56,10 +62,28 @@ export function euclidian(a, b, maxDist) {
     return 1 - euclidianDistance(a, b) / maxDist;
 }
 
+export function euclidianPitch(a, b) {
+    return 1 - euclidianDistance(a, b) / maxEuclidianPitchDistance;
+}
+
+export function euclidianPitchTransposed(a, b, p) {
+    return 1 - euclidianDistanceTransposed(a, b, p) / maxEuclidianPitchDistance;
+}
+
 export function squaredDistance(a, b) {
     let dist = 0;
     for (let i = 0; i < a.length; i++) {
         const diff = a[i] - b[i];
+        dist += diff * diff;
+    }
+    return dist;
+}
+
+export function squaredDistanceTransposed(a, b, p) {
+    let dist = 0;
+    for (let i = 0; i < a.length; i++) {
+        let transposedI = (i + p) % 12;
+        const diff = a[i] - b[transposedI];
         dist += diff * diff;
     }
     return dist;

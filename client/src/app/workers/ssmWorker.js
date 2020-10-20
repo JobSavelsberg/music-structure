@@ -2,9 +2,49 @@ import * as log from "../../dev/log";
 import * as SSM from "../SSM";
 import * as pathExtraction from "../pathExtraction";
 import * as scapePlot from "../scapePlot";
+import Matrix from "../dataStructures/Matrix";
 
 addEventListener("message", (event) => {
     const data = event.data;
+    const sampleAmount = data.segmentStartDuration.length;
+    const allPitches = data.allPitches;
+
+    let startTime = performance.now();
+    const ssm = SSM.calculateSSM(data.pitchFeatures, data.sampleDuration, allPitches, 0.4);
+    log.debug("SSM Time", performance.now() - startTime);
+    startTime = performance.now();
+    const enhancedSSM = SSM.enhanceSSM(ssm, { blurLength: 10, tempoRatios: data.tempoRatios }, allPitches);
+    log.debug("Enhance Time", performance.now() - startTime);
+
+    startTime = performance.now();
+    let transpositionInvariant = SSM.makeTranspositionInvariant(enhancedSSM);
+    log.debug("makeTranspositionInvariant Time", performance.now() - startTime);
+
+    startTime = performance.now();
+    transpositionInvariant = SSM.autoThreshold(transpositionInvariant, data.thresholdPercentage);
+    log.debug("autothreshold Time", performance.now() - startTime);
+
+    const fullTranspositionInvariant = Matrix.fromHalfMatrix(transpositionInvariant);
+
+    const scoreMatrix = pathExtraction.visualizationMatrix(fullTranspositionInvariant, sampleAmount, 50, 100);
+
+    startTime = performance.now();
+    const SP = scapePlot.create(fullTranspositionInvariant, sampleAmount, data.SPminSize, data.SPstepSize);
+    log.debug("ScapePlot Time", performance.now() - startTime);
+
+    scapePlot.sampleAnchorPoints(SP, 300, 0.1, 3);
+
+    postMessage({
+        rawSSM: ssm.getBuffer(),
+        enhancedSSM: enhancedSSM.getBuffer(),
+        transpositionInvariantSSM: transpositionInvariant.getBuffer(),
+        scoreMatrix: scoreMatrix.getBuffer(),
+        scapePlot: SP.getBuffer(),
+        id: data.id,
+        timestamp: new Date(),
+    });
+});
+/*
     log.debug(data);
     const notifyTime = new Date() - data.timestamp;
     const sampleAmount = data.segmentStartDuration.length;
@@ -24,7 +64,12 @@ addEventListener("message", (event) => {
         const enhancedSSM = SSM.threshold(SSM.seePitchDifference(ssmAllPitchesEnhanced, 0), data.threshold);
 
         const { transpositionInvariantSSM, intervalSSM } = SSM.calculateTranspositionInvariant(ssmAllPitchesEnhanced);
-        const thresholdTranspositionInvariantSSM = SSM.threshold(transpositionInvariantSSM, data.threshold);
+        //const thresholdTranspositionInvariantSSM = SSM.threshold(transpositionInvariantSSM, data.threshold);
+        const thresholdTranspositionInvariantSSM = SSM.autoThreshold(
+            transpositionInvariantSSM,
+            data.thresholdPercentage
+        );
+
         //const penalizedTranspositionInvariantSSM = SSM.penalizeThreshold(transpositionInvariantSSM, data.threshold);
         const pitchSSM = SSM.getFullPitchSSM(thresholdTranspositionInvariantSSM, sampleAmount);
         const dtwTime = performance.now();
@@ -47,14 +92,4 @@ addEventListener("message", (event) => {
             id: data.id,
             timestamp: new Date(),
         });
-    } else {
-        const ssm = SSM.calculatePitchTimbreSSM(data.pitchFeatures, data.timbreFeatures);
-        const diff = performance.now() - ssmtime;
-        log.debug("SSM calculate time", diff);
-        let time = performance.now();
-        const enhancedSSM = SSM.enhance(data.segmentStartDuration, ssm, data.blurTime, data.tempoRatios);
-        log.debug("SSM enhance time", performance.now() - time);
-        const thresholdSSM = SSM.threshold(enhancedSSM, data.threshold);
-        postMessage({ rawSSM: ssm.buffer, enhancedSSM: thresholdSSM.buffer, id: data.id, timestamp: new Date() });
-    }
-});
+    }*/

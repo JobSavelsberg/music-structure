@@ -1,3 +1,6 @@
+import Matrix from "../dataStructures/Matrix";
+import HalfMatrix from "../dataStructures/HalfMatrix";
+
 let ssm;
 let cluster;
 let tsne;
@@ -16,10 +19,18 @@ export async function init() {
  * @param {*} segmentStartDuration
  * @param {*} options {blurTime 4, threshold: 0.5, allPitches: false }
  */
-export async function startSSM(trackId, pitchFeatures, timbreFeatures, segmentStartDuration, options = {}) {
+export async function startSSM(
+    trackId,
+    pitchFeatures,
+    timbreFeatures,
+    sampleDuration,
+    segmentStartDuration,
+    options = {}
+) {
     return new Promise((resolve) => {
         const blurTime = options.blurTime || 4;
         const threshold = options.threshold || 0.5;
+        const thresholdPercentage = options.thresholdPercentage || 0.05;
         const allPitches = options.allPitches || false;
         const tempoRatios = options.tempoRatios || [1];
         const SPminSize = options.SPminSize || 4;
@@ -28,6 +39,7 @@ export async function startSSM(trackId, pitchFeatures, timbreFeatures, segmentSt
         ssm.postMessage({
             pitchFeatures,
             timbreFeatures,
+            sampleDuration,
             segmentStartDuration,
             id: trackId,
             timestamp: new Date(),
@@ -35,20 +47,18 @@ export async function startSSM(trackId, pitchFeatures, timbreFeatures, segmentSt
             blurTime,
             tempoRatios,
             threshold,
+            thresholdPercentage,
             SPminSize,
             SPstepSize,
         });
         ssm.onmessage = (event) => {
             const result = event.data;
             if (result.id === trackId) {
-                result.rawSSM = new Uint8Array(result.rawSSM);
-                result.enhancedSSM = new Uint8Array(result.enhancedSSM);
-                if (options.allPitches) {
-                    result.transpositionInvariantSSM = new Uint8Array(result.transpositionInvariantSSM);
-                    result.intervalSSM = new Uint8Array(result.intervalSSM);
-                    result.scoreMatrix = new Float32Array(result.scoreMatrix);
-                    result.scapePlot = new Uint8Array(result.scapePlot);
-                }
+                result.rawSSM = new HalfMatrix(result.rawSSM);
+                result.enhancedSSM = new HalfMatrix(result.enhancedSSM);
+                result.transpositionInvariantSSM = new HalfMatrix(result.transpositionInvariantSSM);
+                result.scoreMatrix = new Matrix(result.scoreMatrix);
+                result.scapePlot = new HalfMatrix(result.scapePlot);
                 resolve(result);
             }
         };

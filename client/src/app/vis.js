@@ -181,29 +181,40 @@ export function renderWaveform(ctx, width, height, track, options = {}) {
     }
 }
 
-export function drawScapePlot(track, ctx) {
-    const scale = 2;
+export function drawScapePlot(track, ctx, canvasWidth) {
     const scapePlot = track.scapePlot;
     const minSize = Track.SPminSize;
     const stepSize = Track.SPstepSize;
     const sampleAmount = track.features.sampleAmount;
+    const scale = canvasWidth / sampleAmount;
 
-    const size = Math.ceil((sampleAmount - minSize) / stepSize);
+    //const size = Math.ceil((sampleAmount - minSize) / stepSize);
     const sqrt2 = Math.sqrt(2);
-    let currentCell = 0;
-    log.debug(scapePlot);
 
+    scapePlot.forEachCell((x, y, value) => {
+        ctx.fillStyle = zeroOneColor(value);
+
+        const start = x * stepSize;
+        const size = (scapePlot.size - 1 - y) * stepSize;
+
+        const rectX = start + size / 2;
+        const rectY = sampleAmount - size-minSize;
+        const width = stepSize;
+        const height = stepSize;
+        ctx.fillRect(rectX * scale, rectY * scale, width * scale * 1.1, height * scale * 1.1);
+    });
+    /*
     for (let size = minSize; size < sampleAmount; size += stepSize) {
         for (let start = 0; start < sampleAmount - size; start += stepSize) {
-            const value = scapePlot[currentCell] / 255.0;
+            const value = scapePlot.getValue(Math.floor(start / stepSize), Math.floor(size / stepSize));
             ctx.fillStyle = zeroOneColor(value);
             currentCell++;
 
-            const x = start + size / 2;
+            const x = start + size / 2 - minSize / 2;
             const y = sampleAmount - size;
             const width = stepSize;
             const height = stepSize;
-            ctx.fillRect(x * scale, y * scale, width * scale, height * scale);
+            ctx.fillRect(x * scale, y * scale, width * scale * 1.1, height * scale * 1.1);
         }
-    }
+    }*/
 }

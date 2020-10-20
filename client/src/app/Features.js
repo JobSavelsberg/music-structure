@@ -70,6 +70,11 @@ export default class Features {
             s.processPitch();
             s.processTimbre(this.timbreMin, this.timbreMax, this.timbreBiggest, this.timbreTotalBiggest);
             this.processed.pitches.push(s.pitches);
+            for (const pitch of s.pitches) {
+                if (pitch < 0 || pitch > 1) {
+                    log.warn("Yo pitch is not good", pitch);
+                }
+            }
             this.processed.timbres.push(s.timbres);
             this.processed.tonalEnergy.push(s.tonalityEnergy);
             this.processed.tonalRadius.push(s.tonalityRadius);
@@ -128,23 +133,31 @@ export default class Features {
                 Math.floor((segmentEnd + blurOutsideSampleDuration) / this.sampleDuration)
             );
 
-            // first sample in range
-            const firstSample = this.sampleStartDuration[sampleRangeStartIndex];
-            const sampleBlurEnd = firstSample[0] + firstSample[1] + blurOutsideSampleDuration;
-            const firstSampleOverlap = sampleBlurEnd - segment.start;
-            // firstSampleValue += firstSampleOverlap*segment.value;
-            this.addFeaturesScaled(sampleRangeStartIndex, segmentIndex, firstSampleOverlap);
-
-            // last sample in range
-            const sampleBlurStart = this.sampleStartDuration[sampleRangeEndIndex][0] - blurOutsideSampleDuration;
-            const lastSampleOverlap = segmentEnd - sampleBlurStart;
-            //lastSampleValue += lastSampleOverlap*segment.value;
-            this.addFeaturesScaled(sampleRangeEndIndex, segmentIndex, lastSampleOverlap);
-
-            // every middle sample
-            for (let i = sampleRangeStartIndex + 1; i < sampleRangeEndIndex; i++) {
-                //sampleValue += segment.duration*segment.value
-                this.addFeaturesScaled(i, segmentIndex, segment.duration);
+            const rangeSize = sampleRangeEndIndex - sampleRangeStartIndex;
+            if (rangeSize >= 1) {
+                // first sample in range
+                const firstSample = this.sampleStartDuration[sampleRangeStartIndex];
+                const sampleBlurEnd = firstSample[0] + firstSample[1] + blurOutsideSampleDuration;
+                const firstSampleOverlap = sampleBlurEnd - segment.start;
+                // firstSampleValue += firstSampleOverlap*segment.value;
+                this.addFeaturesScaled(sampleRangeStartIndex, segmentIndex, firstSampleOverlap);
+            }
+            if (rangeSize >= 1) {
+                // last sample in range
+                const sampleBlurStart = this.sampleStartDuration[sampleRangeEndIndex][0] - blurOutsideSampleDuration;
+                const lastSampleOverlap = segmentEnd - sampleBlurStart;
+                //lastSampleValue += lastSampleOverlap*segment.value;
+                this.addFeaturesScaled(sampleRangeEndIndex, segmentIndex, lastSampleOverlap);
+            }
+            if (rangeSize >= 2) {
+                // every middle sample
+                for (let i = sampleRangeStartIndex + 1; i < sampleRangeEndIndex; i++) {
+                    //sampleValue += segment.duration*segment.value
+                    this.addFeaturesScaled(i, segmentIndex, blurDuration);
+                }
+            }
+            if (rangeSize === 0) {
+                this.addFeaturesScaled(sampleRangeStartIndex, segmentIndex, segment.duration);
             }
         });
 

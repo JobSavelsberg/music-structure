@@ -1,6 +1,151 @@
 import * as sim from "./similarity";
 import * as audioUtil from "./audioUtil";
 import * as log from "../dev/log";
+import Matrix from "./dataStructures/Matrix";
+import HalfMatrix from "./dataStructures/HalfMatrix";
+import { types } from "util";
+
+export function calculateSSM(features, sampleDuration, allPitches, threshold) {
+    const ssm = new HalfMatrix({
+        size: features.length,
+        numberType: HalfMatrix.NumberType.UINT8,
+        sampleDuration: sampleDuration,
+        featureAmount: allPitches ? 12 : 1,
+    });
+    ssm.fillFeaturesNormalized(
+        (x, y, f) => Math.max(0, sim.cosineTransposed(features[x], features[y], f) - threshold) / (1 - threshold)
+    );
+    return ssm;
+}
+
+/**
+ * Diagonal smoothing of ssm, keeps paths but removes noise
+ * @param {*} ssm
+ * @param {*} options {`blurTime`: length in seconds, `blurLength`: length in samples, `tempoRatios`: array of ratios (e.g. [1.5] blurs paths that denote segment similarity with speed difference of 1.5)}
+ */
+export function enhanceSSM(ssm, options, allPitches) {
+    const blurLength = options.blurLength || Math.round(options.blurTime / ssm.sampleDuration) || 4;
+    const tempoRatios = options.tempoRatios || [1];
+
+    const enhancementPasses = [];
+    for (const tempoRatio of tempoRatios) {
+        //enhancementPasses.push(diagonalSmoothing(ssm, 1, blurLength, tempoRatio));
+        //enhancementPasses.push(diagonalSmoothing(ssm, -1, blurLength, tempoRatio));
+        enhancementPasses.push(triangleSmoothing(ssm, blurLength, tempoRatio));
+    }
+
+    const enhancedSSM = HalfMatrix.from(ssm);
+    enhancedSSM.fillByIndex((i) => {
+        let max = 0;
+        for (const enhancementPass of enhancementPasses) {
+            if (enhancementPass.data[i] > max) {
+                max = enhancementPass.data[i];
+            }
+        }
+        return max;
+    });
+    return enhancedSSM;
+}
+
+/**
+ * Performs Diagonal smoothing with 0 padding
+ * @param {*} ssm
+ a
+ * @param {*} options
+ */
+function diagonalSmoothing(ssm, direction, length, tempoRatio) {
+    log.debug("Diagonal Smoothing: dir", direction, "tempoRatio", tempoRatio);
+    if (direction !== 1 && direction !== -1) throw Error("Direction is not allowed");
+    const smoothedSSM = HalfMatrix.from(ssm);
+
+    const iEnd = direction * length;
+
+    const tempos = new Int8Array(length);
+    for (let i = 0; i < length; i++) {
+        tempos[i] = Math.round(i * tempoRatio);
+    }
+
+    smoothedSSM.fillFeatures((x, y, f) => {
+        let sum = 0;
+        for (let i = 0; i !== iEnd; i += direction) {
+            if (!ssm.hasCell(x + i, y + direction * tempos[i * direction])) break;
+            sum += ssm.getValue(x + i, y + direction * tempos[i * direction], f);
+        }
+        return sum / length;
+    });
+    return smoothedSSM;
+}
+
+function triangleSmoothing(ssm, length, tempoRatio) {
+    log.debug("Triangle Smoothing: length", length, "tempoRatio", tempoRatio);
+
+    const smoothedSSM = HalfMatrix.from(ssm);
+
+    const blur = Math.round(length / 2); //Math.floor(length / 2);
+    const total = Math.pow(blur + 1, 2);
+    const tempos = new Int8Array(blur * 2 + 1);
+    for (let i = -blur; i < 1 + blur; i++) {
+        tempos[i + blur] = Math.round(i * tempoRatio);
+    }
+
+    smoothedSSM.fillFeatures((x, y, f) => {
+        let sum = 0;
+        for (let i = -blur; i < 1 + blur; i++) {
+            if (ssm.hasCell(x + i, y + tempos[i + blur])) {
+                sum += ssm.getValue(x + i, y + tempos[i + blur], f) * (blur + 1 - Math.abs(i));
+            }
+        }
+        return sum / total;
+    });
+    return smoothedSSM;
+}
+
+export function makeTranspositionInvariant(ssm) {
+    const lengthWithoutFeatures = ssm.length / ssm.featureAmount;
+    const transpositionInvariantSSM = new HalfMatrix({ size: ssm.size, numberType: HalfMatrix.NumberType.UINT8 });
+
+    let i = 0;
+    while (i < lengthWithoutFeatures) {
+        let max = 0;
+        for (let f = 0; f < ssm.featureAmount; f++) {
+            if (ssm.data[i * ssm.featureAmount + f] > max) {
+                max = ssm.data[i * ssm.featureAmount + f];
+            }
+        }
+        transpositionInvariantSSM.data[i] = max;
+        i++;
+    }
+    return transpositionInvariantSSM;
+}
+
+export function autoThreshold(ssm, percentage) {
+    const typeScale = ssm.numberType.scale;
+    let frequencies = new Uint16Array(typeScale + 1);
+    ssm.forEach((cell) => {
+        frequencies[cell]++;
+    });
+
+    let percentagePosition = ssm.length - ssm.length * percentage;
+    let thresholdValue;
+    for (let i = 0; i < typeScale + 1; i++) {
+        percentagePosition -= frequencies[i];
+        if (percentagePosition <= 0) {
+            thresholdValue = i / typeScale;
+            break;
+        }
+    }
+    log.debug("Finding threshold with percentage", percentage, "got threshold: ", thresholdValue);
+
+    const thresholdSSM = HalfMatrix.from(ssm);
+    for (let i = 0; i < ssm.length; i++) {
+        thresholdSSM.data[i] =
+            Math.min(Math.max(ssm.data[i] / typeScale - thresholdValue, 0) / (1 - thresholdValue), 1) * typeScale;
+    }
+    return thresholdSSM;
+}
+/**
+ * OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD
+ */
 
 /**
  *
@@ -84,6 +229,9 @@ export function calculateTranspositionInvariant(ssmAllPitches) {
 
     return { transpositionInvariantSSM, intervalSSM };
 }
+
+export function enhanceSampled(ssm, blurTime, tempoRations = [1], allPitches = false) {}
+export function enhanceOneDirectionSampled(segmentStartDuration, ssm, blurTime, direction, tempoRatio, allPitches) {}
 
 export function enhance(segmentStartDuration, ssm, blurTime, tempoRatios = [1], allPitches = false) {
     log.debug("enhancing allpitches: ", allPitches);
@@ -209,6 +357,31 @@ export function enhanceOneDirection(segmentStartDuration, ssm, blurTime, directi
 }
 
 export function threshold(ssm, threshold) {
+    const thresholdSSM = new Uint8Array(ssm.length);
+    for (let i = 0; i < ssm.length; i++) {
+        thresholdSSM[i] = Math.min(Math.max(ssm[i] / 255.0 - threshold, 0) / (1 - threshold), 1) * 255;
+    }
+    return thresholdSSM;
+}
+
+export function autoThresholdOld(ssm, percentage) {
+    let frequencies = new Uint16Array(255);
+    for (let i = 0; i < ssm.length / 2; i++) {
+        frequencies[ssm[i * 2]]++;
+    }
+    log.debug(frequencies);
+    let percentagePosition = ssm.length / 2 - (ssm.length / 2) * percentage;
+    let threshold;
+    for (let i = 0; i < 255; i++) {
+        percentagePosition -= frequencies[i];
+        if (percentagePosition <= 0) {
+            threshold = i / 255.0;
+            break;
+        }
+    }
+    log.debug(percentagePosition);
+    log.debug("Finding threshold with percentage", percentage, "got threshold: ", threshold);
+
     const thresholdSSM = new Uint8Array(ssm.length);
     for (let i = 0; i < ssm.length; i++) {
         thresholdSSM[i] = Math.min(Math.max(ssm[i] / 255.0 - threshold, 0) / (1 - threshold), 1) * 255;

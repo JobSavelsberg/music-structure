@@ -1,6 +1,8 @@
 import * as log from "../dev/log";
 import * as audioUtil from "./audioUtil";
 
+const tryRemovePercussion = false;
+
 export default class Segment {
     segment = null;
     start = 0;
@@ -46,12 +48,13 @@ export default class Segment {
         const minDuration = 0.2;
         const decay = 0.5;
         const shortness = this.duration < minDuration ? 1 : decay - (this.duration - 0.15);
-        this.percussiony = Math.min(1, (1 - this.tonalityRadius) * this.tonalityEnergy * 2) * shortness;
+        this.percussiony = Math.max(Math.min(1, (1 - this.tonalityRadius) * this.tonalityEnergy * 2) * shortness, 0);
         this.processedPitch = true;
     }
 
     processedPitchSmooth = false;
     processPitchSmooth(prevSegment, nextSegment) {
+        if (!tryRemovePercussion) return;
         if (this.processedPitchSmooth) return;
         if (!this.processedPitch) throw Error("processed pitchSmooth called before setting initial pitch");
 
