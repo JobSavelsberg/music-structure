@@ -5,7 +5,7 @@ export const circleOfFifths = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5]; // Startin
 export const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 //https://www.vectorstock.com/royalty-free-vector/color-wheel-spectrum-scheme-selection-color-vector-25483441
-export const noteColor = d3
+export const colorWheel = d3
     .scaleLinear()
     .domain([
         0,
@@ -69,7 +69,7 @@ export function tonalVectorColor(pitches) {
     const [angle, radius, energy] = tonality(pitches);
 
     //const color = d3.color(d3.interpolateSinebow((angle+OFFSET)%1.0));
-    const color = d3.hsl(noteColor(angle));
+    const color = d3.hsl(colorWheel(angle));
     const saturation = Math.min((radius * 3) / (energy * 12), 1); // 3 because chord usually minimally 3 tones
     color.s = saturation;
     return color.hex();

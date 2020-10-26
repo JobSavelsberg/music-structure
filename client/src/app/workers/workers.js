@@ -59,6 +59,7 @@ export async function startSSM(
                 result.transpositionInvariantSSM = new HalfMatrix(result.transpositionInvariantSSM);
                 result.scoreMatrix = new Matrix(result.scoreMatrix);
                 result.scapePlot = new HalfMatrix(result.scapePlot);
+                result.scapePlotAnchorColor = new Float32Array(result.scapePlotAnchorColor);
                 resolve(result);
             }
         };

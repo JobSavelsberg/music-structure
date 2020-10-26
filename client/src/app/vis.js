@@ -2,6 +2,8 @@ import * as log from "../dev/log";
 import * as d3 from "d3";
 import * as audioUtil from "./audioUtil";
 import * as Track from "./Track";
+import { euclidian } from "./similarity";
+import { loadavg } from "os";
 
 export const zeroOneColor = d3
     .scaleSequential()
@@ -181,8 +183,41 @@ export function renderWaveform(ctx, width, height, track, options = {}) {
     }
 }
 
+export function drawAnchorPoints(track, ctx, canvasWidth) {
+    const ancholor = track.scapePlotAnchorColor;
+    log.debug(ancholor);
+    const anchorAmount = ancholor.length / 5;
+    const halfWidth = canvasWidth / 2;
+    const scale = halfWidth * 0.95;
+    const size = 6;
+    const scaleFromTopLeft = 0.35;
+    for (let i = 0; i < anchorAmount; i++) {
+        const anchorX = ancholor[i * 5 + 2];
+        const anchorY = ancholor[i * 5 + 3];
+        const anchorAngle = ancholor[i * 5 + 4];
+
+        const color = d3.hsl(d3.interpolateSinebow(anchorAngle));
+        //const color = d3.hsl(audioUtil.colorWheel(anchorAngle));
+        color.l = 0.6;
+        ctx.fillStyle = color.hex();
+
+        const x = halfWidth + anchorX * scale;
+        const y = halfWidth + anchorY * scale;
+        //log.debug(x, y);
+        ctx.fillRect(
+            (x - size / 2) * scaleFromTopLeft,
+            (y - size / 2) * scaleFromTopLeft,
+            size * scaleFromTopLeft,
+            size * scaleFromTopLeft
+        );
+    }
+}
+
 export function drawScapePlot(track, ctx, canvasWidth) {
+    ctx.clearRect(0, 0, canvasWidth, canvasWidth);
+    // eslint-disable-next-line no-unreachable
     const scapePlot = track.scapePlot;
+    const scapePlotAnchorColor = track.scapePlotAnchorColor;
     const minSize = Track.SPminSize;
     const stepSize = Track.SPstepSize;
     const sampleAmount = track.features.sampleAmount;
@@ -192,29 +227,73 @@ export function drawScapePlot(track, ctx, canvasWidth) {
     const sqrt2 = Math.sqrt(2);
 
     scapePlot.forEachCell((x, y, value) => {
-        ctx.fillStyle = zeroOneColor(value);
+        //ctx.fillStyle = greyScaleColor(value);
+
+        ctx.fillStyle = anchorColorLerp(x, y, scapePlotAnchorColor, value);
 
         const start = x * stepSize;
         const size = (scapePlot.size - 1 - y) * stepSize;
 
         const rectX = start + size / 2;
-        const rectY = sampleAmount - size-minSize;
+        const rectY = sampleAmount - size - minSize;
         const width = stepSize;
         const height = stepSize;
         ctx.fillRect(rectX * scale, rectY * scale, width * scale * 1.1, height * scale * 1.1);
     });
-    /*
-    for (let size = minSize; size < sampleAmount; size += stepSize) {
-        for (let start = 0; start < sampleAmount - size; start += stepSize) {
-            const value = scapePlot.getValue(Math.floor(start / stepSize), Math.floor(size / stepSize));
-            ctx.fillStyle = zeroOneColor(value);
-            currentCell++;
+    drawAnchorPoints(track, ctx, canvasWidth);
+}
 
-            const x = start + size / 2 - minSize / 2;
-            const y = sampleAmount - size;
-            const width = stepSize;
-            const height = stepSize;
-            ctx.fillRect(x * scale, y * scale, width * scale * 1.1, height * scale * 1.1);
+function anchorColorLerp(cellX, cellY, ancholor, value) {
+    const anchorAmount = ancholor.length / 5;
+
+    let aDist = Infinity;
+    let aAngle;
+    let bDist = Infinity;
+    let bAngle;
+    for (let i = 0; i < anchorAmount; i++) {
+        const anchorX = ancholor[i * 5];
+        const anchorY = ancholor[i * 5 + 1];
+        const anchorAngle = ancholor[i * 5 + 4];
+        const dist = Math.pow(anchorX - cellX, 2) + Math.pow(anchorY - cellY, 2);
+        if (dist < aDist || dist < bDist) {
+            if (aDist > bDist) {
+                aDist = dist;
+                aAngle = anchorAngle;
+            } else {
+                bDist = dist;
+                bAngle = anchorAngle;
+            }
         }
-    }*/
+    }
+    const closenessToB = aDist / (aDist + bDist);
+    const angle = angleLerp(aAngle, bAngle, closenessToB);
+    //const color = d3.hsl(audioUtil.colorWheel(angle));
+    const color = d3.hsl(d3.interpolateSinebow(angle));
+    color.l = value * 0.9; // values that are 1 need to be a little darker for the color to
+    color.s = 0.3 + value / 2;
+    //const fitnessColor = d3.hsl(zeroOneColor(Math.pow(value, 1.5)));
+    //fitnessColor.l = value < 0.5 ? fitnessColor.l * (value / 0.5) : fitnessColor.l;
+    return color.hex();
+}
+
+function angleLerp(angleA, angleB, val) {
+    if (angleB > angleA) {
+        const distClock = angleB - angleA;
+        const distAntiClock = angleA + (1 - angleB);
+        if (distClock < distAntiClock) {
+            return (angleA + distClock * val) % 1;
+        } else {
+            return (angleB + distAntiClock * (1 - val)) % 1;
+        }
+    } else if (angleA > angleB) {
+        const distClock = angleA - angleB;
+        const distAntiClock = angleB + (1 - angleA);
+        if (distClock < distAntiClock) {
+            return (angleB + distClock * (1 - val)) % 1;
+        } else {
+            return (angleA + distAntiClock * val) % 1;
+        }
+    } else {
+        return angleA;
+    }
 }

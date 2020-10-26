@@ -8,7 +8,7 @@ export function extractPathFamily(ssm, sampleAmount, start, end) {
     const P = computeOptimalPathFamily(D, width, height);
 }
 
-export function computeAccumulatedScoreMatrix(ssm, sampleAmount, start, end) {
+export function computeAccumulatedScoreMatrix(ssm, sampleAmount, start, end, D) {
     if (start < 0) log.error("start below 0: ", start);
     if (end >= sampleAmount) log.error("end above sampleAmount: ", sampleAmount, "end", end);
 
@@ -17,7 +17,12 @@ export function computeAccumulatedScoreMatrix(ssm, sampleAmount, start, end) {
     const width = length + 1;
     const height = sampleAmount;
     // accumulatedScoreMatrix length + 1 for elevator
-    const D = new Float32Array(height * width).fill(Number.NEGATIVE_INFINITY);
+    if (!D) {
+        D = new Float32Array(height * width).fill(Number.NEGATIVE_INFINITY);
+    }
+    for (let i = 0; i < width + 1; i++) {
+        D[i] = Number.NEGATIVE_INFINITY;
+    }
 
     const penalty = -2;
     const penalize = (value) => {
@@ -144,17 +149,34 @@ export function computeFitness(pathFamily, score, sampleAmount, width) {
 
 export function computeInducedCoverage(pathFamily) {
     const pathAmount = pathFamily.length;
-
     let coverage = 0;
     if (pathAmount > 0) {
         for (let p = 0; p < pathAmount; p++) {
-            const pathStartY = pathFamily[p][1];
-            const pathEndY = pathFamily[p][pathFamily[p].length - 1];
+            // paths stored in reverse due to backtracking
+            const pathEndY = pathFamily[p][1];
+            const pathStartY = pathFamily[p][pathFamily[p].length - 1];
             coverage += Math.abs(pathEndY - pathStartY);
         }
     }
 
     return coverage;
+}
+
+export function getInducedSegments(pathFamily) {
+    const pathAmount = pathFamily.length;
+    const inducedSegments = new Uint16Array(pathAmount * 2);
+
+    if (pathAmount > 0) {
+        for (let p = 0; p < pathAmount; p++) {
+            // paths stored in reverse due to backtracking
+            const pathEndY = pathFamily[p][1];
+            const pathStartY = pathFamily[p][pathFamily[p].length - 1];
+            inducedSegments[p * 2] = pathStartY;
+            inducedSegments[p * 2 + 1] = pathEndY;
+        }
+    }
+
+    return inducedSegments;
 }
 
 export function visualizationMatrix(ssm, sampleAmount, start, end) {
@@ -211,229 +233,35 @@ export function visualizationMatrix(ssm, sampleAmount, start, end) {
     return visualizationMatrix;
 }
 
-// OLD OLD OLD OLD
+/**
+ * Similar if they are aproximately repetitions of each other (overlap)
+ * @param inducedSegmentsA in the form of a flat Uint16Array with pairs of start and end position of segments
+ */
+export function segmentDistance(inducedSegmentsA, inducedSegmentsB) {
+    let maxSimilarity = 0;
+    for (let a = 0; a < inducedSegmentsA.length; a += 2) {
+        for (let b = 0; b < inducedSegmentsB.length; b += 2) {
+            const startA = inducedSegmentsA[a];
+            const endA = inducedSegmentsA[a + 1];
+            const startB = inducedSegmentsB[b];
+            const endB = inducedSegmentsB[b + 1];
 
-export function calculateAccumulatedScoreMatrix(ssm, sampleAmount, start, end) {
-    const duration = end - start;
-    const accumulatedMatrix = new Float32Array(sampleAmount * duration);
+            const disjoint = endA <= startB || endB <= startA;
+            if (disjoint) continue;
 
-    accumulatedMatrix[0] = 0; // start of elevator is 0
-    accumulatedMatrix[1] = ssm.data[1] / 255.0; // cell to the right of first elevator cell is score of that cell
+            const smallestStart = Math.min(startA, startB);
+            const largestEnd = Math.max(endA, endB);
+            const union = largestEnd - smallestStart;
 
-    // Fill top with minus infinity (force to come from elevator)
-    for (let x = 2; x < duration; x++) {
-        accumulatedMatrix[x] = Number.NEGATIVE_INFINITY; //TODO: find way to make negative infinity
-        accumulatedMatrix[1 * duration + x] = Number.NEGATIVE_INFINITY;
-    }
+            const smallestEnd = Math.min(endA, endB);
+            const largestStart = Math.max(startA, startB);
+            const overlap = smallestEnd - largestStart;
+            const similarity = overlap / union;
 
-    // Going from top left to bottom right, we have moves that go over 2 cells so we need to start at y and x =2
-    for (let y = 1; y < sampleAmount; y++) {
-        // find x = 0 (elevator) and x=1 (coming off the elevator) value
-        const previousElevatorCell = accumulatedMatrix[(y - 1) * duration + 0];
-        const closingPath = accumulatedMatrix[y * duration - 1];
-        const newElevatorValue = Math.max(previousElevatorCell, closingPath);
-        accumulatedMatrix[y * duration + 0] = newElevatorValue;
-        let score = ssm.data[y * sampleAmount + 1] / 255.0;
-        score = score === 0 ? -3 : score;
-
-        accumulatedMatrix[y * duration + 1] = newElevatorValue + score;
-
-        if (y >= 2) {
-            for (let x = 2; x < duration; x++) {
-                let score = ssm.data[y * sampleAmount + start + x] / 255.0;
-                score = score === 0 ? -2 : score;
-                const diag = accumulatedMatrix[(y - 1) * duration + x - 1];
-                const left = accumulatedMatrix[(y - 1) * duration + x - 2]; // still diagonal, like a chess knight move
-                const top = accumulatedMatrix[(y - 2) * duration + x - 1];
-
-                accumulatedMatrix[y * duration + x] = score + Math.max(diag, left, top);
+            if (similarity > maxSimilarity) {
+                maxSimilarity = similarity;
             }
         }
     }
-    return accumulatedMatrix;
-}
-
-export function calculateAccumulatedScoreMatrixDiagonal(ssm, sampleAmount, start, end) {
-    const duration = end - start;
-    const accumulatedMatrix = new Float32Array(sampleAmount * duration);
-
-    accumulatedMatrix[0] = 0; // start of elevator is 0
-    accumulatedMatrix[1] = ssm.data[1] / 255.0; // cell to the right of first elevator cell is score of that cell
-
-    // Fill top with minus infinity (force to come from elevator)
-    for (let x = 2; x < duration; x++) {
-        accumulatedMatrix[x] = Number.NEGATIVE_INFINITY; //TODO: find way to make negative infinity
-        accumulatedMatrix[1 * duration + x] = Number.NEGATIVE_INFINITY;
-    }
-
-    // Going from top left to bottom right, we have moves that go over 2 cells so we need to start at y and x =2
-    for (let y = 1; y < sampleAmount; y++) {
-        // find x = 0 (elevator) and x=1 (coming off the elevator) value
-        const previousElevatorCell = accumulatedMatrix[(y - 1) * duration + 0];
-        const closingPath = accumulatedMatrix[y * duration - 1];
-        const newElevatorValue = Math.max(previousElevatorCell, closingPath);
-        accumulatedMatrix[y * duration + 0] = newElevatorValue;
-        let score = ssm.data[y * sampleAmount + 1] / 255.0;
-        score = score === 0 ? -3 : score;
-
-        accumulatedMatrix[y * duration + 1] = newElevatorValue + score;
-
-        if (y >= 2) {
-            for (let x = 2; x < duration; x++) {
-                let score = ssm.data[y * sampleAmount + start + x] / 255.0;
-                score = score === 0 ? -2 : score;
-                const diag = accumulatedMatrix[(y - 1) * duration + x - 1];
-
-                accumulatedMatrix[y * duration + x] = score + diag;
-            }
-        }
-    }
-    return accumulatedMatrix;
-}
-
-export function backtracking(dtw, sampleAmount) {
-    const duration = dtw.length / sampleAmount;
-    const paths = [];
-
-    let maxScore;
-    let y = sampleAmount - 1; // All the way at the end of the track
-    const elevatorEnd = dtw[(sampleAmount - 1) * duration];
-    const endEnd = dtw[(sampleAmount - 1) * duration + duration];
-    let x;
-    if (endEnd > elevatorEnd) {
-        x = duration - 1;
-        paths.push([[x, y]]);
-        maxScore = endEnd;
-    } else {
-        x = 0;
-        maxScore = elevatorEnd;
-    }
-
-    while (y > 1) {
-        if (x === 0) {
-            // in elevator down
-            y -= 1;
-
-            // we can go down in elevator
-            const downElevator = dtw[(y - 1) * duration + 0];
-            // we can have path on opposite side
-            const goOpposite = dtw[(y - 1) * duration + duration - 1];
-            x = downElevator > goOpposite ? 0 : duration - 1;
-            if (goOpposite > downElevator) {
-                x = duration - 1;
-                paths.push([[x, y]]);
-            } else {
-                x = 0;
-            }
-        } else {
-            // take a normal backward step
-            const diag = dtw[(y - 1) * duration + x - 1];
-            const left = dtw[(y - 1) * duration + x - 2];
-            const top = dtw[(y - 2) * duration + x - 1];
-            if (left > diag && left > top) {
-                y -= 1;
-                x -= 2;
-                paths[paths.length - 1].push([x, y]);
-            } else if (top > diag && top > left) {
-                y -= 2;
-                x -= 1;
-                paths[paths.length - 1].push([x, y]);
-            } else {
-                // go diagonally
-                y -= 1;
-                x -= 1;
-                paths[paths.length - 1].push([x, y]);
-            }
-        }
-    }
-    const totalPathlength = paths.reduce((length, path) => length + path.length, 0);
-    const normalizedScore = (maxScore - duration) / totalPathlength;
-
-    let coverage = 0;
-    paths.forEach((path) => {
-        const pathStartY = path[0][1];
-        const pathEndY = path[path.length - 1][1];
-        coverage += Math.abs(pathEndY - pathStartY);
-    });
-    const normalizedCoverage = (coverage - duration) / sampleAmount;
-
-    // harmonic mean
-    const fitness = (2 * (normalizedScore * normalizedCoverage)) / (normalizedScore + normalizedCoverage);
-    return { paths, normalizedScore, normalizedCoverage, fitness };
-}
-
-export function backtrackingDiagonal(dtw, sampleAmount) {
-    const duration = dtw.length / sampleAmount;
-    const paths = [];
-
-    let maxScore;
-    let y = sampleAmount - 1; // All the way at the end of the track
-    const elevatorEnd = dtw[(sampleAmount - 1) * duration];
-    const endEnd = dtw[(sampleAmount - 1) * duration + duration];
-    let x;
-    if (endEnd > elevatorEnd) {
-        x = duration - 1;
-        paths.push([[x, y]]);
-        maxScore = endEnd;
-    } else {
-        x = 0;
-        maxScore = elevatorEnd;
-    }
-
-    while (y > 1) {
-        if (x === 0) {
-            // in elevator down
-            y -= 1;
-
-            // we can go down in elevator
-            const downElevator = dtw[(y - 1) * duration + 0];
-            // we can have path on opposite side
-            const goOpposite = dtw[(y - 1) * duration + duration - 1];
-            x = downElevator > goOpposite ? 0 : duration - 1;
-            if (goOpposite > downElevator) {
-                x = duration - 1;
-                paths.push([[x, y]]);
-            } else {
-                x = 0;
-            }
-        } else {
-            // go diagonally
-            y -= 1;
-            x -= 1;
-            paths[paths.length - 1].push([x, y]);
-        }
-    }
-    const totalPathlength = paths.reduce((length, path) => length + path.length, 0);
-    const normalizedScore = (maxScore - duration) / totalPathlength;
-
-    let coverage = 0;
-    paths.forEach((path) => {
-        const pathStartY = path[0][1];
-        const pathEndY = path[path.length - 1][1];
-        coverage += Math.abs(pathEndY - pathStartY);
-    });
-    const normalizedCoverage = (coverage - duration) / sampleAmount;
-
-    // harmonic mean
-    const fitness = (2 * (normalizedScore * normalizedCoverage)) / (normalizedScore + normalizedCoverage);
-    return { paths, normalizedScore, normalizedCoverage, fitness };
-}
-
-export function combine(pitchMatrix, scoreMatrix, paths, sampleAmount, start, end) {
-    const duration = end - start;
-    const combinedMatrix = new Float32Array(scoreMatrix.length * 3);
-    for (let y = 0; y < sampleAmount; y++) {
-        for (let x = 0; x < duration; x++) {
-            combinedMatrix[y * duration * 3 + x] = (pitchMatrix[y * sampleAmount + start + x] / 255.0) * duration;
-            combinedMatrix[y * duration * 3 + duration + x] = scoreMatrix[y * duration + x];
-            combinedMatrix[y * duration * 3 + duration * 2 + x] = 0;
-        }
-    }
-    paths.forEach((path) => {
-        for (let i = 0; i < path.length; i++) {
-            combinedMatrix[path[i][1] * duration * 3 + duration * 2 + path[i][0]] = 255;
-        }
-    });
-
-    return combinedMatrix;
+    return 1 - maxSimilarity;
 }

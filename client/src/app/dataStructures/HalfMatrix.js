@@ -41,6 +41,8 @@ export default class HalfMatrix {
         return new HalfMatrix({ size: matrix.size, featureAmount, numberType, sampleDuration });
     }
 
+    getCellFromIndex(index) {}
+
     hasCell(x, y) {
         return x <= y && y < this.size && x >= 0 && y >= 0;
     }
@@ -190,5 +192,17 @@ export default class HalfMatrix {
             featureAmount: this.featureAmount,
             sampleDuration: this.sampleDuration,
         };
+    }
+
+    getNestedArray() {
+        const nestedArray = new Array(this.size);
+        for (let y = 0; y < this.size; y++) {
+            nestedArray[y] = new Array(this.size);
+            for (let x = 0; x < this.size; x++) {
+                nestedArray[y][x] = this.getValueMirrored(x, y);
+            }
+        }
+
+        return nestedArray;
     }
 }

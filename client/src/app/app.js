@@ -26,18 +26,13 @@ export async function initialize() {
         .catch((err) => {
             router.push("/");
         });
-    /*spotify
-        .getMyTopTracks({ limit: 50, offset: 0 })
-        .then((tracks) => {
-            loadTracksFromSpotify(tracks.items, false);
-            selectTrackAtIndex(0);
-        })
-        .catch((err) => log.error(err));*/
     spotify.getPlaylistTracks("34wIIW2zm3vw5ZRqO8dHi0", {}, (error, result) => {
         if (error) log.error(error);
-        const tracks = result.items.map((item) => item.track);
-        loadTracksFromSpotify(tracks, false);
-        selectTrackAtIndex(0);
+        const playlistTracks = result.items.map((item) => item.track);
+        spotify.getMyTopTracks({ limit: 50, offset: 0 }).then((topTracks) => {
+            loadTracksFromSpotify([...playlistTracks, ...topTracks.items], false);
+            selectTrackAtIndex(0);
+        });
     });
 }
 

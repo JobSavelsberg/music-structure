@@ -1,8 +1,11 @@
-import { max } from "d3";
+const d3 = require("d3");
+import * as audioUtil from "./audioUtil";
+
 import * as log from "../dev/log";
 import HalfMatrix from "./dataStructures/HalfMatrix";
 import Matrix from "./dataStructures/Matrix";
 import * as pathExtraction from "./pathExtraction";
+import * as mds from "./mds";
 
 export function create(fullSSM, sampleAmount, minSize, step) {
     log.debug("calculating scape plot");
@@ -11,18 +14,24 @@ export function create(fullSSM, sampleAmount, minSize, step) {
 
     const fitnessScapePlot = new HalfMatrix({ size: plotSize, numberType: HalfMatrix.NumberType.FLOAT32 });
 
+    const scoreMatrix = new Float32Array(sampleAmount * sampleAmount).fill(Number.NEGATIVE_INFINITY);
+
     let maxVal = 0;
     log.debug("SPCreate, sampleAmount", sampleAmount, "size", plotSize, "minSize", minSize, "step", step);
     fitnessScapePlot.fill((x, y) => {
+        if (y < plotSize / 2) {
+            return 0;
+        }
         const segmentSize = (plotSize - y) * step + minSize;
         const segmentStart = x * step;
-        const { D, width, height, score } = pathExtraction.computeAccumulatedScoreMatrix(
+        const { width, height, score } = pathExtraction.computeAccumulatedScoreMatrix(
             fullSSM,
             sampleAmount,
             segmentStart,
-            segmentStart + segmentSize - 1
+            segmentStart + segmentSize - 1,
+            scoreMatrix
         );
-        const pathFamily = pathExtraction.computeOptimalPathFamily(D, width, height);
+        const pathFamily = pathExtraction.computeOptimalPathFamily(scoreMatrix, width, height);
         const {
             fitness,
             normalizedScore,
@@ -34,7 +43,7 @@ export function create(fullSSM, sampleAmount, minSize, step) {
         if (val > maxVal) {
             maxVal = val;
         }
-        return val;
+        return Math.max(0, val);
     });
 
     fitnessScapePlot.divide(maxVal);
@@ -45,29 +54,47 @@ export function create(fullSSM, sampleAmount, minSize, step) {
  * Not inmplemented
  * @param {*} scapePlot
  */
-export function sampleAnchorPointsMax(scapePlot, maxAmount) {
-    const frequencies = new Uint16Array(256).fill(0);
-    const indexMap = new Array(256);
-    for (let i = 0; i < 256; i++) {
+export function sampleAnchorPointsMax(scapePlot, maxAmount, minSpacing, minSize, minValue) {
+    const maxY = scapePlot.size;
+    const quant = 20;
+    const indexMap = new Array(quant + 1);
+    for (let i = 0; i < quant + 1; i++) {
         indexMap[i] = [];
     }
-    const indexesSortedByFitness = new Uint16Array(scapePlot.length);
+    const anchorPoints = new Uint16Array(maxAmount * 2);
 
-    scapePlot.forEach((val, index) => {
-        indexMap[Math.floor(val * 255) || 0].push(index);
+    scapePlot.forEachCell((x, y, val) => {
+        if (maxY - 1 - y >= minSize && val > minValue) {
+            indexMap[Math.floor(val * quant) || 0].push(x, y);
+        }
     });
+    let anchorPointAmount = 0;
+    let i = quant;
+    while (anchorPointAmount < maxAmount) {
+        while (indexMap[i].length <= 0) {
+            i--;
+            if (i < 0) {
+                break;
+            }
+        }
+        if (i < 0) break;
+        const anchorPointY = indexMap[i].pop();
+        const anchorPointX = indexMap[i].pop();
+        anchorPoints[anchorPointAmount * 2] = anchorPointX;
+        anchorPoints[anchorPointAmount * 2 + 1] = anchorPointY;
+        anchorPointAmount++;
 
-    let pointsLeft = maxAmount;
-    while (pointsLeft > 0) {
-        for (let i = 255; i >= 0; i--) {
-            const anchorPointIndex = indexMap[i].pop();
-            scapePlot.forEach;
+        for (let j = quant; j >= 0; j--) {
+            for (let k = indexMap[j].length - 2; k >= 0; k -= 2) {
+                const x = indexMap[j][k];
+                const y = indexMap[j][k + 1];
+                if (Math.sqrt(Math.pow(anchorPointX - x, 2) + Math.pow(anchorPointY - y, 2)) < minSpacing) {
+                    indexMap[j].splice(k, 2);
+                }
+            }
         }
     }
-
-    log.debug(indexMap);
-    const anchorPoints = [];
-    throw Error("Not Implemented");
+    return { anchorPoints, anchorPointAmount };
 }
 
 /**
@@ -107,4 +134,67 @@ export function sampleAnchorPoints(scapePlot, amount, minValue, minSize) {
     });
 
     return anchorPoints;
+}
+
+/**
+ *
+ * @param {*} fullSSM
+ * @param {*} sampleAmount
+ * @param {*} minSize
+ * @param {*} step
+ * @param {*} anchorPoints
+ * @param {*} anchorPointAmount
+ * @returns a flat array with values (x, y, angle)
+ */
+export function mapColors(fullSSM, sampleAmount, minSize, step, anchorPoints, anchorPointAmount) {
+    const plotSize = Math.floor((sampleAmount - minSize) / step);
+
+    const distanceMatrix = new HalfMatrix({ size: anchorPointAmount, numberType: HalfMatrix.NumberType.FLOAT32 });
+
+    const anchorPointInducedSegments = [];
+
+    for (let i = 0; i < anchorPointAmount; i++) {
+        const x = anchorPoints[i * 2];
+        const y = anchorPoints[i * 2 + 1];
+
+        const segmentSize = (plotSize - y) * step + minSize;
+        const segmentStart = x * step;
+        const { D, width, height, score } = pathExtraction.computeAccumulatedScoreMatrix(
+            fullSSM,
+            sampleAmount,
+            segmentStart,
+            segmentStart + segmentSize - 1
+        );
+        const pathFamily = pathExtraction.computeOptimalPathFamily(D, width, height);
+        const inducedSegments = pathExtraction.getInducedSegments(pathFamily);
+        anchorPointInducedSegments.push(inducedSegments);
+    }
+
+    distanceMatrix.fill((x, y) => {
+        return pathExtraction.segmentDistance(anchorPointInducedSegments[x], anchorPointInducedSegments[y]);
+    });
+
+    const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
+
+    const anchorPointColor = new Float32Array(anchorPointAmount * 5);
+    const thumbnailColor = 0.1;
+    let angleOffset = 0;
+    for (let i = 0; i < anchorPointAmount; i++) {
+        const x = anchorPoints[i * 2];
+        const y = anchorPoints[i * 2 + 1];
+        anchorPointColor[i * 5] = x;
+        anchorPointColor[i * 5 + 1] = y;
+        anchorPointColor[i * 5 + 2] = MdsCoordinates[i][0];
+        anchorPointColor[i * 5 + 3] = MdsCoordinates[i][1];
+        let angle = Math.atan2(MdsCoordinates[i][1], MdsCoordinates[i][0]) / (2 * Math.PI) + angleOffset;
+        angle = angle < 0 ? 1 + angle : angle;
+        if (i === 0) {
+            angleOffset = -angle;
+            angle = 0;
+        }
+        anchorPointColor[i * 5 + 4] = angle + (thumbnailColor % 1);
+    }
+
+    log.debug(anchorPointColor);
+    return anchorPointColor;
 }

@@ -54,7 +54,7 @@ export default {
             drawLoop: null,
             zoomed: false,
             selectedTab: 0,
-            ssmReady: false,
+            readyForVis: false,
 
             ssmBuffers: null,
         };
@@ -91,7 +91,7 @@ export default {
             this.applyRenderMode();
         },
         selectedTab() {
-            if (this.ssmReady) {
+            if (this.readyForVis) {
                 this.setSSM();
                 this.drawSSM();
             }
@@ -100,7 +100,8 @@ export default {
     mounted() {
         this.webGLSetup();
         log.debug("SET UP WEBGL");
-        window.eventBus.$on("ssmDone", () => {
+        window.eventBus.$on("readyForVis", () => {
+            log.debug("Visualization Vue got readyForVis");
             if (!this.track) log.error("SSM done but track does not exist");
 
             this.ssmBuffers = new Array(this.track.matrixes.length + 1);
@@ -115,7 +116,7 @@ export default {
                 }
             });
 
-            this.ssmReady = true;
+            this.readyForVis = true;
 
             this.setSSM();
             this.applyRenderMode();

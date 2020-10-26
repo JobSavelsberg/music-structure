@@ -12,11 +12,17 @@ import * as scapePlot from "./scapePlot";
 
 const GAMMA = 1.7;
 const CLUSTERAMOUNT = 10;
-const samples = 200;
+const samples = 400;
 const sampleDuration = 0.5;
 const sampleBlur = 1.5; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
+
+const blurTime = 14;
+const threshold = 0.65;
+const thresholdPercentage = 0.2;
+const tempoRatios = [0.66, 0.81, 1, 1.22, 1.5];
+
 export const SPminSize = 1; // Minimal size of segment in scape plot
-export const SPstepSize = 1; // Size of the step between segment start and size in scape plot
+export const SPstepSize = 4; // Size of the step between segment start and size in scape plot
 
 export default class Track {
     trackData = null;
@@ -26,6 +32,7 @@ export default class Track {
     intervalSSM = null;
     scoreMatrix = null;
     scapePlot = null;
+    scapePlotAnchorColor = null;
 
     features;
 
@@ -66,14 +73,13 @@ export default class Track {
                 features.sampleDuration,
                 this.getSegmentStartDuration(),
                 {
-                    blurTime: 8,
-                    threshold: 0.65,
-                    thresholdPercentage: 0.2,
-                    tempoRatios: [0.66, 0.81, 1, 1.22, 1.5],
-                    //tempoRatios: [1],
+                    blurTime,
+                    threshold,
+                    thresholdPercentage,
+                    tempoRatios,
                     allPitches: this.allPitches,
-                    SPminSize: SPminSize,
-                    SPstepSize: SPstepSize,
+                    SPminSize,
+                    SPstepSize,
                 }
             )
             .then((result) => {
@@ -88,8 +94,9 @@ export default class Track {
                     //this.SSMs.push({ name: "Interval SSM", ssm: result.intervalSSM, color: true });
                     this.matrixes.push({ name: "Score Matrix", ssm: result.scoreMatrix });
                     this.scapePlot = result.scapePlot;
+                    this.scapePlotAnchorColor = result.scapePlotAnchorColor;
                 }
-                window.eventBus.$emit("ssmDone");
+                window.eventBus.$emit("readyForVis");
             });
 
         /*const nonworkerTime = performance.now();
@@ -125,7 +132,7 @@ export default class Track {
         );
 
         this.matrixes.push({ name: "Score Matrix", ssm: scoreMatrix });
-        window.eventBus.$emit("ssmDone");
+        window.eventBus.$emit("readyForVis");
     }
 
     cluster() {
@@ -201,13 +208,16 @@ export default class Track {
     hasAnalysis() {
         return this.analysisData !== null && this.features.segments.length > 0;
     }
+    hasVisualization() {
+        return this.matrixes.length > 0;
+    }
     getAnalysis() {
         return this.analysisData;
     }
     reload() {
         log.debug("Reloading track");
-        if (this.matrixes.rawSSM) {
-            window.setTimeout(() => window.eventBus.$emit("ssmDone"), 0);
+        if (this.hasVisualization()) {
+            window.setTimeout(() => window.eventBus.$emit("readyForVis"), 0);
         }
     }
     setAnalysis(analysis) {

@@ -32,7 +32,34 @@ addEventListener("message", (event) => {
     const SP = scapePlot.create(fullTranspositionInvariant, sampleAmount, data.SPminSize, data.SPstepSize);
     log.debug("ScapePlot Time", performance.now() - startTime);
 
-    scapePlot.sampleAnchorPoints(SP, 300, 0.1, 3);
+    startTime = performance.now();
+    const anchorNeighborhoodSize = 7 / data.SPstepSize;
+    const anchorMinSize = Math.max(1, 7 - data.SPminSize);
+    const { anchorPoints, anchorPointAmount } = scapePlot.sampleAnchorPointsMax(
+        SP,
+        250,
+        anchorNeighborhoodSize,
+        anchorMinSize,
+        0.1
+    );
+    log.debug("anchorPoints Time", performance.now() - startTime);
+    log.debug("AnchorPoint Amount: ", anchorPointAmount);
+
+    //SP.multiply(0.9);
+    for (let i = 0; i < anchorPointAmount; i++) {
+        //SP.setValue(anchorPoints[i * 2], anchorPoints[i * 2 + 1], 1);
+    }
+
+    startTime = performance.now();
+    const SPAnchorColor = scapePlot.mapColors(
+        fullTranspositionInvariant,
+        sampleAmount,
+        data.SPminSize,
+        data.SPstepSize,
+        anchorPoints,
+        anchorPointAmount
+    );
+    log.debug("colorMap Time", performance.now() - startTime);
 
     postMessage({
         rawSSM: ssm.getBuffer(),
@@ -40,6 +67,7 @@ addEventListener("message", (event) => {
         transpositionInvariantSSM: transpositionInvariant.getBuffer(),
         scoreMatrix: scoreMatrix.getBuffer(),
         scapePlot: SP.getBuffer(),
+        scapePlotAnchorColor: SPAnchorColor.buffer,
         id: data.id,
         timestamp: new Date(),
     });
