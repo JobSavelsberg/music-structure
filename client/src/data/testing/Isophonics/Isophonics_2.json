@@ -1,0 +1,2112 @@
+[
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.365,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 18.46,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.365
+                    },
+                    {
+                        "duration": 16.823,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 18.825
+                    },
+                    {
+                        "duration": 8.411,
+                        "confidence": 1.0,
+                        "value": "breaka",
+                        "time": 35.648
+                    },
+                    {
+                        "duration": 16.824,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 44.059
+                    },
+                    {
+                        "duration": 8.412,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 60.883
+                    },
+                    {
+                        "duration": 16.823,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 69.295
+                    },
+                    {
+                        "duration": 8.411,
+                        "confidence": 1.0,
+                        "value": "breakb",
+                        "time": 86.118
+                    },
+                    {
+                        "duration": 25.236,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 94.529
+                    },
+                    {
+                        "duration": 8.412,
+                        "confidence": 1.0,
+                        "value": "birdge",
+                        "time": 119.765
+                    },
+                    {
+                        "duration": 16.822,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 128.177
+                    },
+                    {
+                        "duration": 25.234,
+                        "confidence": 1.0,
+                        "value": "instrumental",
+                        "time": 144.999
+                    },
+                    {
+                        "duration": 8.408,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 170.233
+                    },
+                    {
+                        "duration": 16.822,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 178.641
+                    },
+                    {
+                        "duration": 16.823,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 195.463
+                    },
+                    {
+                        "duration": 16.822,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 212.286
+                    },
+                    {
+                        "duration": 17.587,
+                        "confidence": 1.0,
+                        "value": "refrain_(with_complete_ending)",
+                        "time": 229.108
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-01 Bad",
+            "identifiers": {},
+            "release": "",
+            "duration": 246.695,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.23,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 28.337,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.23
+                    },
+                    {
+                        "duration": 16.745,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 28.567
+                    },
+                    {
+                        "duration": 16.772,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 45.312
+                    },
+                    {
+                        "duration": 16.715,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 62.084
+                    },
+                    {
+                        "duration": 16.794,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 78.799
+                    },
+                    {
+                        "duration": 16.779,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 95.593
+                    },
+                    {
+                        "duration": 16.775,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 112.372
+                    },
+                    {
+                        "duration": 16.795,
+                        "confidence": 1.0,
+                        "value": "instrumental",
+                        "time": 129.147
+                    },
+                    {
+                        "duration": 16.723,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 145.942
+                    },
+                    {
+                        "duration": 16.806,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 162.665
+                    },
+                    {
+                        "duration": 85.289,
+                        "confidence": 1.0,
+                        "value": "outro",
+                        "time": 179.471
+                    },
+                    {
+                        "duration": 1.587,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 264.76
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-02 The Way You Make Me Feel (Single Version)",
+            "identifiers": {},
+            "release": "",
+            "duration": 266.347,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.46,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 9.548,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.46
+                    },
+                    {
+                        "duration": 38.29,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 10.008
+                    },
+                    {
+                        "duration": 19.137,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 48.298
+                    },
+                    {
+                        "duration": 19.13,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 67.435
+                    },
+                    {
+                        "duration": 9.576,
+                        "confidence": 1.0,
+                        "value": "break",
+                        "time": 86.565
+                    },
+                    {
+                        "duration": 19.138,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 96.141
+                    },
+                    {
+                        "duration": 19.134,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 115.279
+                    },
+                    {
+                        "duration": 19.139,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 134.413
+                    },
+                    {
+                        "duration": 19.139,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 153.552
+                    },
+                    {
+                        "duration": 23.903,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 172.691
+                    },
+                    {
+                        "duration": 19.169,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 196.594
+                    },
+                    {
+                        "duration": 102.977,
+                        "confidence": 1.0,
+                        "value": "outro",
+                        "time": 215.763
+                    },
+                    {
+                        "duration": 0.22,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 318.74
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-03 Man In The Mirror",
+            "identifiers": {},
+            "release": "",
+            "duration": 318.96,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.215,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 29.167,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.215
+                    },
+                    {
+                        "duration": 29.241,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 29.382
+                    },
+                    {
+                        "duration": 14.613,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 58.623
+                    },
+                    {
+                        "duration": 14.617,
+                        "confidence": 1.0,
+                        "value": "breaka",
+                        "time": 73.236
+                    },
+                    {
+                        "duration": 29.233,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 87.853
+                    },
+                    {
+                        "duration": 14.597,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 117.086
+                    },
+                    {
+                        "duration": 29.295,
+                        "confidence": 1.0,
+                        "value": "refrain_(extended)",
+                        "time": 131.683
+                    },
+                    {
+                        "duration": 14.581,
+                        "confidence": 1.0,
+                        "value": "breakb",
+                        "time": 160.978
+                    },
+                    {
+                        "duration": 29.237,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 175.559
+                    },
+                    {
+                        "duration": 14.606,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 204.796
+                    },
+                    {
+                        "duration": 14.625,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 219.402
+                    },
+                    {
+                        "duration": 45.708,
+                        "confidence": 1.0,
+                        "value": "outro",
+                        "time": 234.027
+                    },
+                    {
+                        "duration": 1.025,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 279.735
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-04 Dirty Diana",
+            "identifiers": {},
+            "release": "",
+            "duration": 280.76,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.095,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 24.108,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.095
+                    },
+                    {
+                        "duration": 17.365,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 24.203
+                    },
+                    {
+                        "duration": 17.437,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 41.568
+                    },
+                    {
+                        "duration": 10.895,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 59.005
+                    },
+                    {
+                        "duration": 17.475,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 69.9
+                    },
+                    {
+                        "duration": 17.413,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 87.375
+                    },
+                    {
+                        "duration": 10.896,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 104.788
+                    },
+                    {
+                        "duration": 8.723,
+                        "confidence": 1.0,
+                        "value": "instrumental",
+                        "time": 115.684
+                    },
+                    {
+                        "duration": 6.541,
+                        "confidence": 1.0,
+                        "value": "break",
+                        "time": 124.407
+                    },
+                    {
+                        "duration": 17.449,
+                        "confidence": 1.0,
+                        "value": "instrumental",
+                        "time": 130.948
+                    },
+                    {
+                        "duration": 17.428,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 148.397
+                    },
+                    {
+                        "duration": 10.908,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 165.825
+                    },
+                    {
+                        "duration": 48.292,
+                        "confidence": 1.0,
+                        "value": "outro",
+                        "time": 176.733
+                    },
+                    {
+                        "duration": 1.588,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 225.025
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-05 Another Part Of Me (Single Version)",
+            "identifiers": {},
+            "release": "",
+            "duration": 226.613,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.405,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 30.529,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.405
+                    },
+                    {
+                        "duration": 8.105,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 30.934
+                    },
+                    {
+                        "duration": 8.129,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 39.039
+                    },
+                    {
+                        "duration": 16.248,
+                        "confidence": 1.0,
+                        "value": "bridgea",
+                        "time": 47.168
+                    },
+                    {
+                        "duration": 16.226,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 63.416
+                    },
+                    {
+                        "duration": 16.222,
+                        "confidence": 1.0,
+                        "value": "bridgeb",
+                        "time": 79.642
+                    },
+                    {
+                        "duration": 8.158,
+                        "confidence": 1.0,
+                        "value": "break",
+                        "time": 95.864
+                    },
+                    {
+                        "duration": 8.113,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 104.022
+                    },
+                    {
+                        "duration": 16.251,
+                        "confidence": 1.0,
+                        "value": "bridgea",
+                        "time": 112.135
+                    },
+                    {
+                        "duration": 16.217,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 128.386
+                    },
+                    {
+                        "duration": 8.138,
+                        "confidence": 1.0,
+                        "value": "half_bridgeb",
+                        "time": 144.603
+                    },
+                    {
+                        "duration": 32.468,
+                        "confidence": 1.0,
+                        "value": "instrumental",
+                        "time": 152.741
+                    },
+                    {
+                        "duration": 16.246,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 185.209
+                    },
+                    {
+                        "duration": 16.273,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 201.455
+                    },
+                    {
+                        "duration": 38.547,
+                        "confidence": 1.0,
+                        "value": "outro",
+                        "time": 217.728
+                    },
+                    {
+                        "duration": 0.965,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 256.275
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-06 Smooth Criminal",
+            "identifiers": {},
+            "release": "",
+            "duration": 257.24,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.26,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 23.945,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.26
+                    },
+                    {
+                        "duration": 15.536,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 24.205
+                    },
+                    {
+                        "duration": 15.506,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 39.741
+                    },
+                    {
+                        "duration": 15.59,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 55.247
+                    },
+                    {
+                        "duration": 15.523,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 70.837
+                    },
+                    {
+                        "duration": 7.763,
+                        "confidence": 1.0,
+                        "value": "break",
+                        "time": 86.36
+                    },
+                    {
+                        "duration": 15.539,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 94.123
+                    },
+                    {
+                        "duration": 15.502,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 109.662
+                    },
+                    {
+                        "duration": 15.589,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 125.164
+                    },
+                    {
+                        "duration": 15.532,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 140.753
+                    },
+                    {
+                        "duration": 31.048,
+                        "confidence": 1.0,
+                        "value": "instrumental",
+                        "time": 156.285
+                    },
+                    {
+                        "duration": 15.56,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 187.333
+                    },
+                    {
+                        "duration": 15.545,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 202.893
+                    },
+                    {
+                        "duration": 15.524,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 218.438
+                    },
+                    {
+                        "duration": 43.718,
+                        "confidence": 1.0,
+                        "value": "outro",
+                        "time": 233.962
+                    },
+                    {
+                        "duration": 2.2,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 277.68
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-07 Leave Me Alone",
+            "identifiers": {},
+            "release": "",
+            "duration": 279.88,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.53,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 21.842,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.53
+                    },
+                    {
+                        "duration": 16.712,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 22.372
+                    },
+                    {
+                        "duration": 8.355,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 39.084
+                    },
+                    {
+                        "duration": 4.181,
+                        "confidence": 1.0,
+                        "value": "break",
+                        "time": 47.439
+                    },
+                    {
+                        "duration": 16.712,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 51.62
+                    },
+                    {
+                        "duration": 8.352,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 68.332
+                    },
+                    {
+                        "duration": 12.531,
+                        "confidence": 1.0,
+                        "value": "break_(extended)",
+                        "time": 76.684
+                    },
+                    {
+                        "duration": 18.758,
+                        "confidence": 1.0,
+                        "value": "bridgea",
+                        "time": 89.215
+                    },
+                    {
+                        "duration": 16.742,
+                        "confidence": 1.0,
+                        "value": "bridgeb",
+                        "time": 107.973
+                    },
+                    {
+                        "duration": 8.346,
+                        "confidence": 1.0,
+                        "value": "half_verse",
+                        "time": 124.715
+                    },
+                    {
+                        "duration": 8.364,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 133.061
+                    },
+                    {
+                        "duration": 8.344,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 141.425
+                    },
+                    {
+                        "duration": 8.365,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 149.769
+                    },
+                    {
+                        "duration": 42.496,
+                        "confidence": 1.0,
+                        "value": "outro",
+                        "time": 158.134
+                    },
+                    {
+                        "duration": 0.903,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 200.63
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-08 Black Or White (Single Version)",
+            "identifiers": {},
+            "release": "",
+            "duration": 201.533,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.175,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 19.489,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.175
+                    },
+                    {
+                        "duration": 17.8,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 19.664
+                    },
+                    {
+                        "duration": 17.797,
+                        "confidence": 1.0,
+                        "value": "build",
+                        "time": 37.464
+                    },
+                    {
+                        "duration": 17.794,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 55.261
+                    },
+                    {
+                        "duration": 17.797,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 73.055
+                    },
+                    {
+                        "duration": 17.799,
+                        "confidence": 1.0,
+                        "value": "build",
+                        "time": 90.852
+                    },
+                    {
+                        "duration": 17.794,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 108.651
+                    },
+                    {
+                        "duration": 17.799,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 126.445
+                    },
+                    {
+                        "duration": 17.796,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 144.244
+                    },
+                    {
+                        "duration": 17.797,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 162.04
+                    },
+                    {
+                        "duration": 58.908,
+                        "confidence": 1.0,
+                        "value": "outro",
+                        "time": 179.837
+                    },
+                    {
+                        "duration": 1.148,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 238.745
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-09 Remember The Time",
+            "identifiers": {},
+            "release": "",
+            "duration": 239.893,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.485,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 17.205,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.485
+                    },
+                    {
+                        "duration": 17.198,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 17.69
+                    },
+                    {
+                        "duration": 17.193,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 34.888
+                    },
+                    {
+                        "duration": 17.199,
+                        "confidence": 1.0,
+                        "value": "breaka",
+                        "time": 52.081
+                    },
+                    {
+                        "duration": 12.893,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 69.28
+                    },
+                    {
+                        "duration": 8.59,
+                        "confidence": 1.0,
+                        "value": "breakb",
+                        "time": 82.173
+                    },
+                    {
+                        "duration": 8.582,
+                        "confidence": 1.0,
+                        "value": "mini_intro",
+                        "time": 90.763
+                    },
+                    {
+                        "duration": 17.215,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 99.345
+                    },
+                    {
+                        "duration": 17.195,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 116.56
+                    },
+                    {
+                        "duration": 17.197,
+                        "confidence": 1.0,
+                        "value": "breaka",
+                        "time": 133.755
+                    },
+                    {
+                        "duration": 12.896,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 150.952
+                    },
+                    {
+                        "duration": 8.591,
+                        "confidence": 1.0,
+                        "value": "breakb",
+                        "time": 163.848
+                    },
+                    {
+                        "duration": 21.506,
+                        "confidence": 1.0,
+                        "value": "instrumental",
+                        "time": 172.439
+                    },
+                    {
+                        "duration": 17.19,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 193.945
+                    },
+                    {
+                        "duration": 17.195,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 211.135
+                    },
+                    {
+                        "duration": 12.891,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 228.33
+                    },
+                    {
+                        "duration": 8.596,
+                        "confidence": 1.0,
+                        "value": "breakb",
+                        "time": 241.221
+                    },
+                    {
+                        "duration": 8.598,
+                        "confidence": 1.0,
+                        "value": "mini_intro",
+                        "time": 249.817
+                    },
+                    {
+                        "duration": 27.835,
+                        "confidence": 1.0,
+                        "value": "outro",
+                        "time": 258.415
+                    },
+                    {
+                        "duration": 2.563,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 286.25
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-10 In The Closet (Single Version)",
+            "identifiers": {},
+            "release": "",
+            "duration": 288.813,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.13,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 18.659,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.13
+                    },
+                    {
+                        "duration": 18.64,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 18.789
+                    },
+                    {
+                        "duration": 18.591,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 37.429
+                    },
+                    {
+                        "duration": 18.689,
+                        "confidence": 1.0,
+                        "value": "refraina",
+                        "time": 56.02
+                    },
+                    {
+                        "duration": 18.64,
+                        "confidence": 1.0,
+                        "value": "refrainb",
+                        "time": 74.709
+                    },
+                    {
+                        "duration": 18.643,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 93.349
+                    },
+                    {
+                        "duration": 18.608,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 111.992
+                    },
+                    {
+                        "duration": 18.67,
+                        "confidence": 1.0,
+                        "value": "refraina",
+                        "time": 130.6
+                    },
+                    {
+                        "duration": 18.642,
+                        "confidence": 1.0,
+                        "value": "refrainb",
+                        "time": 149.27
+                    },
+                    {
+                        "duration": 18.635,
+                        "confidence": 1.0,
+                        "value": "instrumental",
+                        "time": 167.912
+                    },
+                    {
+                        "duration": 18.629,
+                        "confidence": 1.0,
+                        "value": "refrainb",
+                        "time": 186.547
+                    },
+                    {
+                        "duration": 18.623,
+                        "confidence": 1.0,
+                        "value": "refraina",
+                        "time": 205.176
+                    },
+                    {
+                        "duration": 15.476,
+                        "confidence": 1.0,
+                        "value": "refraina_(fade-out)",
+                        "time": 223.799
+                    },
+                    {
+                        "duration": 0.285,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 239.275
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-11 Who Is It (7_ Edit)",
+            "identifiers": {},
+            "release": "",
+            "duration": 239.56,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.14,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 69.652,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.14
+                    },
+                    {
+                        "duration": 23.717,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 69.792
+                    },
+                    {
+                        "duration": 11.849,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 93.509
+                    },
+                    {
+                        "duration": 26.689,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 105.358
+                    },
+                    {
+                        "duration": 23.725,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 132.047
+                    },
+                    {
+                        "duration": 11.847,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 155.772
+                    },
+                    {
+                        "duration": 23.71,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 167.619
+                    },
+                    {
+                        "duration": 23.719,
+                        "confidence": 1.0,
+                        "value": "middle_8",
+                        "time": 191.329
+                    },
+                    {
+                        "duration": 23.714,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 215.048
+                    },
+                    {
+                        "duration": 11.866,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 238.762
+                    },
+                    {
+                        "duration": 23.759,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 250.628
+                    },
+                    {
+                        "duration": 23.683,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 274.387
+                    },
+                    {
+                        "duration": 23.71,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 298.07
+                    },
+                    {
+                        "duration": 62.55,
+                        "confidence": 1.0,
+                        "value": "outro",
+                        "time": 321.78
+                    },
+                    {
+                        "duration": 0.603,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 384.33
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-12 Heal The World",
+            "identifiers": {},
+            "release": "",
+            "duration": 384.933,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.555,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 23.212,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.555
+                    },
+                    {
+                        "duration": 23.136,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 23.767
+                    },
+                    {
+                        "duration": 23.149,
+                        "confidence": 1.0,
+                        "value": "break",
+                        "time": 46.903
+                    },
+                    {
+                        "duration": 23.162,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 70.052
+                    },
+                    {
+                        "duration": 23.138,
+                        "confidence": 1.0,
+                        "value": "break",
+                        "time": 93.214
+                    },
+                    {
+                        "duration": 11.551,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 116.352
+                    },
+                    {
+                        "duration": 23.19,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 127.903
+                    },
+                    {
+                        "duration": 23.144,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 151.093
+                    },
+                    {
+                        "duration": 23.168,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 174.237
+                    },
+                    {
+                        "duration": 20.635,
+                        "confidence": 1.0,
+                        "value": "refrain_(with_complete_ending)",
+                        "time": 197.405
+                    },
+                    {
+                        "duration": 2.28,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 218.04
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-13 Will You Be There (Single Version)",
+            "identifiers": {},
+            "release": "",
+            "duration": 220.32,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.23,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 18.631,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.23
+                    },
+                    {
+                        "duration": 32.122,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 18.861
+                    },
+                    {
+                        "duration": 16.074,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 50.983
+                    },
+                    {
+                        "duration": 36.141,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 67.057
+                    },
+                    {
+                        "duration": 16.069,
+                        "confidence": 1.0,
+                        "value": "break",
+                        "time": 103.198
+                    },
+                    {
+                        "duration": 32.121,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 119.267
+                    },
+                    {
+                        "duration": 16.073,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 151.388
+                    },
+                    {
+                        "duration": 36.15,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 167.461
+                    },
+                    {
+                        "duration": 24.102,
+                        "confidence": 1.0,
+                        "value": "middle_8",
+                        "time": 203.611
+                    },
+                    {
+                        "duration": 32.14,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 227.713
+                    },
+                    {
+                        "duration": 34.247,
+                        "confidence": 1.0,
+                        "value": "refrain_(fade-out)",
+                        "time": 259.853
+                    },
+                    {
+                        "duration": 1.887,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 294.1
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-14 You Are Not Alone (Single Version)",
+            "identifiers": {},
+            "release": "",
+            "duration": 295.987,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.425,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 16.868,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.425
+                    },
+                    {
+                        "duration": 27.782,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 17.293
+                    },
+                    {
+                        "duration": 13.865,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 45.075
+                    },
+                    {
+                        "duration": 13.908,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 58.94
+                    },
+                    {
+                        "duration": 27.754,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 72.848
+                    },
+                    {
+                        "duration": 13.869,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 100.602
+                    },
+                    {
+                        "duration": 27.741,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 114.471
+                    },
+                    {
+                        "duration": 13.893,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 142.212
+                    },
+                    {
+                        "duration": 27.781,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 156.105
+                    },
+                    {
+                        "duration": 27.741,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 183.886
+                    },
+                    {
+                        "duration": 88.663,
+                        "confidence": 1.0,
+                        "value": "outro",
+                        "time": 211.627
+                    },
+                    {
+                        "duration": 1.817,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 300.29
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-15 Earth Song (Radio Edit)",
+            "identifiers": {},
+            "release": "",
+            "duration": 302.107,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.28,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 44.484,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.28
+                    },
+                    {
+                        "duration": 10.674,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 44.764
+                    },
+                    {
+                        "duration": 10.673,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 55.438
+                    },
+                    {
+                        "duration": 10.674,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 66.111
+                    },
+                    {
+                        "duration": 10.673,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 76.785
+                    },
+                    {
+                        "duration": 21.349,
+                        "confidence": 1.0,
+                        "value": "bridgea",
+                        "time": 87.458
+                    },
+                    {
+                        "duration": 10.673,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 108.807
+                    },
+                    {
+                        "duration": 10.674,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 119.48
+                    },
+                    {
+                        "duration": 21.348,
+                        "confidence": 1.0,
+                        "value": "bridgea",
+                        "time": 130.154
+                    },
+                    {
+                        "duration": 10.674,
+                        "confidence": 1.0,
+                        "value": "bridgeb",
+                        "time": 151.502
+                    },
+                    {
+                        "duration": 10.676,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 162.176
+                    },
+                    {
+                        "duration": 10.673,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 172.852
+                    },
+                    {
+                        "duration": 21.334,
+                        "confidence": 1.0,
+                        "value": "instrumental",
+                        "time": 183.525
+                    },
+                    {
+                        "duration": 10.689,
+                        "confidence": 1.0,
+                        "value": "bridgeb",
+                        "time": 204.859
+                    },
+                    {
+                        "duration": 10.674,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 215.548
+                    },
+                    {
+                        "duration": 10.664,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 226.222
+                    },
+                    {
+                        "duration": 16.02,
+                        "confidence": 1.0,
+                        "value": "refrain_(extended)",
+                        "time": 236.886
+                    },
+                    {
+                        "duration": 30.849,
+                        "confidence": 1.0,
+                        "value": "outro",
+                        "time": 252.906
+                    },
+                    {
+                        "duration": 0.632,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 283.755
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-16 They Don't Care About Us",
+            "identifiers": {},
+            "release": "",
+            "duration": 284.387,
+            "artist": "Michael Jackson"
+        }
+    },
+    {
+        "sandbox": {},
+        "annotations": [
+            {
+                "data": [
+                    {
+                        "duration": 0.165,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 0.0
+                    },
+                    {
+                        "duration": 43.913,
+                        "confidence": 1.0,
+                        "value": "intro",
+                        "time": 0.165
+                    },
+                    {
+                        "duration": 20.209,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 44.078
+                    },
+                    {
+                        "duration": 20.217,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 64.287
+                    },
+                    {
+                        "duration": 20.19,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 84.504
+                    },
+                    {
+                        "duration": 20.224,
+                        "confidence": 1.0,
+                        "value": "verse",
+                        "time": 104.694
+                    },
+                    {
+                        "duration": 20.217,
+                        "confidence": 1.0,
+                        "value": "bridge",
+                        "time": 124.918
+                    },
+                    {
+                        "duration": 20.21,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 145.135
+                    },
+                    {
+                        "duration": 20.204,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 165.345
+                    },
+                    {
+                        "duration": 20.214,
+                        "confidence": 1.0,
+                        "value": "middle_8",
+                        "time": 185.549
+                    },
+                    {
+                        "duration": 20.214,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 205.763
+                    },
+                    {
+                        "duration": 20.203,
+                        "confidence": 1.0,
+                        "value": "refrain",
+                        "time": 225.977
+                    },
+                    {
+                        "duration": 40.423,
+                        "confidence": 1.0,
+                        "value": "build",
+                        "time": 246.18
+                    },
+                    {
+                        "duration": 19.347,
+                        "confidence": 1.0,
+                        "value": "refrain_(with_complete_ending)",
+                        "time": 286.603
+                    },
+                    {
+                        "duration": 2.383,
+                        "confidence": 1.0,
+                        "value": "silence",
+                        "time": 305.95
+                    }
+                ],
+                "annotation_metadata": {
+                    "annotation_tools": "",
+                    "curator": {
+                        "name": "Matthias Mauch",
+                        "email": "m.mauch@qmul.ac.uk"
+                    },
+                    "annotator": {},
+                    "version": 1.0,
+                    "corpus": "Isophonics",
+                    "annotation_rules": "",
+                    "validation": "",
+                    "data_source": ""
+                },
+                "namespace": "segment_open",
+                "sandbox": {}
+            }
+        ],
+        "file_metadata": {
+            "jams_version": "0.2.0",
+            "title": "2-17 You Rock My World",
+            "identifiers": {},
+            "release": "",
+            "duration": 308.333,
+            "artist": "Michael Jackson"
+        }
+    }
+]

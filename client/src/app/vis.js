@@ -1,6 +1,8 @@
 import * as log from "../dev/log";
 import * as d3 from "d3";
 import * as audioUtil from "./audioUtil";
+import * as testing from "./testing";
+
 import * as Track from "./Track";
 import { euclidian } from "./similarity";
 import { loadavg } from "os";
@@ -26,6 +28,7 @@ export const diverging = d3
     .scaleDiverging()
     .domain([-1, 0, 1])
     .interpolator(d3.interpolateRdBu);
+export const categoryColor = d3.scaleOrdinal().range(d3.schemeCategory10);
 
 export function renderRawPitch(track, left, width, yOffset, height, ctx) {
     const scale = width / track.getAnalysis().track.duration;
@@ -296,4 +299,54 @@ function angleLerp(angleA, angleB, val) {
     } else {
         return angleA;
     }
+}
+
+export function drawGroundTruth(track, ctx, canvasWidth, blockHeight) {
+    if (!track.groundTruth) return;
+    const trackDuration = track.getAnalysis().track.duration;
+
+    const annotations = track.groundTruth.annotations;
+    let y = 0;
+    const height = blockHeight;
+
+    ctx.fillStyle = "white";
+    ctx.font = "16px";
+    ctx.fillText("Spotify Sections", 0, 8);
+    y += 16;
+    track.getAnalysis().sections.forEach((section, index) => {
+        const x = (section.start / trackDuration) * canvasWidth;
+        const width = (section.duration / trackDuration) * canvasWidth;
+        ctx.fillStyle = categoryColor(index);
+        ctx.fillRect(x, y, width, height);
+    });
+    y += height;
+
+    ctx.fillStyle = "white";
+    ctx.font = "16px";
+    ctx.fillText("Ground Truth", 0, y + 12);
+    y += 16;
+    annotations.forEach((annotation) => {
+        if (annotation.namespace !== "beat") {
+            const uniqueValues = [];
+            annotation.data.forEach((segment) => {
+                const confidence = segment.confidence;
+                const duration = segment.duration;
+                const time = segment.time;
+                const value = segment.value;
+                if (!uniqueValues.includes(value)) {
+                    uniqueValues.push(value);
+                }
+
+                const x = (time / trackDuration) * canvasWidth;
+                const width = (duration / trackDuration) * canvasWidth;
+
+                ctx.fillStyle = categoryColor(uniqueValues.indexOf(value));
+                ctx.fillRect(x, y, width, height);
+                ctx.fillStyle = "white";
+                ctx.font = "12px";
+                ctx.fillText(value, x, y + height / 2);
+            });
+            y += height;
+        }
+    });
 }

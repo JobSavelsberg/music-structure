@@ -1,4 +1,6 @@
 import * as log from "../dev/log";
+import Matrix from "./dataStructures/Matrix";
+
 let gl;
 let program;
 let bufferSize = 0;
@@ -92,10 +94,16 @@ export function createSSMDataArray(track, ssm) {
     } // Scale and translate
 
     const ssmVertices = [];
+    const isMatrix = ssm instanceof Matrix;
 
     for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
-            const value = ssm.getValueNormalizedMirrored(x, y);
+            let value;
+            if (isMatrix) {
+                value = ssm.getValueNormalized(x, y);
+            } else {
+                value = ssm.getValueNormalizedMirrored(x, y);
+            }
             const left = st(segmentStartDuration[x][0]);
             const top = -st(segmentStartDuration[y][0]);
             const right = st(segmentStartDuration[x][0] + segmentStartDuration[x][1]);

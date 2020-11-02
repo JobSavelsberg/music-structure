@@ -49,6 +49,31 @@ export default class Matrix {
         return matrix;
     }
 
+    static createTimeLagFromHalfMatrix(halfMatrix) {}
+
+    static combine(halfMatrixLeft, halfMatrixRight) {
+        assert(halfMatrixLeft.size === halfMatrixRight.size);
+        assert(halfMatrixLeft.numberType === halfMatrixRight.numberType);
+        assert(halfMatrixLeft.sampleDuration === halfMatrixRight.sampleDuration);
+        const size = halfMatrixLeft.size;
+        const numberType = halfMatrixLeft.numberType;
+        const sampleDuration = halfMatrixLeft.sampleDuration;
+        const matrix = new Matrix({
+            width: size,
+            height: size,
+            numberType: numberType,
+            sampleDuration: sampleDuration,
+        });
+        matrix.fill((x, y) => {
+            if (x > y) {
+                return halfMatrixRight.getValueMirrored(x, y);
+            } else {
+                return halfMatrixLeft.getValue(x, y);
+            }
+        });
+        return matrix;
+    }
+
     hasCell(x, y) {
         return x < this.width && y < this.height && x >= 0 && y >= 0;
     }

@@ -12,27 +12,30 @@ import * as scapePlot from "./scapePlot";
 
 const GAMMA = 1.7;
 const CLUSTERAMOUNT = 10;
-const samples = 400;
+const samples = 250;
 const sampleDuration = 0.5;
 const sampleBlur = 1.5; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
 
-const blurTime = 14;
+const blurTime = 10;
 const threshold = 0.65;
 const thresholdPercentage = 0.2;
 const tempoRatios = [0.66, 0.81, 1, 1.22, 1.5];
 
 export const SPminSize = 1; // Minimal size of segment in scape plot
-export const SPstepSize = 4; // Size of the step between segment start and size in scape plot
+export const SPstepSize = 2; // Size of the step between segment start and size in scape plot
 
 export default class Track {
     trackData = null;
     analysisData = null;
+
+    groundTruth = null;
 
     matrixes = []; // {name, ssm}
     intervalSSM = null;
     scoreMatrix = null;
     scapePlot = null;
     scapePlotAnchorColor = null;
+    novelty = null;
 
     features;
 
@@ -41,6 +44,14 @@ export default class Track {
     allPitches = true;
 
     clusters = new Array(CLUSTERAMOUNT).fill([]);
+
+    constructor(trackData) {
+        this.trackData = trackData;
+        if (trackData.groundTruth) {
+            this.groundTruth = trackData.groundTruth;
+            log.debug(this.groundTruth);
+        }
+    }
 
     process() {
         this.features = new Features(this.analysisData, {
@@ -96,6 +107,8 @@ export default class Track {
                     this.scapePlot = result.scapePlot;
                     this.scapePlotAnchorColor = result.scapePlotAnchorColor;
                 }
+                this.novelty = result.novelty;
+
                 window.eventBus.$emit("readyForVis");
             });
 
@@ -181,9 +194,6 @@ export default class Track {
         return closestSegment;
     }
 
-    constructor(trackData) {
-        this.trackData = trackData;
-    }
     static createWithAnalysis(trackData, analysisData) {
         const track = new Track(trackData);
         track.setAnalysis(analysisData);

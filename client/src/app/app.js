@@ -5,6 +5,8 @@ import store from "./../store"; // path to your Vuex store
 import router from "../router";
 import * as workers from "./workers/workers";
 import * as log from "../dev/log";
+import * as testing from "./testing";
+
 export const spotify = new SpotifyWebApi();
 
 const allTracks = new Map();
@@ -107,4 +109,25 @@ export async function search(query) {
         .catch((err) => {
             log.error(err);
         });
+}
+
+export async function loadTestSet(testSetKey) {
+    log.debug("loading test set with key", testSetKey);
+    const testSetTracks = testing.getTracks(testSetKey);
+    const spotifyTracks = [];
+    for (const track of testSetTracks) {
+        await spotify
+            .search(track.query, ["track"])
+            .then((results) => {
+                if (results.tracks.items.length > 0) {
+                    let spotifyTrack = results.tracks.items[0];
+                    spotifyTrack.groundTruth = track;
+                    spotifyTracks.push(spotifyTrack);
+                }
+            })
+            .catch((err) => {
+                log.error(err);
+            });
+    }
+    loadTracksFromSpotify(spotifyTracks, true);
 }

@@ -26,6 +26,8 @@
                 fill="#1DB954"
             ></rect>
         </svg>
+        <Novelty :width="width" />
+        <GroundTruthVis :width="width" />
         <canvas
             v-show="!loadingTrack"
             id="scapePlotCanvas"
@@ -38,6 +40,9 @@
 </template>
 
 <script>
+import GroundTruthVis from "./visualizations/GroundTruthVis";
+import Novelty from "./visualizations/Novelty";
+
 import * as log from "../dev/log";
 import * as webGL from "../app/webGL";
 import * as player from "../app/player";
@@ -48,6 +53,10 @@ const ENHANCEDSSM = 1;
 
 export default {
     props: ["width"],
+    components: {
+        GroundTruthVis,
+        Novelty,
+    },
     data() {
         return {
             glCanvas: null,

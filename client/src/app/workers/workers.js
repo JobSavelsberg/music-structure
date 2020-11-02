@@ -54,12 +54,13 @@ export async function startSSM(
         ssm.onmessage = (event) => {
             const result = event.data;
             if (result.id === trackId) {
-                result.rawSSM = new HalfMatrix(result.rawSSM);
+                result.rawSSM = new Matrix(result.rawSSM);
                 result.enhancedSSM = new HalfMatrix(result.enhancedSSM);
                 result.transpositionInvariantSSM = new HalfMatrix(result.transpositionInvariantSSM);
                 result.scoreMatrix = new Matrix(result.scoreMatrix);
                 result.scapePlot = new HalfMatrix(result.scapePlot);
                 result.scapePlotAnchorColor = new Float32Array(result.scapePlotAnchorColor);
+                result.novelty = new Float32Array(result.novelty);
                 resolve(result);
             }
         };

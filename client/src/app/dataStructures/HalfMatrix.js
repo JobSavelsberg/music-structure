@@ -184,6 +184,14 @@ export default class HalfMatrix {
         }
     }
 
+    getFirstFeatureMatrix() {
+        const matrix = new HalfMatrix(this);
+        matrix.fill((x, y) => {
+            return this.getValue(x, y);
+        });
+        return matrix;
+    }
+
     getBuffer() {
         return {
             buffer: this.data.buffer,

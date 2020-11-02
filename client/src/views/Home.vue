@@ -5,7 +5,7 @@
 
             <v-spacer></v-spacer>
 
-            <form v-on:submit.prevent="search">
+            <form v-if="!testing" v-on:submit.prevent="search">
                 <v-text-field
                     v-model="searchQuery"
                     hide-details
@@ -16,6 +16,22 @@
                     filled
                 ></v-text-field>
             </form>
+            <form v-if="testing">
+                <v-select
+                    v-model="selectedTestSet"
+                    :items="allTestSets"
+                    return-object
+                    hide-details
+                    single-line
+                    rounded
+                    dense
+                    filled
+                ></v-select>
+            </form>
+
+            <v-btn icon @click="testing = !testing">
+                <v-icon>mdi-ab-testing</v-icon>
+            </v-btn>
             <div class="volumeSlider">
                 <v-container>
                     <v-slider
@@ -51,6 +67,8 @@ import Player from "../components/Player";
 import * as app from "../app/app";
 import * as auth from "../app/authentication";
 import * as player from "../app/player";
+import * as testing from "../app/testing";
+
 import * as log from "../dev/log";
 export default {
     name: "Home",
@@ -61,6 +79,8 @@ export default {
             prevVolume: 0.75,
             padding: 20 * 4, // vuetify padding only goes per 4 px
             windowWidth: window.innerWidth,
+            testing: false,
+            selectedTestSet: null,
         };
     },
     computed: {
@@ -88,6 +108,9 @@ export default {
         mainContentWidth() {
             return this.windowWidth - this.padding * 2;
         },
+        allTestSets() {
+            return testing.getAllTestSets();
+        },
     },
     watch: {
         selectedIndex(newIndex, oldIndex) {
@@ -95,6 +118,9 @@ export default {
         },
         selectedTrack(newTrack, oldTrack) {
             log.info(`We have ${newTrack.getName()} selected!`);
+        },
+        selectedTestSet(newTestSet, oldTestSet) {
+            this.loadTestSet(newTestSet);
         },
         volume(newVol, oldVol) {
             player.setVolume(Math.pow(this.volume, 2));
@@ -114,6 +140,9 @@ export default {
     methods: {
         search() {
             app.search(this.searchQuery);
+        },
+        loadTestSet() {
+            app.loadTestSet(this.selectedTestSet);
         },
         getVolumeIcon(volume) {
             if (volume > 0.6) return "mdi-volume-high";

@@ -149,6 +149,7 @@ export function autoThreshold(ssm, percentage) {
 }
 
 export function rowColumnAutoThreshold(ssm, percentageRow, percentageCol = percentageRow) {
+    log.debug("rowColumnAutoThreshold: row %:", percentageRow, "col %:", percentageCol);
     const typeScale = ssm.numberType.scale;
 
     const rowBinaryMatrix = new HalfMatrix({ size: ssm.size, numberType: NumberType.UINT8 });
@@ -213,18 +214,10 @@ export function rowColumnAutoThreshold(ssm, percentageRow, percentageCol = perce
             }
         }
     }
-
-    log.debug("row", rowBinaryMatrix);
-
-    log.debug("col", colBinaryMatrix);
-
     const thresholdSSM = HalfMatrix.from(ssm);
-    log.debug(ssm);
     thresholdSSM.fill((x, y) => {
         return (rowBinaryMatrix.getValue(x, y) + colBinaryMatrix.getValue(x, y)) / 2;
     });
-
-    log.debug("thresh", thresholdSSM);
 
     return thresholdSSM;
 }
