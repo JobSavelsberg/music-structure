@@ -84,8 +84,6 @@ export function createSSMDataArray(track, ssm) {
     bufferSize = size * size * 6;
     if (bufferSize > 22e6) {
         log.error("Buffer OVERFLOW with size", bufferSize);
-    } else {
-        log.debug("Buffer size", bufferSize);
     }
 
     const halfDuration = track.getAnalysisDuration() / 2;

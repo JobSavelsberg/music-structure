@@ -4,8 +4,9 @@ import * as log from "../dev/log";
 import Matrix from "./dataStructures/Matrix";
 import HalfMatrix from "./dataStructures/HalfMatrix";
 import { NumberType } from "./dataStructures/NumberType";
+import asciichart from "asciichart";
 
-export function calculateSSM(features, sampleDuration, allPitches, threshold) {
+export function calculateSSM(features, sampleDuration, allPitches = false, threshold) {
     const ssm = new HalfMatrix({
         size: features.length,
         numberType: HalfMatrix.NumberType.UINT8,
@@ -23,7 +24,7 @@ export function calculateSSM(features, sampleDuration, allPitches, threshold) {
  * @param {*} ssm
  * @param {*} options {`blurTime`: length in seconds, `blurLength`: length in samples, `tempoRatios`: array of ratios (e.g. [1.5] blurs paths that denote segment similarity with speed difference of 1.5)}
  */
-export function enhanceSSM(ssm, options, allPitches) {
+export function enhanceSSM(ssm, options, allPitches = false) {
     const blurLength = options.blurLength || Math.round(options.blurTime / ssm.sampleDuration) || 4;
     const tempoRatios = options.tempoRatios || [1];
 
@@ -139,8 +140,12 @@ export function autoThreshold(ssm, percentage) {
         }
     }
     log.debug("Finding threshold with percentage", percentage, "got threshold: ", thresholdValue);
-
-    const thresholdSSM = HalfMatrix.from(ssm);
+    let thresholdSSM;
+    if (ssm instanceof Matrix) {
+        thresholdSSM = Matrix.from(ssm);
+    } else {
+        thresholdSSM = HalfMatrix.from(ssm);
+    }
     for (let i = 0; i < ssm.length; i++) {
         thresholdSSM.data[i] =
             Math.min(Math.max(ssm.data[i] / typeScale - thresholdValue, 0) / (1 - thresholdValue), 1) * typeScale;
@@ -220,4 +225,69 @@ export function rowColumnAutoThreshold(ssm, percentageRow, percentageCol = perce
     });
 
     return thresholdSSM;
+}
+
+export function binarize(matrix, threshold = 0.5) {
+    let binaryMatrix;
+    if (matrix instanceof Matrix) {
+        binaryMatrix = Matrix.from(matrix, { numberType: Matrix.NumberType.UINT8 });
+    } else {
+        binaryMatrix = HalfMatrix.from(matrix, { numberType: Matrix.NumberType.UINT8 });
+    }
+    binaryMatrix.fill((x, y) => {
+        if (matrix.getValueNormalized(x, y) > threshold) {
+            return 255;
+        } else {
+            return 0;
+        }
+    });
+
+    return binaryMatrix;
+}
+
+export function gaussianBlurOptimized(matrix, size) {
+    log.debug("Performing gaussian", size);
+    const matrixSize = matrix.getSize();
+    const fullKernalSize = size * 2 + 1;
+    const kernal1D = generate1DgaussianKernal(fullKernalSize, size / 2);
+    const blurredMatrix = Matrix.from(matrix);
+
+    blurredMatrix.fill((x, y) => {
+        let sum = 0;
+        for (let kx = -size; kx <= size; kx++) {
+            if (x + kx > 0 && x + kx < matrixSize) {
+                sum += matrix.getValue(x + kx, y) * kernal1D[kx + size];
+            }
+        }
+        return sum;
+    });
+    const blurredMatrixSecondPass = Matrix.from(matrix);
+
+    blurredMatrixSecondPass.fill((x, y) => {
+        let sum = 0;
+        for (let ky = -size; ky <= size; ky++) {
+            if (y + ky > 0 && y + ky < matrixSize) {
+                sum += blurredMatrix.getValue(x, y + ky) * kernal1D[ky + size];
+            }
+        }
+        return sum;
+    });
+    return blurredMatrixSecondPass;
+}
+
+function generate1DgaussianKernal(size, sigma = size) {
+    const kernel = new Float32Array(size);
+    const meanIndex = (size - 1) / 2;
+    let sum = 0; // For accumulating the kernel values
+    for (let x = 0; x < size; x++) {
+        kernel[x] = Math.exp(-0.5 * Math.pow((x - meanIndex) / sigma, 2.0));
+        // Accumulate the kernel values
+        sum += kernel[x];
+    }
+
+    // Normalize the kernel
+    for (let x = 0; x < size; x++) {
+        kernel[x] /= sum;
+    }
+    return kernel;
 }

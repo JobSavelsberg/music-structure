@@ -1,5 +1,5 @@
 import * as log from "../dev/log";
-
+import asciichart from "asciichart";
 /**
  * Convolve checkerboard kernel along main diagonal
  * @param {*} ssm half matrix
@@ -58,5 +58,26 @@ function createKernel(size) {
     for (let i = 0; i < kernelSize; i++) {
         kernel[i] /= sum;
     }
+
     return kernel;
+}
+
+export function computeNoveltyFromTimeLag(timeLagMatrix) {
+    const novelty = new Float32Array(timeLagMatrix.width);
+    // sqrt of all distances
+    for (let x = 0; x < timeLagMatrix.width; x++) {
+        let differenceSum = 0;
+        for (let y = 0; y < timeLagMatrix.height; y++) {
+            const currentValue = timeLagMatrix.getValueNormalized(x, y);
+            if (x < timeLagMatrix.width - 1) {
+                const nextValue = timeLagMatrix.getValueNormalized(x + 1, y);
+                const difference = nextValue - currentValue;
+                differenceSum += difference * difference;
+            } else {
+                differenceSum = novelty[x - 1] * novelty[x - 1]; // Last value just repeats the second to last
+            }
+        }
+        novelty[x] = Math.sqrt(differenceSum);
+    }
+    return novelty;
 }

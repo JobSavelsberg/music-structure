@@ -11,6 +11,9 @@ addEventListener("message", (event) => {
     const sampleAmount = data.segmentStartDuration.length;
     const allPitches = data.allPitches;
 
+    const matrixes = [];
+    const graphs = [];
+
     // Calculate raw SSM: pitchSSM with 12 pitches, timbreSSM
     let startTime = performance.now();
     const ssmPitch = SSM.calculateSSM(data.pitchFeatures, data.sampleDuration, allPitches, 0.4);
@@ -19,15 +22,22 @@ addEventListener("message", (event) => {
 
     const ssmPitchSinglePitch = ssmPitch.getFirstFeatureMatrix();
 
-    const noveltySmall = noveltyDetection.detect(ssmPitchSinglePitch, 5);
-    const noveltyMedium = noveltyDetection.detect(ssmPitchSinglePitch, 15);
-    const noveltyLarge = noveltyDetection.detect(ssmPitchSinglePitch, 40);
+    const pitchNoveltySmall = noveltyDetection.detect(ssmPitchSinglePitch, 5);
+    const pitchNoveltyMedium = noveltyDetection.detect(ssmPitchSinglePitch, 20);
+    const pitchNoveltyLarge = noveltyDetection.detect(ssmPitchSinglePitch, 40);
+
+    const timbreNoveltyMedium = noveltyDetection.detect(ssmTimbre, 20);
+
+    graphs.push({ name: "Pitch Novelty Medium", buffer: pitchNoveltyMedium.buffer });
+    graphs.push({ name: "Timbre Novelty Medium", buffer: timbreNoveltyMedium.buffer });
 
     const ssmTimbrePitch = Matrix.combine(ssmPitch, ssmTimbre);
+    matrixes.push({ name: "Raw Pitch/Timbre", buffer: ssmTimbrePitch.getBuffer() });
 
     // Enhance pitch SSM, diagonal smoothing, still contains 12 pitches
     startTime = performance.now();
     const enhancedSSM = SSM.enhanceSSM(ssmPitch, { blurLength: 10, tempoRatios: data.tempoRatios }, allPitches);
+    matrixes.push({ name: "Enhanced SSM", buffer: enhancedSSM.getBuffer() });
     log.debug("Enhance Time", performance.now() - startTime);
 
     // Make transposition invariant; take max of all pitches
@@ -38,12 +48,22 @@ addEventListener("message", (event) => {
     // Threshold the ssm to only show important paths
     startTime = performance.now();
     transpositionInvariant = SSM.rowColumnAutoThreshold(transpositionInvariant, data.thresholdPercentage);
+    matrixes.push({ name: "Transposition Invariant", buffer: transpositionInvariant.getBuffer() });
     log.debug("autothreshold Time", performance.now() - startTime);
 
     const fullTranspositionInvariant = Matrix.fromHalfMatrix(transpositionInvariant);
 
-    // Scorematrix of single segment purely for visualization
-    const scoreMatrix = pathExtraction.visualizationMatrix(fullTranspositionInvariant, sampleAmount, 50, 100);
+    const longerDiagonalBlur = SSM.enhanceSSM(transpositionInvariant, {
+        blurLength: 20,
+        tempoRatios: data.tempoRatios,
+    });
+    const timeLagMatrix = Matrix.createTimeLagMatrix(longerDiagonalBlur);
+    //const binaryTimeLagMatrix = SSM.binarize(timeLagMatrix, 0.4);
+    const blurredBinaryTimeLagMatrix = SSM.gaussianBlurOptimized(timeLagMatrix, 3);
+    matrixes.push({ name: "Blurred Binary Time Lag Matrix", buffer: blurredBinaryTimeLagMatrix.getBuffer() });
+
+    const structureFeatureNovelty = noveltyDetection.computeNoveltyFromTimeLag(blurredBinaryTimeLagMatrix);
+    graphs.push({ name: "Structure Feature Novelty", buffer: structureFeatureNovelty.buffer });
 
     // Scapeplot creation
     startTime = performance.now();
@@ -82,14 +102,17 @@ addEventListener("message", (event) => {
     );
     log.debug("colorMap Time", performance.now() - startTime);
 
+    const noveltyCombined = new Float32Array(timbreNoveltyMedium.length);
+    for (let i = 0; i < noveltyCombined.length; i++) {
+        noveltyCombined[i] = timbreNoveltyMedium[i] * 0.5 + pitchNoveltyMedium[i] + structureFeatureNovelty[i];
+    }
+    graphs.push({ name: "Combined Novelty", buffer: noveltyCombined.buffer });
+
     postMessage({
-        rawSSM: ssmTimbrePitch.getBuffer(),
-        enhancedSSM: enhancedSSM.getBuffer(),
-        transpositionInvariantSSM: transpositionInvariant.getBuffer(),
-        scoreMatrix: scoreMatrix.getBuffer(),
         scapePlot: SP.getBuffer(),
         scapePlotAnchorColor: SPAnchorColor.buffer,
-        novelty: noveltyMedium.buffer,
+        matrixes,
+        graphs,
         id: data.id,
         timestamp: new Date(),
     });

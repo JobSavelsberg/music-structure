@@ -30,12 +30,10 @@ export default class Track {
 
     groundTruth = null;
 
-    matrixes = []; // {name, ssm}
-    intervalSSM = null;
-    scoreMatrix = null;
+    matrixes = []; // {name, matrix}
     scapePlot = null;
     scapePlotAnchorColor = null;
-    novelty = null;
+    graphFeatures = []; // {name, data};
 
     features;
 
@@ -49,7 +47,6 @@ export default class Track {
         this.trackData = trackData;
         if (trackData.groundTruth) {
             this.groundTruth = trackData.groundTruth;
-            log.debug(this.groundTruth);
         }
     }
 
@@ -98,16 +95,10 @@ export default class Track {
                 const diffBack = new Date() - result.timestamp;
                 log.info("workerSSM outside", diff);
                 log.info("workerSSM sending back", diffBack);
-                this.matrixes.push({ name: "Raw SSM", ssm: result.rawSSM });
-                this.matrixes.push({ name: "Enhanced SSM", ssm: result.enhancedSSM });
-                if (this.allPitches) {
-                    this.matrixes.push({ name: "Transposition Invariant SSM", ssm: result.transpositionInvariantSSM });
-                    //this.SSMs.push({ name: "Interval SSM", ssm: result.intervalSSM, color: true });
-                    this.matrixes.push({ name: "Score Matrix", ssm: result.scoreMatrix });
-                    this.scapePlot = result.scapePlot;
-                    this.scapePlotAnchorColor = result.scapePlotAnchorColor;
-                }
-                this.novelty = result.novelty;
+                this.matrixes = result.matrixes;
+                this.graphFeatures = result.graphs;
+                this.scapePlot = result.scapePlot;
+                this.scapePlotAnchorColor = result.scapePlotAnchorColor;
 
                 window.eventBus.$emit("readyForVis");
             });
@@ -135,7 +126,7 @@ export default class Track {
         }
 
         const fullTranspositionInvariant = Matrix.fromHalfMatrix(
-            this.getMatrixByName("Transposition Invariant SSM").ssm
+            this.getMatrixByName("Transposition Invariant SSM").matrix
         );
         const scoreMatrix = pathExtraction.visualizationMatrix(
             fullTranspositionInvariant,
@@ -144,7 +135,7 @@ export default class Track {
             start + size - 1
         );
 
-        this.matrixes.push({ name: "Score Matrix", ssm: scoreMatrix });
+        this.matrixes.push({ name: "Score Matrix", matrix: scoreMatrix });
         window.eventBus.$emit("readyForVis");
     }
 

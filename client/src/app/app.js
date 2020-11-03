@@ -116,18 +116,22 @@ export async function loadTestSet(testSetKey) {
     const testSetTracks = testing.getTracks(testSetKey);
     const spotifyTracks = [];
     for (const track of testSetTracks) {
-        await spotify
-            .search(track.query, ["track"])
-            .then((results) => {
-                if (results.tracks.items.length > 0) {
-                    let spotifyTrack = results.tracks.items[0];
-                    spotifyTrack.groundTruth = track;
-                    spotifyTracks.push(spotifyTrack);
-                }
-            })
-            .catch((err) => {
-                log.error(err);
-            });
+        const spotifySearches = [];
+        spotifySearches.push(
+            spotify
+                .search(track.query, ["track"])
+                .then((results) => {
+                    if (results.tracks.items.length > 0) {
+                        let spotifyTrack = results.tracks.items[0];
+                        spotifyTrack.groundTruth = track;
+                        spotifyTracks.push(spotifyTrack);
+                    }
+                })
+                .catch((err) => {
+                    log.error(err);
+                })
+        );
+        await Promise.all(spotifySearches);
     }
     loadTracksFromSpotify(spotifyTracks, true);
 }

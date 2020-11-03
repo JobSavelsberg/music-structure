@@ -194,6 +194,7 @@ export default class HalfMatrix {
 
     getBuffer() {
         return {
+            type: "HalfMatrix",
             buffer: this.data.buffer,
             size: this.size,
             numberType: this.numberType.name,
@@ -212,5 +213,12 @@ export default class HalfMatrix {
         }
 
         return nestedArray;
+    }
+
+    getNewEmptyMatrix() {
+        return new HalfMatrix(this);
+    }
+    getSize() {
+        return this.size;
     }
 }

@@ -54,13 +54,23 @@ export async function startSSM(
         ssm.onmessage = (event) => {
             const result = event.data;
             if (result.id === trackId) {
-                result.rawSSM = new Matrix(result.rawSSM);
-                result.enhancedSSM = new HalfMatrix(result.enhancedSSM);
-                result.transpositionInvariantSSM = new HalfMatrix(result.transpositionInvariantSSM);
-                result.scoreMatrix = new Matrix(result.scoreMatrix);
                 result.scapePlot = new HalfMatrix(result.scapePlot);
                 result.scapePlotAnchorColor = new Float32Array(result.scapePlotAnchorColor);
-                result.novelty = new Float32Array(result.novelty);
+
+                result.matrixes.forEach((matrix) => {
+                    if (matrix.buffer.type === "Matrix") {
+                        matrix.matrix = new Matrix(matrix.buffer);
+                    } else if (matrix.buffer.type === "HalfMatrix") {
+                        matrix.matrix = new HalfMatrix(matrix.buffer);
+                    }
+                    delete matrix.buffer;
+                });
+
+                result.graphs.forEach((graph) => {
+                    graph.data = new Float32Array(graph.buffer);
+                    delete graph.buffer;
+                });
+
                 resolve(result);
             }
         };

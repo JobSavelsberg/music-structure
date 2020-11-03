@@ -1,21 +1,31 @@
 <template>
-    <svg :width="width" :height="height * 2">
-        <path fill="none" stroke="white" stroke-width="2" :d="d" />
-    </svg>
+    <div v-if="track">
+        <div v-for="feature in this.track.graphFeatures" :key="feature.name">
+            <p class="pa-0 ma-0">{{ feature.name }}</p>
+            <Seeker :width="width" :height="height" />
+            <svg :width="width" :height="height">
+                <path fill="none" stroke="white" stroke-width="2" :d="d[feature.name]" class="graphPath" />
+            </svg>
+        </div>
+    </div>
 </template>
 
 <script>
 import * as d3 from "d3";
 import * as log from "../../dev/log";
+import Seeker from "./Seeker";
 
 export default {
     props: ["width"],
+    components: {
+        Seeker,
+    },
     data() {
         return {
             height: 60,
             max: 0,
             min: 0,
-            d: null,
+            d: {},
         };
     },
     computed: {
@@ -38,22 +48,24 @@ export default {
     },
     mounted() {
         window.eventBus.$on("readyForVis", () => {
-            this.generateLine();
+            this.track.graphFeatures.forEach((feature) => this.generateLine(feature));
         });
     },
     methods: {
         lmap(val, min, max) {
             return (val - min) / (max - min);
         },
-        generateLine() {
-            log.info("Generating Line");
-            this.max = Math.max(...this.track.novelty);
-            this.min = Math.min(...this.track.novelty);
-
-            this.d = this.lineGenerator(this.track.novelty);
+        generateLine(feature) {
+            this.max = Math.max(...feature.data);
+            this.min = Math.min(...feature.data);
+            this.d[feature.name] = this.lineGenerator(feature.data);
         },
     },
 };
 </script>
 
-<style></style>
+<style>
+.graphTitle {
+    color: white;
+}
+</style>

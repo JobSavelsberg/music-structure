@@ -4,8 +4,6 @@ import * as audioUtil from "./audioUtil";
 import * as testing from "./testing";
 
 import * as Track from "./Track";
-import { euclidian } from "./similarity";
-import { loadavg } from "os";
 
 export const zeroOneColor = d3
     .scaleSequential()
@@ -188,7 +186,6 @@ export function renderWaveform(ctx, width, height, track, options = {}) {
 
 export function drawAnchorPoints(track, ctx, canvasWidth) {
     const ancholor = track.scapePlotAnchorColor;
-    log.debug(ancholor);
     const anchorAmount = ancholor.length / 5;
     const halfWidth = canvasWidth / 2;
     const scale = halfWidth * 0.95;
@@ -200,13 +197,11 @@ export function drawAnchorPoints(track, ctx, canvasWidth) {
         const anchorAngle = ancholor[i * 5 + 4];
 
         const color = d3.hsl(d3.interpolateSinebow(anchorAngle));
-        //const color = d3.hsl(audioUtil.colorWheel(anchorAngle));
         color.l = 0.6;
         ctx.fillStyle = color.hex();
 
         const x = halfWidth + anchorX * scale;
         const y = halfWidth + anchorY * scale;
-        //log.debug(x, y);
         ctx.fillRect(
             (x - size / 2) * scaleFromTopLeft,
             (y - size / 2) * scaleFromTopLeft,
@@ -325,8 +320,10 @@ export function drawGroundTruth(track, ctx, canvasWidth, blockHeight) {
     ctx.font = "16px";
     ctx.fillText("Ground Truth", 0, y + 12);
     y += 16;
+
+    const allowedNamespaces = [...testing.namespaces.coarse];
     annotations.forEach((annotation) => {
-        if (annotation.namespace !== "beat") {
+        if (annotation && allowedNamespaces.includes(annotation.namespace)) {
             const uniqueValues = [];
             annotation.data.forEach((segment) => {
                 const confidence = segment.confidence;

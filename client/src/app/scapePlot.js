@@ -119,7 +119,6 @@ export function sampleAnchorPoints(scapePlot, amount, minValue, minSize) {
     const anchorPoints = new Uint16Array(amount * 2);
     let i = 0;
     let step = 0;
-    log.debug("Eligable Cells", eligableCells);
     scapePlot.forEachCell((x, y, value) => {
         if (value > minValue && y < largestYValue) {
             if (step % stepSize === 0) {
@@ -195,6 +194,5 @@ export function mapColors(fullSSM, sampleAmount, minSize, step, anchorPoints, an
         anchorPointColor[i * 5 + 4] = angle + (thumbnailColor % 1);
     }
 
-    log.debug(anchorPointColor);
     return anchorPointColor;
 }

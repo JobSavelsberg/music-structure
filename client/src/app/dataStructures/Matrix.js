@@ -49,7 +49,15 @@ export default class Matrix {
         return matrix;
     }
 
-    static createTimeLagFromHalfMatrix(halfMatrix) {}
+    static createTimeLagMatrix(matrix) {
+        const size = matrix.size || matrix.width;
+        const timeLagMatrix = new Matrix(matrix);
+        timeLagMatrix.fill((n, lag) => {
+            const x = (n + lag) % size;
+            return matrix.getValueMirrored(x, n);
+        });
+        return timeLagMatrix;
+    }
 
     static combine(halfMatrixLeft, halfMatrixRight) {
         assert(halfMatrixLeft.size === halfMatrixRight.size);
@@ -79,6 +87,9 @@ export default class Matrix {
     }
     setValue(x, y, value) {
         this.data[(y * this.width + x) * this.featureAmount] = value;
+    }
+    getValueMirrored(x, y, f = 0) {
+        return this.getValue(x, y, f);
     }
     getValue(x, y, f = 0) {
         return this.data[(y * this.width + x) * this.featureAmount + f];
@@ -191,6 +202,7 @@ export default class Matrix {
 
     getBuffer() {
         return {
+            type: "Matrix",
             buffer: this.data.buffer,
             width: this.width,
             height: this.height,
@@ -198,5 +210,14 @@ export default class Matrix {
             featureAmount: this.featureAmount,
             sampleDuration: this.sampleDuration,
         };
+    }
+
+    getNewEmptyMatrix() {
+        return new Matrix(this);
+    }
+
+    getSize() {
+        assert(this.width === this.height);
+        return this.width;
     }
 }
