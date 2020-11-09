@@ -1,5 +1,6 @@
 import * as log from "../dev/log";
 import asciichart from "asciichart";
+import { maxeqS } from "numeric";
 /**
  * Convolve checkerboard kernel along main diagonal
  * @param {*} ssm half matrix
@@ -18,7 +19,7 @@ export function detect(ssm, size) {
                 const ssmX = i - (size - halfSize) + x;
                 const ssmY = i - (size - halfSize + 1) + y;
                 if (ssmX >= 0 && ssmX < ssm.size && ssmY >= 0 && ssmY < ssm.size) {
-                    kernelSum += ssm.getValueNormalized(ssmX, ssmY) * kernel[cell];
+                    kernelSum += ssm.getValueNormalizedMirrored(ssmX, ssmY) * kernel[cell];
                 }
                 cell++;
             }
@@ -63,14 +64,19 @@ function createKernel(size) {
 }
 
 export function computeNoveltyFromTimeLag(timeLagMatrix) {
-    const novelty = new Float32Array(timeLagMatrix.width);
+    return absoluteEuclideanColumnDerivative(timeLagMatrix);
+}
+
+// Detects amount of change in ssm for column n and column n+1
+export function absoluteEuclideanColumnDerivative(ssm) {
+    const novelty = new Float32Array(ssm.width);
     // sqrt of all distances
-    for (let x = 0; x < timeLagMatrix.width; x++) {
+    for (let x = 0; x < ssm.width; x++) {
         let differenceSum = 0;
-        for (let y = 0; y < timeLagMatrix.height; y++) {
-            const currentValue = timeLagMatrix.getValueNormalized(x, y);
-            if (x < timeLagMatrix.width - 1) {
-                const nextValue = timeLagMatrix.getValueNormalized(x + 1, y);
+        for (let y = 0; y < ssm.height; y++) {
+            const currentValue = ssm.getValueNormalizedMirrored(x, y);
+            if (x < ssm.width - 1) {
+                const nextValue = ssm.getValueNormalizedMirrored(x + 1, y);
                 const difference = nextValue - currentValue;
                 differenceSum += difference * difference;
             } else {
@@ -80,4 +86,16 @@ export function computeNoveltyFromTimeLag(timeLagMatrix) {
         novelty[x] = Math.sqrt(differenceSum);
     }
     return novelty;
+}
+
+export function findLocalMaxima(novelty) {
+    const maximaIndexes = [0];
+    for (let i = 1; i < novelty.length - 1; i++) {
+        const val = novelty[i];
+        // prefers first index if maxima spans multiple samples
+        if (novelty[i - 1] < val && val >= novelty[i + 1]) {
+            maximaIndexes.push(i);
+        }
+    }
+    return maximaIndexes;
 }

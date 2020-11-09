@@ -5,7 +5,6 @@ import Matrix from "./dataStructures/Matrix";
 import HalfMatrix from "./dataStructures/HalfMatrix";
 import { NumberType } from "./dataStructures/NumberType";
 import asciichart from "asciichart";
-
 export function calculateSSM(features, sampleDuration, allPitches = false, threshold) {
     const ssm = new HalfMatrix({
         size: features.length,
@@ -243,51 +242,4 @@ export function binarize(matrix, threshold = 0.5) {
     });
 
     return binaryMatrix;
-}
-
-export function gaussianBlurOptimized(matrix, size) {
-    log.debug("Performing gaussian", size);
-    const matrixSize = matrix.getSize();
-    const fullKernalSize = size * 2 + 1;
-    const kernal1D = generate1DgaussianKernal(fullKernalSize, size / 2);
-    const blurredMatrix = Matrix.from(matrix);
-
-    blurredMatrix.fill((x, y) => {
-        let sum = 0;
-        for (let kx = -size; kx <= size; kx++) {
-            if (x + kx > 0 && x + kx < matrixSize) {
-                sum += matrix.getValue(x + kx, y) * kernal1D[kx + size];
-            }
-        }
-        return sum;
-    });
-    const blurredMatrixSecondPass = Matrix.from(matrix);
-
-    blurredMatrixSecondPass.fill((x, y) => {
-        let sum = 0;
-        for (let ky = -size; ky <= size; ky++) {
-            if (y + ky > 0 && y + ky < matrixSize) {
-                sum += blurredMatrix.getValue(x, y + ky) * kernal1D[ky + size];
-            }
-        }
-        return sum;
-    });
-    return blurredMatrixSecondPass;
-}
-
-function generate1DgaussianKernal(size, sigma = size) {
-    const kernel = new Float32Array(size);
-    const meanIndex = (size - 1) / 2;
-    let sum = 0; // For accumulating the kernel values
-    for (let x = 0; x < size; x++) {
-        kernel[x] = Math.exp(-0.5 * Math.pow((x - meanIndex) / sigma, 2.0));
-        // Accumulate the kernel values
-        sum += kernel[x];
-    }
-
-    // Normalize the kernel
-    for (let x = 0; x < size; x++) {
-        kernel[x] /= sum;
-    }
-    return kernel;
 }

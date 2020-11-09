@@ -1,21 +1,33 @@
 <template>
-    <canvas id="SPcanvas" ref="SPcanvas" class="SPcanvas pa-0 ma-0" :height="width" :width="width"></canvas>
+    <canvas
+        v-if="track && createScapePlot"
+        id="SPcanvas"
+        ref="SPcanvas"
+        class="SPcanvas pa-0 ma-0"
+        :height="width"
+        :width="width"
+    ></canvas>
 </template>
 
 <script>
 import * as log from "../../dev/log";
 import * as vis from "../../app/vis";
-
+import * as Track from "../../app/Track";
 export default {
     props: ["width"],
     computed: {
         track() {
             return this.$store.getters.selectedTrack;
         },
+        createScapePlot() {
+            return Track.createScapePlot;
+        },
     },
     mounted() {
         window.eventBus.$on("readyForVis", () => {
-            this.drawSP();
+            if (this.createScapePlot) {
+                this.drawSP();
+            }
         });
     },
     methods: {

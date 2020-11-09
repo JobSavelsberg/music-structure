@@ -30,7 +30,7 @@
             </form>
 
             <v-btn icon @click="testing = !testing">
-                <v-icon>mdi-ab-testing</v-icon>
+                <v-icon>mdi-test-tube</v-icon>
             </v-btn>
             <div class="volumeSlider">
                 <v-container>

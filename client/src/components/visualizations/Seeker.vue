@@ -8,7 +8,7 @@
         @click="clickedSVG"
     >
         <rect
-            :x="(this.zoomed ? 0.5 : seekerNormalized) * width - 1.25"
+            :x="(useZoom && isZoomed ? 0.5 : seekerNormalized) * width - 1.25"
             :y="0"
             :width="2.5"
             :height="height * 2"
@@ -23,7 +23,7 @@ import * as log from "../../dev/log";
 import * as player from "../../app/player";
 
 export default {
-    props: ["width", "height"],
+    props: ["width", "height", "useZoom"],
     data() {
         return {};
     },
@@ -37,8 +37,11 @@ export default {
         seekerNormalized() {
             return this.$store.getters.seeker / (this.track.getAnalysisDuration() * 1000);
         },
-        zoomed() {
-            return this.$store.state.zoomed;
+        isZoomed() {
+            return this.$store.state.isZoomed;
+        },
+        zoomScale() {
+            return this.$store.getters.zoomScale;
         },
     },
     mounted() {},
@@ -53,6 +56,7 @@ export default {
                 xNormalized = event.offsetX / this.width;
                 yNormalized = event.layerY / this.height;
             }
+
             /* Code for scapeplot
             if (yNormalized > 1) {
                 const size = Math.floor(Math.min(Math.max(0, 2 - yNormalized), 1) * this.track.features.sampleAmount);
@@ -61,8 +65,13 @@ export default {
                 this.track.updateScoreMatrix(size, start);
             }*/
             //log.debug(xNormalized, yNormalized);
-
-            player.seekS(xNormalized * this.track.getAnalysisDuration());
+            if (this.useZoom && this.isZoomed) {
+                const xFromMiddle = xNormalized * 2 - 1;
+                const seekerPos = Math.min(1, Math.max(0, this.seekerNormalized + xFromMiddle / (2 * this.zoomScale)));
+                player.seekS(seekerPos * this.track.getAnalysisDuration());
+            } else {
+                player.seekS(xNormalized * this.track.getAnalysisDuration());
+            }
         },
     },
 };

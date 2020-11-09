@@ -12,34 +12,35 @@ import * as scapePlot from "./scapePlot";
 
 const GAMMA = 1.7;
 const CLUSTERAMOUNT = 10;
-const samples = 250;
-const sampleDuration = 0.5;
+const samples = 500;
+const sampleDuration = 1;
 const sampleBlur = 1.5; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
 
 const blurTime = 10;
 const threshold = 0.65;
-const thresholdPercentage = 0.2;
+const thresholdPercentage = 0.15;
 const tempoRatios = [0.66, 0.81, 1, 1.22, 1.5];
 
 export const SPminSize = 1; // Minimal size of segment in scape plot
-export const SPstepSize = 2; // Size of the step between segment start and size in scape plot
+export const SPstepSize = 5; // Size of the step between segment start and size in scape plot
+export const createScapePlot = false;
 
+const useSampled = true;
+const allPitches = true;
 export default class Track {
     trackData = null;
     analysisData = null;
-
     groundTruth = null;
 
     matrixes = []; // {name, matrix}
     scapePlot = null;
     scapePlotAnchorColor = null;
     graphFeatures = []; // {name, data};
+    structureSections = [];
 
     features;
 
     processed = false;
-    useSampled = true;
-    allPitches = true;
 
     clusters = new Array(CLUSTERAMOUNT).fill([]);
 
@@ -69,25 +70,25 @@ export default class Track {
         const time = new Date();
 
         let features = this.features.processed;
-        if (this.useSampled) {
+        if (useSampled) {
             features = this.features.sampled;
         }
-
         workers
             .startSSM(
                 this.getID(),
                 features.pitches,
                 features.timbres,
-                features.sampleDuration,
+                this.features.sampleDuration,
                 this.getSegmentStartDuration(),
                 {
                     blurTime,
                     threshold,
                     thresholdPercentage,
                     tempoRatios,
-                    allPitches: this.allPitches,
+                    allPitches,
                     SPminSize,
                     SPstepSize,
+                    createScapePlot,
                 }
             )
             .then((result) => {
@@ -99,7 +100,7 @@ export default class Track {
                 this.graphFeatures = result.graphs;
                 this.scapePlot = result.scapePlot;
                 this.scapePlotAnchorColor = result.scapePlotAnchorColor;
-
+                this.structureSections = result.structureSections;
                 window.eventBus.$emit("readyForVis");
             });
 
@@ -246,7 +247,7 @@ export default class Track {
         return this.features.segments[i];
     }
     getSegmentStartDuration() {
-        if (this.useSampled) {
+        if (useSampled) {
             return this.features.sampleStartDuration;
         } else {
             return this.features.segmentStartDuration;

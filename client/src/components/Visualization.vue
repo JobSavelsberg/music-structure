@@ -7,20 +7,24 @@
         <Matrixes :width="width" />
 
         <Graphs :width="width" />
-        <GroundTruthVis :width="width" />
-
+        <Structure :width="width" />
+        <GroundTruth :width="width" />
+        <Beats :width="width" />
+        <PitchTimbre :width="width" />
         <ScapePlot :width="width" />
     </div>
 </template>
 
 <script>
 import Matrixes from "./visualizations/Matrixes";
-import GroundTruthVis from "./visualizations/GroundTruthVis";
+import GroundTruth from "./visualizations/GroundTruth";
 import Graphs from "./visualizations/Graphs";
 import ScapePlot from "./visualizations/ScapePlot";
+import Beats from "./visualizations/Beats";
+import PitchTimbre from "./visualizations/PitchTimbre";
+import Structure from "./visualizations/Structure";
 
 import * as log from "../dev/log";
-import * as webGL from "../app/webGL";
 import * as player from "../app/player";
 import * as vis from "../app/vis";
 
@@ -28,9 +32,12 @@ export default {
     props: ["width"],
     components: {
         Matrixes,
-        GroundTruthVis,
+        GroundTruth,
+        Beats,
         Graphs,
         ScapePlot,
+        PitchTimbre,
+        Structure,
     },
     data() {
         return {

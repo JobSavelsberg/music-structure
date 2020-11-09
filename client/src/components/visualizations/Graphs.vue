@@ -5,6 +5,13 @@
             <Seeker :width="width" :height="height" />
             <svg :width="width" :height="height">
                 <path fill="none" stroke="white" stroke-width="2" :d="d[feature.name]" class="graphPath" />
+                <rect
+                    x="0"
+                    y="0"
+                    :width="width"
+                    :height="height"
+                    style="fill:none; stroke:grey; stroke-width:1; fill-opacity:0; stroke-opacity:1;"
+                />
             </svg>
         </div>
     </div>
@@ -28,6 +35,11 @@ export default {
             d: {},
         };
     },
+    watch: {
+        width() {
+            this.draw();
+        },
+    },
     computed: {
         track() {
             return this.$store.getters.selectedTrack;
@@ -48,10 +60,13 @@ export default {
     },
     mounted() {
         window.eventBus.$on("readyForVis", () => {
-            this.track.graphFeatures.forEach((feature) => this.generateLine(feature));
+            this.draw();
         });
     },
     methods: {
+        draw() {
+            this.track.graphFeatures.forEach((feature) => this.generateLine(feature));
+        },
         lmap(val, min, max) {
             return (val - min) / (max - min);
         },

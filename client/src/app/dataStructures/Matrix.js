@@ -35,7 +35,9 @@ export default class Matrix {
         const featureAmount = options.featureAmount || matrix.featureAmount;
         const numberType = options.numberType || matrix.numberType;
         const sampleDuration = options.sampleDuration || matrix.sampleDuration;
-        return new Matrix({ width: matrix.width, height: matrix.height, featureAmount, numberType, sampleDuration });
+        const width = matrix.width || matrix.size;
+        const height = matrix.height || matrix.size;
+        return new Matrix({ width: width, height: height, featureAmount, numberType, sampleDuration });
     }
 
     static fromHalfMatrix(halfMatrix) {

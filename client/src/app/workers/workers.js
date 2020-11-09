@@ -35,6 +35,7 @@ export async function startSSM(
         const tempoRatios = options.tempoRatios || [1];
         const SPminSize = options.SPminSize || 4;
         const SPstepSize = options.SPstepSize || 1;
+        const createScapePlot = options.createScapePlot || false;
 
         ssm.postMessage({
             pitchFeatures,
@@ -50,12 +51,15 @@ export async function startSSM(
             thresholdPercentage,
             SPminSize,
             SPstepSize,
+            createScapePlot,
         });
         ssm.onmessage = (event) => {
             const result = event.data;
             if (result.id === trackId) {
-                result.scapePlot = new HalfMatrix(result.scapePlot);
-                result.scapePlotAnchorColor = new Float32Array(result.scapePlotAnchorColor);
+                if (createScapePlot) {
+                    result.scapePlot = new HalfMatrix(result.scapePlot);
+                    result.scapePlotAnchorColor = new Float32Array(result.scapePlotAnchorColor);
+                }
 
                 result.matrixes.forEach((matrix) => {
                     if (matrix.buffer.type === "Matrix") {

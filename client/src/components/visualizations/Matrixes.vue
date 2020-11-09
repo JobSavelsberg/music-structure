@@ -5,7 +5,7 @@
                 <v-tab v-for="matrix in this.track.matrixes" :key="matrix.name">{{ matrix.name }}</v-tab>
             </v-tabs>
         </div>
-        <Seeker :width="width" :height="width" />
+        <Seeker :width="width" :height="width" :useZoom="true" />
         <canvas id="gl-canvas" :height="width" :width="width" class="glCanvas pa-0 ma-0"></canvas>
     </div>
 </template>
@@ -13,7 +13,8 @@
 <script>
 import * as log from "../../dev/log";
 import * as vis from "../../app/vis";
-import * as webGL from "../../app/webGL";
+import WebGLMatrixPool from "../../app/webgl/WebGLMatrixPool";
+
 import Seeker from "./Seeker";
 
 export default {
@@ -23,10 +24,9 @@ export default {
     },
     data() {
         return {
-            glCanvas: null,
-            matrixBuffers: null,
             selectedTab: 0,
             drawLoop: null,
+            webGLMatrixPool: null,
         };
     },
     watch: {
@@ -34,13 +34,11 @@ export default {
             this.applyRenderMode();
         },
         selectedTab() {
-            if (this.readyForVis) {
-                this.setSSM();
-                this.drawSSM();
-            }
+            this.setSelected();
+            this.draw();
         },
         track() {
-            this.clearMatrixes();
+            this.webGLMatrixPool.clear();
         },
     },
     computed: {
@@ -49,6 +47,9 @@ export default {
         },
         zoomed() {
             return this.$store.getters.isZoomed;
+        },
+        zoomScale() {
+            return this.$store.getters.zoomScale;
         },
         seekerNormalized() {
             return this.$store.getters.seeker / (this.track.getAnalysisDuration() * 1000);
@@ -62,66 +63,31 @@ export default {
         },
     },
     mounted() {
-        this.webGLSetup();
-        log.debug("SET UP WEBGL");
+        this.webGLMatrixPool = new WebGLMatrixPool(document.getElementById("gl-canvas"));
         window.eventBus.$on("readyForVis", () => {
-            log.debug("Visualization Vue got readyForVis");
             if (!this.track) log.error("SSM done but track does not exist");
 
-            this.matrixBuffers = new Array(this.track.matrixes.length + 1);
+            this.webGLMatrixPool.fillMatrixBufferPool(this.track, this.selectedTab);
 
-            this.track.matrixes.forEach((matrix, index) => {
-                if (index === this.selectedTab) {
-                    this.matrixBuffers[index] = webGL.createSSMDataArray(this.track, matrix.matrix);
-                } else {
-                    setTimeout(() => {
-                        this.matrixBuffers[index] = webGL.createSSMDataArray(this.track, matrix.matrix);
-                    }, 0);
-                }
-            });
-
-            this.readyForVis = true;
-
-            this.setSSM();
+            this.setSelected();
             this.applyRenderMode();
         });
     },
     methods: {
-        webGLSetup() {
-            this.glCanvas = document.getElementById("gl-canvas");
-            if (!this.glCanvas) {
-                log.warn("canvas not ready: ");
-                return;
-            }
-            this.glCanvas.width = this.width;
-            this.glCanvas.height = this.width;
-            webGL.init(this.glCanvas);
+        setSelected() {
+            this.webGLMatrixPool.select(this.selectedTab);
         },
-        visChanged(newVis, oldVis) {},
-
-        setSSM() {
-            if (this.glCanvas) {
-                webGL.setSSMDataArray(this.matrixBuffers[this.selectedTab]);
-            } else {
-                log.warn("No canvas");
-            }
-        },
-
-        drawSSM() {
-            webGL.clear();
-            webGL.drawSSM(this.xCenterPositionNormalized, this.zoomed ? 2 : 1);
+        draw() {
+            this.webGLMatrixPool.clear();
+            this.webGLMatrixPool.draw(this.xCenterPositionNormalized, this.zoomed ? this.zoomScale : 1, 1);
         },
         applyRenderMode() {
             clearInterval(this.drawLoop);
             if (this.zoomed) {
-                this.drawLoop = setInterval(this.drawSSM, 33);
+                this.drawLoop = setInterval(this.draw, this.$store.getters.seekerUpdateSpeed);
             } else {
-                this.drawSSM();
+                this.draw();
             }
-        },
-        clearMatrixes() {
-            webGL.clear();
-            this.matrixBuffers = null;
         },
     },
 };

@@ -64,9 +64,9 @@ export default class Features {
 
     processSegments() {
         this.segments.forEach((s, i) => {
-            this.raw.pitches = s.segment.pitches;
-            this.raw.timbres = s.segment.timbres;
-            this.raw.loudness = s.getLoudnessFeatures();
+            this.raw.pitches[i] = s.segment.pitches;
+            this.raw.timbres[i] = s.segment.timbres;
+            this.raw.loudness[i] = s.getLoudnessFeatures();
             s.processPitch();
             s.processTimbre(this.timbreMin, this.timbreMax, this.timbreBiggest, this.timbreTotalBiggest);
             this.processed.pitches.push(s.pitches);
