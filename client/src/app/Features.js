@@ -11,6 +11,7 @@ export default class Features {
     length = 0;
     segments = [];
     segmentStartDuration = [];
+    beatsStartDuration = [];
     raw = { pitches: [], timbres: [], loudness: [] };
     processed = {
         pitches: [],
@@ -41,6 +42,8 @@ export default class Features {
         this.sampleDuration = analysisData.track.duration / this.sampleAmount;
         this.sampleBlur = options.sampleBlur || 1;
         log.info("Reducing segments, sample amount:", this.sampleAmount);
+        log.info("Amount of beats:", analysisData.beats.length);
+        this.fillBeatsStartDuration(analysisData.beats);
         this.calculateMaxMin();
         this.processSegments();
         this.sampleFeatures();
@@ -62,6 +65,12 @@ export default class Features {
         }
     }
 
+    fillBeatsStartDuration(beats) {
+        beats.forEach((beat) => {
+            this.beatsStartDuration.push([beat.start, beat.duration]);
+        });
+    }
+
     processSegments() {
         this.segments.forEach((s, i) => {
             this.raw.pitches[i] = s.segment.pitches;
@@ -70,11 +79,6 @@ export default class Features {
             s.processPitch();
             s.processTimbre(this.timbreMin, this.timbreMax, this.timbreBiggest, this.timbreTotalBiggest);
             this.processed.pitches.push(s.pitches);
-            for (const pitch of s.pitches) {
-                if (pitch < 0 || pitch > 1) {
-                    log.warn("Yo pitch is not good", pitch);
-                }
-            }
             this.processed.timbres.push(s.timbres);
             this.processed.tonalEnergy.push(s.tonalityEnergy);
             this.processed.tonalRadius.push(s.tonalityRadius);

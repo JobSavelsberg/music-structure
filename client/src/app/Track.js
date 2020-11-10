@@ -14,7 +14,7 @@ const GAMMA = 1.7;
 const CLUSTERAMOUNT = 10;
 const samples = 500;
 const sampleDuration = 1;
-const sampleBlur = 1.5; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
+const sampleBlur = 1; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
 
 const blurTime = 10;
 const threshold = 0.65;
@@ -80,6 +80,7 @@ export default class Track {
                 features.timbres,
                 this.features.sampleDuration,
                 this.getSegmentStartDuration(),
+                this.features.beatsStartDuration,
                 {
                     blurTime,
                     threshold,

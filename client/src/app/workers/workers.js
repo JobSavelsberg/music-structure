@@ -25,6 +25,7 @@ export async function startSSM(
     timbreFeatures,
     sampleDuration,
     segmentStartDuration,
+    beatsStartDuration,
     options = {}
 ) {
     return new Promise((resolve) => {
@@ -42,6 +43,7 @@ export async function startSSM(
             timbreFeatures,
             sampleDuration,
             segmentStartDuration,
+            beatsStartDuration,
             id: trackId,
             timestamp: new Date(),
             allPitches,

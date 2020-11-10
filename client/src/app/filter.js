@@ -76,3 +76,5 @@ export function gaussianBlur1D(array, size) {
 
     return blurredArray;
 }
+
+export function medianBlur1DSegments() {}

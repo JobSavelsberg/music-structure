@@ -16,6 +16,19 @@ addEventListener("message", (event) => {
     const matrixes = [];
     const graphs = [];
 
+    const beatAmount = data.beatsStartDuration.length;
+    const beatDurationArray = new Float32Array(beatAmount);
+    for (let i = 0; i < beatAmount; i++) {
+        beatDurationArray[i] = data.beatsStartDuration[i][1];
+    }
+    const beatDurationGraph = {
+        name: "Beat Duration",
+        buffer: beatDurationArray.buffer,
+        min: 0,
+        max: 1,
+    };
+    graphs.push(beatDurationGraph);
+
     // Calculate raw SSM: pitchSSM with 12 pitches, timbreSSM
     const ssmPitch = timed("ssmPitch", () =>
         SSM.calculateSSM(data.pitchFeatures, data.sampleDuration, allPitches, 0.4)

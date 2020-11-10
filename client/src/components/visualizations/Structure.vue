@@ -60,14 +60,15 @@ export default {
     },
     methods: {
         drawStructure() {
-            this.zoomCanvas.clear();
             this.track.structureSections.forEach((section, index) => {
-                this.zoomCanvas.drawRect(
+                this.zoomCanvas.drawRectWithBorder(
                     section.start,
                     0,
                     section.duration,
                     this.blockHeight,
-                    vis.categoryColor(index)
+                    vis.categoryColor(index),
+                    1,
+                    null
                 );
             });
         },

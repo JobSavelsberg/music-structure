@@ -1,18 +1,7 @@
 <template>
     <div v-if="track">
-        <div v-for="feature in this.track.graphFeatures" :key="feature.name">
-            <p class="pa-0 ma-0">{{ feature.name }}</p>
-            <Seeker :width="width" :height="height" />
-            <svg :width="width" :height="height">
-                <path fill="none" stroke="white" stroke-width="2" :d="d[feature.name]" class="graphPath" />
-                <rect
-                    x="0"
-                    y="0"
-                    :width="width"
-                    :height="height"
-                    style="fill:none; stroke:grey; stroke-width:1; fill-opacity:0; stroke-opacity:1;"
-                />
-            </svg>
+        <div v-for="(feature, index) in features" :key="feature.name">
+            <Graph :width="width" :height="height" :featureIndex="index" />
         </div>
     </div>
 </template>
@@ -20,61 +9,32 @@
 <script>
 import * as d3 from "d3";
 import * as log from "../../dev/log";
-import Seeker from "./Seeker";
+import Graph from "./Graph";
 
 export default {
     props: ["width"],
     components: {
-        Seeker,
+        Graph,
     },
     data() {
         return {
             height: 60,
-            max: 0,
-            min: 0,
-            d: {},
+            features: [],
         };
-    },
-    watch: {
-        width() {
-            this.draw();
-        },
     },
     computed: {
         track() {
             return this.$store.getters.selectedTrack;
         },
-        step() {
-            return this.width / this.track.features.sampleAmount;
-        },
-        lineGenerator() {
-            return d3
-                .line()
-                .x((v, i) => {
-                    return this.step * i;
-                })
-                .y((v) => {
-                    return this.height - this.lmap(v, this.min, this.max) * this.height;
-                });
-        },
     },
     mounted() {
         window.eventBus.$on("readyForVis", () => {
-            this.draw();
+            if (this.features.length <= 0) {
+                this.track.graphFeatures.forEach((feature, index) => {
+                    this.features.push(feature.name);
+                });
+            }
         });
-    },
-    methods: {
-        draw() {
-            this.track.graphFeatures.forEach((feature) => this.generateLine(feature));
-        },
-        lmap(val, min, max) {
-            return (val - min) / (max - min);
-        },
-        generateLine(feature) {
-            this.max = Math.max(...feature.data);
-            this.min = Math.min(...feature.data);
-            this.d[feature.name] = this.lineGenerator(feature.data);
-        },
     },
 };
 </script>

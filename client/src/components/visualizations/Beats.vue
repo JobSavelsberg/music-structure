@@ -56,7 +56,6 @@ export default {
     },
     methods: {
         draw() {
-            this.zoomCanvas.clear();
             let y = 0;
             this.drawElements(this.track.getBars(), y);
             y += this.elementHeight;

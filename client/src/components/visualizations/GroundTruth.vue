@@ -2,10 +2,10 @@
     <div>
         <p class="pa-0 ma-0">Spotify Sections</p>
 
-        <Seeker :width="width" :height="height" />
+        <Seeker :width="width" :height="height" useZoom="true" />
         <canvas id="GTcanvas" ref="GTcanvas" class="GTcanvas pa-0 ma-0" :height="height" :width="width"></canvas>
         <div v-if="track">
-            <p v-if="trackHasGroundTruth" class="pa-0 ma-0" :style="`transform: translate(0px, ${-height + 5}px);`">
+            <p v-if="trackHasGroundTruth" class="pa-0 ma-0" :style="`transform: translate(0px, ${-height + 15}px);`">
                 Ground Truth
             </p>
         </div>
@@ -28,7 +28,7 @@ export default {
         return {
             allowedNamespaces: [testing.namespaces.coarse],
             blockHeight: 20,
-            titleHeight: 15,
+            titleHeight: 25,
             zoomCanvas: null,
         };
     },
@@ -73,7 +73,15 @@ export default {
             const height = this.blockHeight;
 
             this.track.getAnalysis().sections.forEach((section, index) => {
-                this.zoomCanvas.drawRect(section.start, y, section.duration, height, vis.categoryColor(index));
+                this.zoomCanvas.drawRectWithBorder(
+                    section.start,
+                    y,
+                    section.duration,
+                    height,
+                    vis.categoryColor(index),
+                    1,
+                    null
+                );
             });
             y += height;
 
@@ -93,12 +101,14 @@ export default {
                             uniqueValues.push(value);
                         }
 
-                        this.zoomCanvas.drawRect(
+                        this.zoomCanvas.drawRectWithBorder(
                             time,
                             y,
                             duration,
                             height,
-                            vis.categoryColor(uniqueValues.indexOf(value))
+                            vis.categoryColor(uniqueValues.indexOf(value)),
+                            1,
+                            null
                         );
                         this.zoomCanvas.drawText(time, y + height / 2, value);
                     });

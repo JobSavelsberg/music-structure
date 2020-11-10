@@ -50,10 +50,15 @@ export default class ZoomCanvas {
     applyRenderMode() {
         clearInterval(this.drawLoop);
         if (this.zoomed) {
-            this.drawLoop = setInterval(this.drawFunction, store.state.seekerUpdateSpeed);
+            this.drawLoop = setInterval(() => this.clearAndDraw(), store.state.seekerUpdateSpeed);
         } else {
-            this.drawFunction();
+            this.clearAndDraw();
         }
+    }
+
+    clearAndDraw() {
+        this.clear();
+        this.drawFunction();
     }
 
     getSeekerNormalized() {
@@ -74,6 +79,20 @@ export default class ZoomCanvas {
         this.ctx.fillRect(x, y, width, height);
     }
 
+    drawRectWithBorder(start, y, duration, height, color, borderSize, borderColor) {
+        let startNormalized = start / this.trackDuration;
+        if (this.zoomed) startNormalized *= this.zoomScale;
+
+        const x = (startNormalized + this.getOffsetXNormalized()) * this.width;
+        const width = (duration / this.trackDuration) * (this.zoomed ? this.zoomScale : 1) * this.width;
+        if (borderColor !== null) {
+            this.ctx.fillStyle = borderColor;
+            this.ctx.fillRect(x, y, width, height);
+        }
+        this.ctx.fillStyle = color;
+        this.ctx.fillRect(x + borderSize, y + borderSize, width - borderSize * 2, height - borderSize * 2);
+    }
+
     drawVerticalLine(start, y, width, height, color) {
         let startNormalized = start / this.trackDuration;
         if (this.zoomed) startNormalized *= this.zoomScale;
@@ -84,8 +103,13 @@ export default class ZoomCanvas {
     }
 
     drawText(start, y, text, color = "white", font = "12px") {
+        let startNormalized = start / this.trackDuration;
+        if (this.zoomed) startNormalized *= this.zoomScale;
+
+        const x = (startNormalized + this.getOffsetXNormalized()) * this.width;
+
         this.ctx.fillStyle = color;
         this.ctx.font = font;
-        this.ctx.fillText(text, start, y);
+        this.ctx.fillText(text, x, y);
     }
 }
