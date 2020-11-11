@@ -230,4 +230,22 @@ export default class HalfMatrix {
     getSize() {
         return this.size;
     }
+
+    normalize() {
+        let min = this.numberType.max;
+        let max = this.numberType.min;
+        this.forEach((value) => {
+            if (value > max) {
+                max = value;
+            }
+            if (value < min) {
+                min = value;
+            }
+        });
+
+        let i = this.length;
+        while (i--) {
+            this.data[i] = (this.data[i] - min) / (max - min);
+        }
+    }
 }

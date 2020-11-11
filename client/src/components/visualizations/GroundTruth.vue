@@ -26,9 +26,9 @@ export default {
     },
     data() {
         return {
-            allowedNamespaces: [testing.namespaces.coarse],
+            allowedNamespaces: [testing.namespaces.coarse, testing.namespaces.fine],
             blockHeight: 20,
-            titleHeight: 25,
+            innerSpacing: 3,
             zoomCanvas: null,
         };
     },
@@ -36,14 +36,14 @@ export default {
         track() {
             return this.$store.getters.selectedTrack;
         },
-        blockAndTitleHeight() {
-            return this.blockHeight + this.titleHeight;
-        },
         trackHasGroundTruth() {
             return this.track && this.track.groundTruth !== null;
         },
         height() {
-            return (1 + (this.trackHasGroundTruth ? this.allowedNamespaces.length : 0)) * this.blockAndTitleHeight;
+            return (
+                (1 + (this.trackHasGroundTruth ? this.allowedNamespaces.length + 1 : 0)) *
+                (this.blockHeight + this.innerSpacing)
+            );
         },
         zoomed() {
             return this.$store.getters.isZoomed;
@@ -70,7 +70,7 @@ export default {
             const trackDuration = this.track.getAnalysisDuration();
 
             let y = 0;
-            const height = this.blockHeight;
+            const height = this.blockHeight + this.innerSpacing;
 
             this.track.getAnalysis().sections.forEach((section, index) => {
                 this.zoomCanvas.drawRectWithBorder(
@@ -88,32 +88,31 @@ export default {
             if (!this.track.groundTruth) return;
             const annotations = this.track.groundTruth.annotations;
 
-            annotations.forEach((annotation) => {
-                if (annotation && allAllowedNamespaces.includes(annotation.namespace)) {
-                    y += this.titleHeight;
-                    const uniqueValues = [];
-                    annotation.data.forEach((segment) => {
-                        const confidence = segment.confidence;
-                        const duration = segment.duration;
-                        const time = segment.time;
-                        const value = segment.value;
-                        if (!uniqueValues.includes(value)) {
-                            uniqueValues.push(value);
-                        }
+            allAllowedNamespaces.forEach((allowedNamespace) => {
+                const annotation = annotations.find((a) => allowedNamespace.includes(a.namespace));
+                if (!annotation) return;
+                y += height;
+                const uniqueValues = [];
+                annotation.data.forEach((segment) => {
+                    const confidence = segment.confidence;
+                    const duration = segment.duration;
+                    const time = segment.time;
+                    const value = segment.value;
+                    if (!uniqueValues.includes(value)) {
+                        uniqueValues.push(value);
+                    }
 
-                        this.zoomCanvas.drawRectWithBorder(
-                            time,
-                            y,
-                            duration,
-                            height,
-                            vis.categoryColor(uniqueValues.indexOf(value)),
-                            1,
-                            null
-                        );
-                        this.zoomCanvas.drawText(time, y + height / 2, value);
-                    });
-                    y += height;
-                }
+                    this.zoomCanvas.drawRectWithBorder(
+                        time,
+                        y + this.innerSpacing,
+                        duration,
+                        this.blockHeight,
+                        vis.categoryColor(uniqueValues.indexOf(value)),
+                        1,
+                        null
+                    );
+                    this.zoomCanvas.drawText(time + 0.5, y + this.innerSpacing + this.blockHeight / 2, value);
+                });
             });
         },
     },

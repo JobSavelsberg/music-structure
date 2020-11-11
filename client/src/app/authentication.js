@@ -1,4 +1,5 @@
 import * as log from "../dev/log";
+import router from "../router";
 
 import axios from "axios";
 
@@ -10,9 +11,13 @@ const api = axios.create({
 });
 
 export let token;
-let tokenTimestamp;
-let expiresIn;
+let tokenTimestamp = new Date();
+let expiresIn = 3600;
 let refreshToken;
+
+setInterval(() => {
+    log.debug("Token expires in", Math.floor((expiresIn - (new Date() - tokenTimestamp) / 1000) / 60), "minutes");
+}, 5 * 60000);
 
 export async function requestFirstToken(code) {
     await api
@@ -23,9 +28,11 @@ export async function requestFirstToken(code) {
             token = res.data.access_token;
             window.sessionStorage.setItem("token", token);
             expiresIn = res.data.expires_in;
-            window.sessionStorage.setItem("tokenTimestamp", new Date().getTime().toString());
-            refreshToken = res.data.expires_in;
+            tokenTimestamp = new Date();
+            window.sessionStorage.setItem("tokenTimestamp", new Date());
+            refreshToken = res.data.refresh_token;
             window.sessionStorage.setItem("refreshToken", refreshToken);
+            setTimeout(requestRefreshToken, expiresIn * 1000);
         })
         .catch((err) => {
             log.error(err);
@@ -33,6 +40,12 @@ export async function requestFirstToken(code) {
 }
 
 export async function requestRefreshToken() {
+    if (!refreshToken) {
+        refreshToken = window.sessionStorage.getItem("refreshToken");
+        if (!refreshToken) {
+            router.push("/login");
+        }
+    }
     await api
         .post("spotify/token", {
             refresh_token: refreshToken,
@@ -41,9 +54,13 @@ export async function requestRefreshToken() {
             token = res.data.access_token;
             window.sessionStorage.setItem("token", token);
             expiresIn = res.data.expires_in;
-            window.sessionStorage.setItem("tokenTimestamp", new Date().getTime().toString());
-            refreshToken = res.data.expires_in;
+            tokenTimestamp = new Date();
+            window.sessionStorage.setItem("tokenTimestamp", new Date());
+            if (res.data.refresh_token) {
+                refreshToken = res.data.refresh_token;
+            }
             window.sessionStorage.setItem("refreshToken", refreshToken);
+            setTimeout(requestRefreshToken, expiresIn * 1000);
         })
         .catch((err) => {
             log.error(err);
@@ -57,11 +74,27 @@ export function isAuthorized() {
         const r = window.sessionStorage.getItem("refreshToken");
         if (t) {
             token = t;
-            // TODO: check if token is expired, if so renew
+            refreshToken = r;
+            if (!refreshToken || refreshToken.length <= 0) {
+                return false;
+            }
+            tokenTimestamp = new Date(e);
+            if (tokenExpired()) {
+                return false;
+            }
+            setTimeout(requestRefreshToken, timeLeftMilliseconds());
             return true;
         } else {
             return false;
         }
     }
     return true;
+}
+
+export function tokenExpired() {
+    return timeLeftMilliseconds() < 0;
+}
+
+export function timeLeftMilliseconds() {
+    return expiresIn * 1000 - (new Date() - tokenTimestamp) < 0;
 }

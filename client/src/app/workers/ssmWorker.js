@@ -22,27 +22,35 @@ addEventListener("message", (event) => {
 
     const ssmPitchSinglePitch = data.allPitches ? ssmPitch.getFirstFeatureMatrix() : ssmPitch;
 
-    const pitchNoveltySmall = noveltyDetection.detect(ssmPitchSinglePitch, 5);
-    const pitchNoveltyMedium = noveltyDetection.detect(ssmPitchSinglePitch, 20);
-    const pitchNoveltyLarge = noveltyDetection.detect(ssmPitchSinglePitch, 40);
+    // BLURRING
+    const blurredTimbre = filter.gaussianBlur2DOptimized(ssmTimbre, 12);
+    matrixes.push({ name: "Blurred Timbre", buffer: blurredTimbre.getBuffer() });
+    const blurredPitch = filter.gaussianBlur2DOptimized(ssmPitchSinglePitch, 12);
+    matrixes.push({ name: "Blurred Pitch", buffer: blurredPitch.getBuffer() });
 
     const timbreNoveltySmall = noveltyDetection.detect(ssmTimbre, 5);
     const timbreNoveltyMedium = noveltyDetection.detect(ssmTimbre, 20);
     const timbreNoveltyLarge = noveltyDetection.detect(ssmTimbre, 40);
+    const pitchNoveltySmall = noveltyDetection.detect(ssmPitch, 5);
+    const pitchNoveltyMedium = noveltyDetection.detect(ssmPitch, 20);
+    const pitchNoveltyLarge = noveltyDetection.detect(ssmPitch, 40);
 
-    const blurredPitch = filter.gaussianBlur2DOptimized(ssmPitchSinglePitch, 12);
-    matrixes.push({ name: "Blurred Pitch", buffer: blurredPitch.getBuffer() });
+    graphs.push({ name: "Timbre Novelty Blur Small", buffer: timbreNoveltySmall.buffer });
+    graphs.push({ name: "Timbre Novelty Blur Medium", buffer: timbreNoveltyMedium.buffer });
+    graphs.push({ name: "Timbre Novelty Blur Large", buffer: timbreNoveltyLarge.buffer });
+    graphs.push({ name: "Pitch Novelty Blur Small", buffer: pitchNoveltySmall.buffer });
+    graphs.push({ name: "Pitch Novelty Blur Medium", buffer: pitchNoveltyMedium.buffer });
+    graphs.push({ name: "Pitch Novelty Blur Large", buffer: pitchNoveltyLarge.buffer });
 
-    const blurredPitchNovelty = noveltyDetection.absoluteEuclideanColumnDerivative(blurredPitch);
-    graphs.push({ name: "Blur Pitch Column Novelty", buffer: blurredPitchNovelty.buffer });
-
-    const blurredTimbre = filter.gaussianBlur2DOptimized(ssmTimbre, 12);
-    matrixes.push({ name: "Blurred Timbre", buffer: blurredTimbre.getBuffer() });
+    const timbreNovelty = noveltyDetection.absoluteEuclideanColumnDerivative(ssmTimbre);
+    graphs.push({ name: "Timbre Column Novelty", buffer: timbreNovelty.buffer });
     const blurredTimbreNovelty = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbre);
     graphs.push({ name: "Blur Timbre Column Novelty", buffer: blurredTimbreNovelty.buffer });
 
-    graphs.push({ name: "Pitch Novelty Medium", buffer: pitchNoveltyLarge.buffer });
-    graphs.push({ name: "Timbre Novelty Medium", buffer: timbreNoveltyLarge.buffer });
+    const pitchNovelty = noveltyDetection.absoluteEuclideanColumnDerivative(ssmPitchSinglePitch);
+    graphs.push({ name: "Pitch Column Novelty", buffer: pitchNovelty.buffer });
+    const blurredPitchNovelty = noveltyDetection.absoluteEuclideanColumnDerivative(blurredPitch);
+    graphs.push({ name: "Blur Pitch Column Novelty", buffer: blurredPitchNovelty.buffer });
 
     // Enhance pitch SSM, diagonal smoothing, still contains 12 pitches
     let startTime = performance.now();
@@ -72,8 +80,10 @@ addEventListener("message", (event) => {
         tempoRatios: data.tempoRatios,
     });
     const timeLagMatrix = Matrix.createTimeLagMatrix(longerDiagonalBlur);
+    matrixes.push({ name: "Time Lag Matrix", buffer: timeLagMatrix.getBuffer() });
+
     //const binaryTimeLagMatrix = SSM.binarize(timeLagMatrix, 0.4);
-    const blurredBinaryTimeLagMatrix = filter.gaussianBlur2DOptimized(timeLagMatrix, 6);
+    const blurredBinaryTimeLagMatrix = filter.gaussianBlur2DOptimized(timeLagMatrix, 10);
     matrixes.push({ name: "Blurred Binary Time Lag Matrix", buffer: blurredBinaryTimeLagMatrix.getBuffer() });
 
     const structureFeatureNovelty = noveltyDetection.computeNoveltyFromTimeLag(blurredBinaryTimeLagMatrix);
@@ -137,6 +147,8 @@ addEventListener("message", (event) => {
     const structureSections = structure.createSectionsFromNovelty(smoothedCombined, data.sampleDuration);
     log.debug(structureSections);
 
+    visualizeKernel(data, matrixes);
+
     message.matrixes = matrixes;
     message.graphs = graphs;
     message.structureSections = structureSections;
@@ -184,4 +196,12 @@ export function createBeatGraph(data, graphs) {
     };
     graphs.push(beatDurationGraph);
     return beatDurationArray;
+}
+
+export function visualizeKernel(data, matrixes) {
+    const kernel = noveltyDetection.createKernel(data.sampleAmount);
+    const kernelMatrix = new HalfMatrix({ size: data.sampleAmount, numberType: HalfMatrix.NumberType.FLOAT32 });
+    kernelMatrix.data = kernel;
+    kernelMatrix.normalize();
+    matrixes.push({ name: "Kernel", buffer: kernelMatrix.getBuffer() });
 }

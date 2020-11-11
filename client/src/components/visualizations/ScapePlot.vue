@@ -32,6 +32,7 @@ export default {
     },
     methods: {
         drawSP() {
+            if (!this.createScapePlot) return;
             const canvas = document.getElementById("SPcanvas");
             if (!canvas) {
                 log.error("canvas not ready");

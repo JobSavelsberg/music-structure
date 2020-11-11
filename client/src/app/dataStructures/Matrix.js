@@ -202,15 +202,6 @@ export default class Matrix {
         }
     }
 
-    normalize() {
-        let maxValue = 0;
-        this.forEach((value) => {
-            if (value > maxValue) {
-                maxValue = value;
-            }
-        });
-    }
-
     getBuffer() {
         return {
             type: "Matrix",
@@ -230,5 +221,23 @@ export default class Matrix {
     getSize() {
         assert(this.width === this.height);
         return this.width;
+    }
+
+    normalize() {
+        let min = this.numberType.max;
+        let max = this.numberType.min;
+        this.forEach((value) => {
+            if (value > max) {
+                max = value;
+            }
+            if (value < min) {
+                min = value;
+            }
+        });
+
+        let i = this.length;
+        while (i--) {
+            this.data[i] = (this.data[i] - min) / (max - min);
+        }
     }
 }
