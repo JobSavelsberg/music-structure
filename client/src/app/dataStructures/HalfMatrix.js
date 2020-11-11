@@ -49,7 +49,16 @@ export default class HalfMatrix {
     setValue(x, y, value) {
         this.data[((y * y + y) / 2) * this.featureAmount + x * this.featureAmount] = value;
     }
-
+    setValueNormalized(x, y, value) {
+        this.data[((y * y + y) / 2) * this.featureAmount + x * this.featureAmount] = value * this.numberType.scale;
+    }
+    setValueNormalizedMirrored(x, y, value) {
+        if (x > y) {
+            this.data[((x * x + x) / 2) * this.featureAmount + y * this.featureAmount] = value * this.numberType.scale;
+        } else {
+            this.data[((y * y + y) / 2) * this.featureAmount + x * this.featureAmount] = value * this.numberType.scale;
+        }
+    }
     getValue(x, y, f = 0) {
         return this.data[((y * y + y) / 2) * this.featureAmount + x * this.featureAmount + f];
     }

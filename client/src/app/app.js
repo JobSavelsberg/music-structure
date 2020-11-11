@@ -6,6 +6,7 @@ import router from "../router";
 import * as workers from "./workers/workers";
 import * as log from "../dev/log";
 import * as testing from "./testing";
+import SynthesizedTrack from "./synthesizer";
 
 export const spotify = new SpotifyWebApi();
 
@@ -134,4 +135,15 @@ export async function loadTestSet(testSetKey) {
         await Promise.all(spotifySearches);
     }
     loadTracksFromSpotify(spotifyTracks, true);
+}
+
+export async function synthesize(synthesizerString) {
+    let trackData = {};
+    trackData.id = "0000";
+    const track = new SynthesizedTrack(trackData, synthesizerString);
+    allTracks.set(trackData.id, track);
+    store.commit("clearTrackList");
+    store.commit("addToTrackList", track);
+
+    selectTrackAtIndex(0);
 }

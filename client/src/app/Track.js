@@ -10,16 +10,17 @@ import * as pathExtraction from "./pathExtraction";
 
 import * as scapePlot from "./scapePlot";
 
-const GAMMA = 1.7;
-const CLUSTERAMOUNT = 10;
-const samples = 500;
-const sampleDuration = 1;
-const sampleBlur = 1; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
+export const GAMMA = 1.7;
+export const CLUSTERAMOUNT = 10;
+export const samples = 500;
+export const sampleDuration = 0.25;
+export const sampleBlur = 1; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
 
-const blurTime = 10;
-const threshold = 0.65;
-const thresholdPercentage = 0.15;
-const tempoRatios = [0.66, 0.81, 1, 1.22, 1.5];
+export const enhanceBlurLength = 20;
+export const blurTime = 10;
+export const threshold = 0.65;
+export const thresholdPercentage = 0.2;
+export const tempoRatios = [0.66, 0.81, 1, 1.22, 1.5];
 
 export const SPminSize = 1; // Minimal size of segment in scape plot
 export const SPstepSize = 5; // Size of the step between segment start and size in scape plot
@@ -53,8 +54,8 @@ export default class Track {
 
     process() {
         this.features = new Features(this.analysisData, {
-            samples: samples,
-            //sampleDuration: sampleDuration,
+            //samples: samples,
+            sampleDuration: sampleDuration,
             sampleBlur: sampleBlur,
         });
         //this.tsne();
@@ -83,6 +84,7 @@ export default class Track {
                 this.features.beatsStartDuration,
                 {
                     blurTime,
+                    enhanceBlurLength,
                     threshold,
                     thresholdPercentage,
                     tempoRatios,

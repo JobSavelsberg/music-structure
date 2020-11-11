@@ -5,7 +5,7 @@
 
             <v-spacer></v-spacer>
 
-            <form v-if="!testing" v-on:submit.prevent="search">
+            <form v-if="!testing && !synthesizing" v-on:submit.prevent="search">
                 <v-text-field
                     v-model="searchQuery"
                     hide-details
@@ -16,7 +16,7 @@
                     filled
                 ></v-text-field>
             </form>
-            <form v-if="testing">
+            <form v-if="testing && !synthesizing">
                 <v-select
                     v-model="selectedTestSet"
                     :items="allTestSets"
@@ -28,9 +28,14 @@
                     filled
                 ></v-select>
             </form>
-
-            <v-btn icon @click="testing = !testing">
+            <form v-if="synthesizing" v-on:submit.prevent="synthesize">
+                <v-text-field v-model="synthesizerString" hide-details single-line rounded dense filled></v-text-field>
+            </form>
+            <v-btn v-if="!synthesizing" icon @click="testing = !testing">
                 <v-icon>mdi-test-tube</v-icon>
+            </v-btn>
+            <v-btn icon @click="synthesizing = !synthesizing">
+                <v-icon>mdi-pencil</v-icon>
             </v-btn>
             <div class="volumeSlider">
                 <v-container>
@@ -52,9 +57,9 @@
                 <v-icon>mdi-dots-vertical</v-icon>
             </v-btn>
         </v-app-bar>
-        <TrackSelector :tracks="trackList" :album-size="120" />
+        <TrackSelector v-if="!synthesizing" :tracks="trackList" :album-size="120" />
         <div ref="mainContent" class="mainContent" :style="mainContentStyle">
-            <Player :width="mainContentWidth" />
+            <Player v-if="!synthesizing" :width="mainContentWidth" />
             <Visualization :width="mainContentWidth" />
         </div>
     </div>
@@ -75,11 +80,13 @@ export default {
     data() {
         return {
             searchQuery: "",
+            synthesizerString: "",
             volume: 0.75,
             prevVolume: 0.75,
             padding: 20 * 4, // vuetify padding only goes per 4 px
             windowWidth: window.innerWidth,
             testing: false,
+            synthesizing: false,
             selectedTestSet: null,
         };
     },
@@ -157,6 +164,11 @@ export default {
             } else {
                 this.volume = this.prevVolume;
             }
+        },
+        synthesize() {
+            log.debug("Synthesizing", this.synthesizerString);
+
+            app.synthesize(this.synthesizerString);
         },
     },
 };

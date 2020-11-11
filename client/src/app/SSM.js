@@ -32,6 +32,7 @@ export function enhanceSSM(ssm, options, allPitches = false) {
         //enhancementPasses.push(diagonalSmoothing(ssm, 1, blurLength, tempoRatio));
         //enhancementPasses.push(diagonalSmoothing(ssm, -1, blurLength, tempoRatio));
         enhancementPasses.push(linearSmoothing(ssm, blurLength, tempoRatio));
+        //enhancementPasses.push(gaussianSmoothing(ssm, blurLength, tempoRatio));
     }
 
     const enhancedSSM = HalfMatrix.from(ssm);

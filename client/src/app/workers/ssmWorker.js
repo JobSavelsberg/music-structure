@@ -6,36 +6,21 @@ import * as structure from "../structure";
 import * as filter from "../filter";
 import * as scapePlot from "../scapePlot";
 import Matrix from "../dataStructures/Matrix";
+import HalfMatrix from "../dataStructures/HalfMatrix";
 
 addEventListener("message", (event) => {
     const data = event.data;
     const message = {};
-    const sampleAmount = data.segmentStartDuration.length;
-    const allPitches = data.allPitches;
-
     const matrixes = [];
     const graphs = [];
 
-    const beatAmount = data.beatsStartDuration.length;
-    const beatDurationArray = new Float32Array(beatAmount);
-    for (let i = 0; i < beatAmount; i++) {
-        beatDurationArray[i] = data.beatsStartDuration[i][1];
-    }
-    const beatDurationGraph = {
-        name: "Beat Duration",
-        buffer: beatDurationArray.buffer,
-        min: 0,
-        max: 1,
-    };
-    graphs.push(beatDurationGraph);
+    const beatGraph = createBeatGraph(data, graphs);
 
-    // Calculate raw SSM: pitchSSM with 12 pitches, timbreSSM
-    const ssmPitch = timed("ssmPitch", () =>
-        SSM.calculateSSM(data.pitchFeatures, data.sampleDuration, allPitches, 0.4)
-    );
-    const ssmTimbre = timed("ssmTimbre", () => SSM.calculateSSM(data.timbreFeatures, data.sampleDuration, false, 0.4));
+    const { ssmPitch, ssmTimbre } = calculateSSM(data, 0.4);
+    const ssmTimbrePitch = Matrix.combine(ssmPitch, ssmTimbre);
+    matrixes.push({ name: "Raw Pitch/Timbre", buffer: ssmTimbrePitch.getBuffer() });
 
-    const ssmPitchSinglePitch = ssmPitch.getFirstFeatureMatrix();
+    const ssmPitchSinglePitch = data.allPitches ? ssmPitch.getFirstFeatureMatrix() : ssmPitch;
 
     const pitchNoveltySmall = noveltyDetection.detect(ssmPitchSinglePitch, 5);
     const pitchNoveltyMedium = noveltyDetection.detect(ssmPitchSinglePitch, 20);
@@ -43,10 +28,11 @@ addEventListener("message", (event) => {
 
     const timbreNoveltySmall = noveltyDetection.detect(ssmTimbre, 5);
     const timbreNoveltyMedium = noveltyDetection.detect(ssmTimbre, 20);
-    const timbreNoveltyLarge = noveltyDetection.detect(ssmTimbre, 20);
+    const timbreNoveltyLarge = noveltyDetection.detect(ssmTimbre, 40);
 
     const blurredPitch = filter.gaussianBlur2DOptimized(ssmPitchSinglePitch, 12);
     matrixes.push({ name: "Blurred Pitch", buffer: blurredPitch.getBuffer() });
+
     const blurredPitchNovelty = noveltyDetection.absoluteEuclideanColumnDerivative(blurredPitch);
     graphs.push({ name: "Blur Pitch Column Novelty", buffer: blurredPitchNovelty.buffer });
 
@@ -58,12 +44,13 @@ addEventListener("message", (event) => {
     graphs.push({ name: "Pitch Novelty Medium", buffer: pitchNoveltyLarge.buffer });
     graphs.push({ name: "Timbre Novelty Medium", buffer: timbreNoveltyLarge.buffer });
 
-    const ssmTimbrePitch = Matrix.combine(ssmPitch, ssmTimbre);
-    matrixes.push({ name: "Raw Pitch/Timbre", buffer: ssmTimbrePitch.getBuffer() });
-
     // Enhance pitch SSM, diagonal smoothing, still contains 12 pitches
     let startTime = performance.now();
-    const enhancedSSM = SSM.enhanceSSM(ssmPitch, { blurLength: 6, tempoRatios: data.tempoRatios }, allPitches);
+    const enhancedSSM = SSM.enhanceSSM(
+        ssmPitch,
+        { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios },
+        data.allPitches
+    );
     matrixes.push({ name: "Enhanced SSM", buffer: enhancedSSM.getBuffer() });
     log.debug("Enhance Time", performance.now() - startTime);
 
@@ -86,7 +73,7 @@ addEventListener("message", (event) => {
     });
     const timeLagMatrix = Matrix.createTimeLagMatrix(longerDiagonalBlur);
     //const binaryTimeLagMatrix = SSM.binarize(timeLagMatrix, 0.4);
-    const blurredBinaryTimeLagMatrix = filter.gaussianBlur2DOptimized(timeLagMatrix, 12);
+    const blurredBinaryTimeLagMatrix = filter.gaussianBlur2DOptimized(timeLagMatrix, 6);
     matrixes.push({ name: "Blurred Binary Time Lag Matrix", buffer: blurredBinaryTimeLagMatrix.getBuffer() });
 
     const structureFeatureNovelty = noveltyDetection.computeNoveltyFromTimeLag(blurredBinaryTimeLagMatrix);
@@ -94,7 +81,7 @@ addEventListener("message", (event) => {
 
     if (data.createScapePlot) {
         startTime = performance.now();
-        const SP = scapePlot.create(fullTranspositionInvariant, sampleAmount, data.SPminSize, data.SPstepSize);
+        const SP = scapePlot.create(fullTranspositionInvariant, data.sampleAmount, data.SPminSize, data.SPstepSize);
         log.debug("ScapePlot Time", performance.now() - startTime);
 
         // Anchorpoint selection for segment family similarity
@@ -121,7 +108,7 @@ addEventListener("message", (event) => {
         startTime = performance.now();
         const SPAnchorColor = scapePlot.mapColors(
             fullTranspositionInvariant,
-            sampleAmount,
+            data.sampleAmount,
             data.SPminSize,
             data.SPstepSize,
             anchorPoints,
@@ -144,10 +131,11 @@ addEventListener("message", (event) => {
     }
     graphs.push({ name: "Combined Novelty", buffer: noveltyCombined.buffer });
 
-    const smoothedCombined = filter.gaussianBlur1D(noveltyCombined, 2);
+    const smoothedCombined = filter.gaussianBlur1D(structureFeatureNovelty, 2);
     graphs.push({ name: "Smoothed Combined Novelty", buffer: smoothedCombined.buffer });
 
     const structureSections = structure.createSectionsFromNovelty(smoothedCombined, data.sampleDuration);
+    log.debug(structureSections);
 
     message.matrixes = matrixes;
     message.graphs = graphs;
@@ -163,4 +151,37 @@ export function timed(name, f) {
     const result = f();
     log.info(`${name} \t took`, Math.round(performance.now() - startTime));
     return result;
+}
+
+export function calculateSSM(data, threshold) {
+    if (data.synthesized) {
+        const ssmPitch = new HalfMatrix(data.synthesizedSSMPitch);
+        const ssmTimbre = new HalfMatrix(data.synthesizedSSMTimbre);
+        return { ssmPitch, ssmTimbre };
+    } else {
+        // Calculate raw SSM: pitchSSM with 12 pitches, timbreSSM
+        const ssmPitch = timed("ssmPitch", () =>
+            SSM.calculateSSM(data.pitchFeatures, data.sampleDuration, data.allPitches, threshold)
+        );
+        const ssmTimbre = timed("ssmTimbre", () =>
+            SSM.calculateSSM(data.timbreFeatures, data.sampleDuration, false, threshold)
+        );
+        return { ssmPitch, ssmTimbre };
+    }
+}
+
+export function createBeatGraph(data, graphs) {
+    const beatAmount = data.beatsStartDuration.length;
+    const beatDurationArray = new Float32Array(beatAmount);
+    for (let i = 0; i < beatAmount; i++) {
+        beatDurationArray[i] = data.beatsStartDuration[i][1];
+    }
+    const beatDurationGraph = {
+        name: "Beat Duration",
+        buffer: beatDurationArray.buffer,
+        min: 0,
+        max: 1,
+    };
+    graphs.push(beatDurationGraph);
+    return beatDurationArray;
 }

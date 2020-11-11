@@ -7,9 +7,11 @@ let tsne;
 
 export async function init() {
     ssm = new Worker("./ssmWorker.js", { type: "module" });
-    tsne = new Worker("./tsneWorker.js", { type: "module" });
-    cluster = new Worker("./clusterWorker.js", { type: "module" });
+    //tsne = new Worker("./tsneWorker.js", { type: "module" });
+    //cluster = new Worker("./clusterWorker.js", { type: "module" });
 }
+
+let isCalculating = false;
 
 /**
  *
@@ -30,6 +32,7 @@ export async function startSSM(
 ) {
     return new Promise((resolve) => {
         const blurTime = options.blurTime || 4;
+        const enhanceBlurLength = options.enhanceBlurLength || 4;
         const threshold = options.threshold || 0.5;
         const thresholdPercentage = options.thresholdPercentage || 0.05;
         const allPitches = options.allPitches || false;
@@ -37,16 +40,26 @@ export async function startSSM(
         const SPminSize = options.SPminSize || 4;
         const SPstepSize = options.SPstepSize || 1;
         const createScapePlot = options.createScapePlot || false;
+        const synthesized = options.synthesized || false;
+        const synthesizedSSMPitch = options.synthesizedSSMPitch || null;
+        const synthesizedSSMTimbre = options.synthesizedSSMTimbre || null;
+        const sampleAmount = options.sampleAmount || segmentStartDuration.length;
+        if (isCalculating) {
+            ssm.terminate();
+            ssm = new Worker("./ssmWorker.js", { type: "module" });
+        }
 
         ssm.postMessage({
             pitchFeatures,
             timbreFeatures,
             sampleDuration,
+            sampleAmount,
             segmentStartDuration,
             beatsStartDuration,
             id: trackId,
             timestamp: new Date(),
             allPitches,
+            enhanceBlurLength,
             blurTime,
             tempoRatios,
             threshold,
@@ -54,8 +67,14 @@ export async function startSSM(
             SPminSize,
             SPstepSize,
             createScapePlot,
+            synthesized,
+            synthesizedSSMPitch,
+            synthesizedSSMTimbre,
         });
+        isCalculating = true;
+
         ssm.onmessage = (event) => {
+            isCalculating = false;
             const result = event.data;
             if (result.id === trackId) {
                 if (createScapePlot) {

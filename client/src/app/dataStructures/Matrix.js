@@ -202,6 +202,15 @@ export default class Matrix {
         }
     }
 
+    normalize() {
+        let maxValue = 0;
+        this.forEach((value) => {
+            if (value > maxValue) {
+                maxValue = value;
+            }
+        });
+    }
+
     getBuffer() {
         return {
             type: "Matrix",

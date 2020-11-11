@@ -4,7 +4,7 @@
             <v-btn icon small class="pa-0 ma-0" @click="expanded = !expanded"
                 ><v-icon>{{ expanded ? "mdi-chevron-up" : "mdi-chevron-down" }}</v-icon>
             </v-btn>
-            <p class="pa-0 ma-0">{{ feature.name }}</p>
+            <p @click="expanded = !expanded" class="pa-0 ma-0">{{ feature.name }}</p>
         </v-row>
         <v-expand-transition>
             <div v-show="expanded">
@@ -78,7 +78,6 @@ export default {
     mounted() {
         this.generateLine();
         window.eventBus.$on("readyForVis", () => {
-            log.debug("YYYY");
             this.generateLine();
         });
     },
