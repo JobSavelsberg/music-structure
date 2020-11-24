@@ -37,7 +37,7 @@ export default {
             return this.$store.getters.selectedTrack;
         },
         height() {
-            return this.blockHeight;
+            return this.blockHeight*2;
         },
         zoomed() {
             return this.$store.getters.isZoomed;
@@ -70,6 +70,19 @@ export default {
                     1,
                     null
                 );
+            });
+            this.track.optimalStructure.forEach((section, index) => {
+                this.zoomCanvas.drawRectWithBorder(
+                    section.start,
+                    this.blockHeight,
+                    section.duration,
+                    this.blockHeight,
+                    vis.categoryColor(index),
+                    1,
+                    null
+                );
+                this.zoomCanvas.drawText(section.start + 0.5, this.blockHeight + this.blockHeight / 2, section.label);
+
             });
         },
     },

@@ -10,6 +10,7 @@ export default class HalfMatrix {
     data;
     size;
     featureAmount;
+    sampleDuration;
     numberType;
     length;
 
@@ -201,6 +202,14 @@ export default class HalfMatrix {
         return matrix;
     }
 
+    getFeatureMatrix(featureIndex) {
+        const matrix = new HalfMatrix(this);
+        matrix.fill((x, y) => {
+            return this.getValue(x, y, featureIndex);
+        });
+        return matrix;
+    }
+
     getBuffer() {
         return {
             type: "HalfMatrix",
@@ -210,6 +219,10 @@ export default class HalfMatrix {
             featureAmount: this.featureAmount,
             sampleDuration: this.sampleDuration,
         };
+    }
+
+    getSampleAmount(){
+        return this.size;
     }
 
     getNestedArray() {

@@ -8,11 +8,11 @@
         @click="clickedSVG"
     >
         <rect
-            :x="(useZoom && isZoomed ? 0.5 : seekerNormalized) * width - 1.25"
-            :y="0"
-            :width="2.5"
-            :height="height * 2"
-            fill="#1DB954"
+            :x="!isVertical * ((useZoom && isZoomed ? 0.5 : seekerNormalized) * width - 1.25)"
+            :y="isVertical * ((useZoom && isZoomed ? 0.5 : seekerNormalized) * height - 1.25)"
+            :width="isVertical ? width * 2 : 2.5"
+            :height="isVertical ? 2.5 : height * 2"
+            :fill="isVertical ? '#1D4924' : '#1DB954'"
         ></rect>
     </svg>
 </template>
@@ -23,7 +23,7 @@ import * as log from "../../dev/log";
 import * as player from "../../app/player";
 
 export default {
-    props: ["width", "height", "useZoom"],
+    props: ["width", "height", "useZoom", "vertical"],
     data() {
         return {};
     },
@@ -42,6 +42,13 @@ export default {
         },
         zoomScale() {
             return this.$store.getters.zoomScale;
+        },
+        isVertical() {
+            if (this.vertical) {
+                return 1;
+            } else {
+                return 0;
+            }
         },
     },
     mounted() {},

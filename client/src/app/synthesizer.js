@@ -79,6 +79,7 @@ export default class SynthesizedTrack extends Track {
                 this.scapePlot = result.scapePlot;
                 this.scapePlotAnchorColor = result.scapePlotAnchorColor;
                 this.structureSections = result.structureSections;
+                this.optimalStructure = result.optimalStructure;
                 window.eventBus.$emit("readyForVis");
             });
     }

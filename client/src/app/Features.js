@@ -33,6 +33,7 @@ export default class Features {
 
     constructor(analysisData, options = {}) {
         this.duration = analysisData.track.duration;
+        log.debug("Segment Amount: ", analysisData.segments.length);
         analysisData.segments.forEach((segment) => {
             this.segments.push(new Segment(segment));
             this.segmentStartDuration.push([segment.start, segment.duration]);
@@ -74,12 +75,13 @@ export default class Features {
     processSegments() {
         this.segments.forEach((s, i) => {
             this.raw.pitches[i] = s.segment.pitches;
-            this.raw.timbres[i] = s.segment.timbres;
+            this.raw.timbres[i] = s.segment.timbre;
             this.raw.loudness[i] = s.getLoudnessFeatures();
             s.processPitch();
             s.processTimbre(this.timbreMin, this.timbreMax, this.timbreBiggest, this.timbreTotalBiggest);
             this.processed.pitches.push(s.pitches);
             this.processed.timbres.push(s.timbres);
+            //this.processed.timbres.push(s.timbresScaled);
             this.processed.tonalEnergy.push(s.tonalityEnergy);
             this.processed.tonalRadius.push(s.tonalityRadius);
             this.processed.tonalAngle.push(s.tonalityAngle);

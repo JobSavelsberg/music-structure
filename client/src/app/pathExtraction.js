@@ -3,12 +3,18 @@ import * as log from "../dev/log";
 import Matrix from "./dataStructures/Matrix";
 import { penalizeThreshold } from "./SSM";
 
-export function extractPathFamily(ssm, sampleAmount, start, end) {
-    const { D, width, height, score } = computeAccumulatedScoreMatrix(ssm, sampleAmount, start, end);
-    const P = computeOptimalPathFamily(D, width, height);
+export function createScoreMatrixBuffer(sampleAmount){
+    return new Float32Array(sampleAmount * sampleAmount).fill(Number.NEGATIVE_INFINITY);
 }
 
-export function computeAccumulatedScoreMatrix(ssm, sampleAmount, start, end, D) {
+export function extractPathFamily(ssm, start, end) {
+    const { D, width, height, score } = computeAccumulatedScoreMatrix(ssm, start, end, D);
+    const P = computeOptimalPathFamily(D, width, height);
+    return {P, score};
+}
+
+export function computeAccumulatedScoreMatrix(ssm, start, end, D) {
+    const sampleAmount = ssm.getSampleAmount(); 
     if (start < 0) log.error("start below 0: ", start);
     if (end >= sampleAmount) log.error("end above sampleAmount: ", sampleAmount, "end", end);
 

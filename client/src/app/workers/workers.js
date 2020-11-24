@@ -31,7 +31,6 @@ export async function startSSM(
     options = {}
 ) {
     return new Promise((resolve) => {
-        const blurTime = options.blurTime || 4;
         const enhanceBlurLength = options.enhanceBlurLength || 4;
         const threshold = options.threshold || 0.5;
         const thresholdPercentage = options.thresholdPercentage || 0.05;
@@ -60,7 +59,6 @@ export async function startSSM(
             timestamp: new Date(),
             allPitches,
             enhanceBlurLength,
-            blurTime,
             tempoRatios,
             threshold,
             thresholdPercentage,

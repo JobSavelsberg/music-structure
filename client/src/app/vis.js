@@ -13,15 +13,15 @@ export const greyScaleColor = d3
     .scaleSequential()
     .domain([1, 0])
     .interpolator(d3.interpolateGreys);
-export const timbreColor = d3
-    .scaleSequential()
-    .domain([-1, 1])
-    .interpolator(d3.interpolateViridis);
 export const rainbowColor = d3
     .scaleSequential()
     .domain([0, 11])
     .interpolator(d3.interpolateRainbow);
-export const diverging = d3
+export const rawTimbreColor = d3
+    .scaleDiverging()
+    .domain([-300, 0, 300])
+    .interpolator(d3.interpolateRdBu);
+export const divergingColor = d3
     .scaleDiverging()
     .domain([-1, 0, 1])
     .interpolator(d3.interpolateRdBu);
@@ -86,7 +86,7 @@ export function renderRawTimbre(track, left, width, yOffset, height, ctx) {
             const segmentHeight = height / 12 - 2;
             const y = yOffset + (11 - i) * (segmentHeight + 2);
             const segmentWidth = segment.duration * scale;
-            ctx.fillStyle = diverging(track.getProcessedTimbre(segmentIndex)[i]);
+            ctx.fillStyle = divergingColor(track.getProcessedTimbre(segmentIndex)[i]);
             ctx.fillRect(x, y, segmentWidth, segmentHeight);
         }
     });
@@ -216,7 +216,7 @@ export function drawAnchorPoints(track, ctx, canvasWidth) {
     }
 }
 
-export function drawScapePlot(track, ctx, canvasWidth) {
+export function drawScapePlot(track, ctx, canvasWidth, color=true) {
     ctx.clearRect(0, 0, canvasWidth, canvasWidth);
     // eslint-disable-next-line no-unreachable
     const scapePlot = track.scapePlot;
@@ -231,8 +231,15 @@ export function drawScapePlot(track, ctx, canvasWidth) {
 
     scapePlot.forEachCell((x, y, value) => {
         //ctx.fillStyle = greyScaleColor(value);
+        if(color){
+            ctx.fillStyle = anchorColorLerp(x, y, scapePlotAnchorColor, value);
+        }else{
+            ctx.fillStyle = zeroOneColor(value)
 
-        ctx.fillStyle = anchorColorLerp(x, y, scapePlotAnchorColor, value);
+            if(value > 0.95){
+                ctx.fillStyle = 'red';
+            }
+        }
 
         const start = x * stepSize;
         const size = (scapePlot.size - 1 - y) * stepSize;

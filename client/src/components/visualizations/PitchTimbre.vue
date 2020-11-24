@@ -77,6 +77,19 @@ export default {
                 { name: "Pitch raw", data: this.track.features.raw.pitches, sampled: false },
                 { name: "Pitch processed", data: this.track.features.processed.pitches, sampled: false },
                 { name: "Pitch sampled", data: this.track.features.sampled.pitches, sampled: true },
+                { name: "Timbre raw", data: this.track.features.raw.timbres, sampled: false, range: [-300, 300] },
+                {
+                    name: "Timbre processed",
+                    data: this.track.features.processed.timbres,
+                    sampled: false,
+                    range: [-1, 1],
+                },
+                {
+                    name: "Timbre Sampled",
+                    data: this.track.features.sampled.timbres,
+                    sampled: true,
+                    range: [-1, 1],
+                },
             ];
             this.webGLPitchTimbre.setHeight(this.height);
             this.webGLPitchTimbre.fillpitchTimbreBufferPool(this.track, this.selectedFeatures);

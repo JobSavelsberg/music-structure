@@ -61,7 +61,8 @@ export default class Segment {
         for (let p = 0; p < this.pitches.length; p++) {
             this.pitches[p] =
                 (1 - this.percussiony) * this.pitches[p] +
-                (this.percussiony * (prevSegment.pitches[p] + nextSegment.pitches[p])) / 2;
+                this.percussiony * prevSegment.pitches[p] * this.pitches[p] +
+                (nextSegment.pitches[p] * this.pitches[p]) / 2;
         }
         this.processedPitchSmooth = true;
     }

@@ -11,6 +11,7 @@ export default class Matrix {
     width;
     height;
     featureAmount;
+    sampleDuration;
     numberType;
     length;
 
@@ -221,6 +222,10 @@ export default class Matrix {
     getSize() {
         assert(this.width === this.height);
         return this.width;
+    }
+
+    getSampleAmount(){
+        return this.height;
     }
 
     normalize() {

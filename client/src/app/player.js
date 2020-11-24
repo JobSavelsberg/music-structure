@@ -2,6 +2,8 @@ import * as log from "../dev/log";
 import { spotify } from "./app";
 import store from "../store";
 
+const autoConnect = false;
+
 export let deviceId = null;
 let player = null;
 
@@ -171,10 +173,16 @@ export async function initialize(token) {
             deviceId = device_id;
             log.info("Ready with Device ID", device_id);
             const deviceIdArray = [deviceId];
-            //spotify.transferMyPlayback(deviceIdArray).then((err, result) => {
-            window.setTimeout(store.commit("playerReady", true), 1);
-            startSeekerInterval();
-            //});
+            if(autoConnect){
+                spotify.transferMyPlayback(deviceIdArray).then((err, result) => {
+                    window.setTimeout(store.commit("playerReady", true), 1);
+                    startSeekerInterval();
+                });
+            }else{
+                window.setTimeout(store.commit("playerReady", true), 1);
+                startSeekerInterval();
+            }
+            
         });
 
         // Not Ready

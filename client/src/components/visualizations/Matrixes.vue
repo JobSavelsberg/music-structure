@@ -1,11 +1,21 @@
 <template>
     <div>
         <div class="d-flex">
-            <v-tabs v-if="this.track && this.track.matrixes.length > 0" v-model="selectedTab" dark>
+            <v-tabs v-if="trackVisready" v-model="selectedTab" dark>
                 <v-tab v-for="matrix in this.track.matrixes" :key="matrix.name">{{ matrix.name }}</v-tab>
             </v-tabs>
         </div>
-        <Seeker :width="width" :height="width" :useZoom="true" />
+        <Seeker :width="width" :height="width" />
+        <Seeker :width="width" :height="width" :vertical="true" />
+        <svg v-if="trackVisready" class="annotations" :height="width" :width="width">
+            <rect v-for="(section,index) in track.structureSections" :key="index" 
+            :x="section.start*secondsToXPosition-1"
+            :y="0"
+            :width="2"
+            :height="width"
+            :fill="getCategoryColor(index)"
+            :opacity="0.5"></rect>
+        </svg>
         <canvas id="gl-canvas" :height="width" :width="width" class="glCanvas pa-0 ma-0"></canvas>
     </div>
 </template>
@@ -40,6 +50,7 @@ export default {
         track() {
             this.webGLMatrixPool.clear();
         },
+
     },
     computed: {
         track() {
@@ -54,6 +65,9 @@ export default {
         seekerNormalized() {
             return this.$store.getters.seeker / (this.track.getAnalysisDuration() * 1000);
         },
+        secondsToXPosition(){
+            return this.width/(this.track.getAnalysisDuration());
+        },
         xCenterPositionNormalized() {
             if (this.zoomed) {
                 return this.seekerNormalized;
@@ -61,6 +75,9 @@ export default {
                 return 0.5;
             }
         },
+                trackVisready(){
+            return this.track && this.track.matrixes.length > 0;
+        }
     },
     mounted() {
         this.webGLMatrixPool = new WebGLMatrixPool(document.getElementById("gl-canvas"));
@@ -79,7 +96,8 @@ export default {
         },
         draw() {
             this.webGLMatrixPool.clear();
-            this.webGLMatrixPool.draw(this.xCenterPositionNormalized, this.zoomed ? this.zoomScale : 1, 1);
+            this.webGLMatrixPool.draw(0.5, 1, 1);
+            // no zoom pls  this.zoomed ? this.zoomScale : 1
         },
         applyRenderMode() {
             clearInterval(this.drawLoop);
@@ -89,6 +107,9 @@ export default {
                 this.draw();
             }
         },
+        getCategoryColor(index){
+           return vis.categoryColor(index)
+        }
     },
 };
 </script>
@@ -98,5 +119,9 @@ export default {
     background-color: "white";
     width: 100%;
     height: 100%;
+}
+.annotations{
+    position: absolute;
+    z-index: 5;
 }
 </style>

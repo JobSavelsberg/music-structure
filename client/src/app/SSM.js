@@ -21,18 +21,23 @@ export function calculateSSM(features, sampleDuration, allPitches = false, thres
 /**
  * Diagonal smoothing of ssm, keeps paths but removes noise
  * @param {*} ssm
- * @param {*} options {`blurTime`: length in seconds, `blurLength`: length in samples, `tempoRatios`: array of ratios (e.g. [1.5] blurs paths that denote segment similarity with speed difference of 1.5)}
+ * @param {*} options {`strategy`: choice of `onedir, linear, gauss, linmed`,`blurTime`: length in seconds, `blurLength`: length in samples, `tempoRatios`: array of ratios (e.g. [1.5] blurs paths that denote segment similarity with speed difference of 1.5)}
  */
 export function enhanceSSM(ssm, options, allPitches = false) {
     const blurLength = options.blurLength || Math.round(options.blurTime / ssm.sampleDuration) || 4;
     const tempoRatios = options.tempoRatios || [1];
+    const strategy = options.strategy || "linmed"
 
     const enhancementPasses = [];
     for (const tempoRatio of tempoRatios) {
-        //enhancementPasses.push(diagonalSmoothing(ssm, 1, blurLength, tempoRatio));
-        //enhancementPasses.push(diagonalSmoothing(ssm, -1, blurLength, tempoRatio));
-        enhancementPasses.push(linearSmoothing(ssm, blurLength, tempoRatio));
-        //enhancementPasses.push(gaussianSmoothing(ssm, blurLength, tempoRatio));
+        if(strategy === "onedir")enhancementPasses.push(onedirectionalSmoothing(ssm, 1, Math.floor(blurLength / 2), tempoRatio));
+        if(strategy === "onedir")enhancementPasses.push(onedirectionalSmoothing(ssm, -1, Math.floor(blurLength / 2), tempoRatio));
+        if(strategy === "linear")enhancementPasses.push(linearSmoothing(ssm, blurLength, tempoRatio));
+        if(strategy === "gauss") enhancementPasses.push(gaussianSmoothing(ssm, blurLength, tempoRatio));
+        if(strategy === "onedirmed")enhancementPasses.push(medianSmoothing( onedirectionalSmoothing(ssm, 1, Math.floor(blurLength / 2), tempoRatio), blurLength, tempoRatio));
+        if(strategy === "onedirmed")enhancementPasses.push(medianSmoothing( onedirectionalSmoothing(ssm, -1, Math.floor(blurLength / 2), tempoRatio), blurLength, tempoRatio));
+        if(strategy === "linmed")enhancementPasses.push(medianSmoothing( linearSmoothing(ssm, blurLength, tempoRatio), blurLength, tempoRatio));
+        
     }
 
     const enhancedSSM = HalfMatrix.from(ssm);
@@ -46,6 +51,28 @@ export function enhanceSSM(ssm, options, allPitches = false) {
         return max;
     });
     return enhancedSSM;
+}
+
+export function onedirectionalSmoothing(ssm, direction, length, tempoRatio) {
+    log.debug("One Directional Smoothing: length", length, "tempoRatio", tempoRatio);
+
+    const smoothedSSM = HalfMatrix.from(ssm);
+
+    const tempos = new Int8Array(length);
+    for (let i = 0; i < length; i++) {
+        tempos[i] = Math.round(i * tempoRatio);
+    }
+
+    smoothedSSM.fillFeatures((x, y, f) => {
+        let sum = 0;
+        for (let i = 0; i !== direction * length; i += direction) {
+            if (ssm.hasCell(x + i, y + direction * tempos[Math.abs(i)])) {
+                sum += ssm.getValue(x + i, y + direction * tempos[Math.abs(i)], f);
+            }
+        }
+        return sum / length;
+    });
+    return smoothedSSM;
 }
 
 function linearSmoothing(ssm, length, tempoRatio) {
@@ -69,6 +96,44 @@ function linearSmoothing(ssm, length, tempoRatio) {
         }
         return sum / total;
     });
+    return smoothedSSM;
+}
+
+function medianSmoothing(ssm, length, tempoRatio, resolution=128) {
+    log.debug("Median Smoothing: length", length, "tempoRatio", tempoRatio);
+    const buckets = new Float32Array(resolution);
+
+    const l = Math.floor((length - 1) / 2);
+
+    const tempos = new Int8Array(l * 2 + 1);
+    for (let i = -l; i < 1 + l; i++) {
+        tempos[i + l] = Math.round(i * tempoRatio);
+    }
+    const smoothedSSM = HalfMatrix.from(ssm);
+
+    smoothedSSM.fillNormalized((x, y) => {
+        let totalValues = 0;
+        for (let offset = -l; offset <= l; offset++) {
+            if (ssm.hasCell(x + offset, y + tempos[offset + l])) {
+                const value = ssm.getValueNormalized(x + offset, y + tempos[offset + l]);
+                buckets[Math.floor(value * (resolution - 1))]++;
+                totalValues++;
+            }
+        }
+        let middle = totalValues / 2;
+
+        //Both check middle and clear buckets
+        let mean = -1;
+        for (let i = 0; i < resolution; i++) {
+            middle -= buckets[i];
+            if (middle < 0 && mean === -1) {
+                mean = i / (resolution - 1);
+            }
+            buckets[i] = 0;
+        }
+        return mean;
+    });
+
     return smoothedSSM;
 }
 
@@ -107,7 +172,7 @@ function gauss(blur, sigma = 2) {
 
 export function makeTranspositionInvariant(ssm) {
     const lengthWithoutFeatures = ssm.length / ssm.featureAmount;
-    const transpositionInvariantSSM = new HalfMatrix({ size: ssm.size, numberType: HalfMatrix.NumberType.UINT8 });
+    const transpositionInvariantSSM = new HalfMatrix({ size: ssm.size, numberType: HalfMatrix.NumberType.UINT8, sampleDuration: ssm.sampleDuration });
 
     let i = 0;
     while (i < lengthWithoutFeatures) {

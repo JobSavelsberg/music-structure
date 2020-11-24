@@ -62,7 +62,7 @@ export default {
             return this.track.graphFeatures[this.featureIndex];
         },
         step() {
-            return this.width / this.feature.data.length;
+            return this.width / (this.feature.data.length - 1);
         },
         lineGenerator() {
             return d3

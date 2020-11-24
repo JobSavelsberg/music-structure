@@ -1,6 +1,9 @@
 import * as log from "../dev/log";
 import asciichart from "asciichart";
 import { maxeqS } from "numeric";
+import * as filter from "./filter";
+import Matrix from "./dataStructures/Matrix";
+
 /**
  * Convolve checkerboard kernel along main diagonal
  * @param {*} ssm half matrix
@@ -88,14 +91,72 @@ export function absoluteEuclideanColumnDerivative(ssm) {
     return novelty;
 }
 
-export function findLocalMaxima(novelty) {
+// Basically sums / averages in the direction of paths
+export function computePriorLag(timeLagMatrix, fades = 0) {
+    const ssmSize = timeLagMatrix.size || timeLagMatrix.width;
+    const novelty = new Float32Array(ssmSize);
+    for (let y = 0; y < ssmSize; y++) {
+        for (let x = 0; x < ssmSize; x++) {
+            novelty[y] += timeLagMatrix.getValueNormalizedMirrored(x, y);
+        }
+        novelty[y] /= ssmSize;
+    }
+    const fadedNovelty = filter.createFades(novelty, fades);
+    return fadedNovelty;
+}
+
+// Basically sums / averages in the direction of paths
+export function computePriorLagHalf(timeLagMatrix, fades = 0) {
+    const ssmSize = timeLagMatrix.size || timeLagMatrix.width;
+    const novelty = new Float32Array(ssmSize);
+    for (let y = 0; y < ssmSize; y++) {
+        for (let x = 0; x < ssmSize - y; x++) {
+            novelty[y] += timeLagMatrix.getValueNormalizedMirrored(x, y);
+        }
+        novelty[y] /= ssmSize - y;
+    }
+    const fadedNovelty = filter.createFades(novelty, fades);
+    return fadedNovelty;
+}
+
+export function findLocalMaxima(novelty, threshold = 0) {
+    const max = Math.max.apply(Math, novelty);
     const maximaIndexes = [0];
     for (let i = 1; i < novelty.length - 1; i++) {
         const val = novelty[i];
         // prefers first index if maxima spans multiple samples
-        if (novelty[i - 1] < val && val >= novelty[i + 1]) {
+        if (novelty[i - 1] < val && val >= novelty[i + 1] && val > threshold*max) {
             maximaIndexes.push(i);
         }
     }
     return maximaIndexes;
+}
+
+
+export function columnDensity(matrix){
+    const ssmSize = matrix.size || matrix.width;
+    const novelty = new Float32Array(ssmSize);
+    for(let i = 0; i <ssmSize; i++){
+        novelty[i] = 0;
+        for(let j = 0; j < ssmSize; j++){
+            novelty[i] += matrix.getValueNormalizedMirrored(i, j);
+        }
+        novelty[i] /= ssmSize;
+    }
+    return novelty;
+}
+
+export function normalizeByColumnDensity(matrix){
+    const ssmSize = matrix.size || matrix.width;
+    const density = columnDensity(matrix);
+    const normalizedMatrix = Matrix.from(matrix, {numberType: Matrix.NumberType.FLOAT32});
+    let max = 0;
+    normalizedMatrix.fill((x,y) => {
+        const val = matrix.getValueNormalizedMirrored(x, y) / (ssmSize*density[x]);
+        if(val > max) max = val;
+        return val;
+    })
+    normalizedMatrix.divide(max);
+
+    return normalizedMatrix;
 }

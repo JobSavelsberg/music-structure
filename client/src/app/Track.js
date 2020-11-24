@@ -16,18 +16,17 @@ export const samples = 500;
 export const sampleDuration = 0.5;
 export const sampleBlur = 1; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
 
-export const enhanceBlurLength = 10;
-export const blurTime = 10;
+export const enhanceBlurLength = 8;
 export const threshold = 0.65;
-export const thresholdPercentage = 0.15;
+export const thresholdPercentage = 0.35;
 export const tempoRatios = [0.66, 0.81, 1, 1.22, 1.5];
 
-export const SPminSize = 8; // Minimal size of segment in scape plot
+export const SPminSize = 16; // Minimal size of segment in scape plot
 export const SPstepSize = 4; // Size of the step between segment start and size in scape plot
 export const createScapePlot = false;
 
 const useSampled = true;
-const allPitches = true;
+const allPitches = false;
 export default class Track {
     trackData = null;
     analysisData = null;
@@ -37,7 +36,9 @@ export default class Track {
     scapePlot = null;
     scapePlotAnchorColor = null;
     graphFeatures = []; // {name, data};
+    structures = []; // {name, [{start, duration, label}]}
     structureSections = [];
+    optimalStructure = [];
 
     features;
 
@@ -83,7 +84,6 @@ export default class Track {
                 this.getSegmentStartDuration(),
                 this.features.beatsStartDuration,
                 {
-                    blurTime,
                     enhanceBlurLength,
                     threshold,
                     thresholdPercentage,
@@ -101,9 +101,11 @@ export default class Track {
                 log.info("workerSSM sending back", diffBack);
                 this.matrixes = result.matrixes;
                 this.graphFeatures = result.graphs;
+                this.structures = result.structures;
                 this.scapePlot = result.scapePlot;
                 this.scapePlotAnchorColor = result.scapePlotAnchorColor;
                 this.structureSections = result.structureSections;
+                this.optimalStructure = result.optimalStructure;
                 window.eventBus.$emit("readyForVis");
             });
 

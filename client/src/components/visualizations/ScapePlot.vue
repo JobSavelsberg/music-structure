@@ -40,7 +40,9 @@ export default {
             }
             const ctx = canvas.getContext("2d");
 
-            vis.drawScapePlot(this.track, ctx, this.width);
+            //vis.drawScapePlot(this.track, ctx, this.width);
+            vis.drawScapePlot(this.track, ctx, this.width, false);
+
         },
     },
 };

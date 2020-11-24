@@ -19,14 +19,13 @@ export function create(fullSSM, sampleAmount, minSize, step) {
     let maxVal = 0;
     log.debug("SPCreate, sampleAmount", sampleAmount, "size", plotSize, "minSize", minSize, "step", step);
     fitnessScapePlot.fill((x, y) => {
-        if (y < plotSize / 2) {
+        if (y < plotSize *0.7) {
             return 0;
         }
         const segmentSize = (plotSize - y) * step + minSize;
         const segmentStart = x * step;
         const { width, height, score } = pathExtraction.computeAccumulatedScoreMatrix(
             fullSSM,
-            sampleAmount,
             segmentStart,
             segmentStart + segmentSize - 1,
             scoreMatrix
@@ -160,7 +159,6 @@ export function mapColors(fullSSM, sampleAmount, minSize, step, anchorPoints, an
         const segmentStart = x * step;
         const { D, width, height, score } = pathExtraction.computeAccumulatedScoreMatrix(
             fullSSM,
-            sampleAmount,
             segmentStart,
             segmentStart + segmentSize - 1
         );

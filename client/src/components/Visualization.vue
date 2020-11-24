@@ -5,10 +5,10 @@
         </v-btn>
 
         <Matrixes :width="width" />
-
-        <Graphs :width="width" />
         <Structure :width="width" />
         <GroundTruth :width="width" />
+        <Graphs :width="width" />
+
         <Beats :width="width" />
         <PitchTimbre :width="width" />
         <ScapePlot :width="width" />
@@ -61,7 +61,19 @@ export default {
             return this.$store.state.isZoomed;
         },
     },
-    mounted() {},
+    mounted() {
+        this._keyListener = function(e) {
+            if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault(); // present "Save Page" from getting triggered.
+
+                this.$store.commit("toggleZoomed");
+            }
+        };
+        document.addEventListener("keydown", this._keyListener.bind(this));
+    },
+    beforeDestroy() {
+        document.removeEventListener("keydown", this._keyListener);
+    },
     methods: {
         visChanged(newVis, oldVis) {},
     },
