@@ -85,15 +85,15 @@ export default class HalfMatrix {
         }
         return values;
     }
-    getValueNormalized(x, y) {
-        return this.data[((y * y + y) / 2) * this.featureAmount + x * this.featureAmount] / this.numberType.scale;
-    }
     getValueNormalizedMirrored(x, y) {
         if (x > y) {
             return this.data[((x * x + x) / 2) * this.featureAmount + y * this.featureAmount] / this.numberType.scale;
         } else {
             return this.data[((y * y + y) / 2) * this.featureAmount + x * this.featureAmount] / this.numberType.scale;
         }
+    }
+    getValueNormalized(x, y, f=0) {
+        return this.data[((y * y + y) / 2) * this.featureAmount + x * this.featureAmount + f] / this.numberType.scale;
     }
 
     fillByIndex(callback) {
@@ -126,7 +126,16 @@ export default class HalfMatrix {
             }
         }
     }
-
+    fillFeaturesNormalized(callback) {
+        for (let y = 0; y < this.size; y++) {
+            const cellsBefore = ((y * y + y) / 2) * this.featureAmount;
+            for (let x = 0; x < y + 1; x++) {
+                for (let f = 0; f < this.featureAmount; f++) {
+                    this.data[cellsBefore + x * this.featureAmount + f] = callback(x, y, f)*this.numberType.scale;
+                }
+            }
+        }
+    }
     forEach(callback) {
         let i = this.length;
         while (i--) {
@@ -157,16 +166,6 @@ export default class HalfMatrix {
         }
     }
 
-    fillFeaturesNormalized(callback) {
-        for (let y = 0; y < this.size; y++) {
-            const cellsBefore = ((y * y + y) / 2) * this.featureAmount;
-            for (let x = 0; x < y + 1; x++) {
-                for (let f = 0; f < this.featureAmount; f++) {
-                    this.data[cellsBefore + x * this.featureAmount + f] = callback(x, y, f) * this.numberType.scale;
-                }
-            }
-        }
-    }
 
     map(callback) {
         let i = this.length;

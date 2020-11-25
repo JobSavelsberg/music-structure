@@ -1,8 +1,5 @@
 <template>
     <div>
-        <p class="pa-0 ma-0">
-            Structure
-        </p>
         <Seeker :width="width" :height="height" :useZoom="true" />
         <canvas
             id="StructureCanvas"
@@ -28,6 +25,7 @@ export default {
     },
     data() {
         return {
+            titleHeight: 16,
             blockHeight: 20,
             zoomCanvas: null,
         };
@@ -37,7 +35,11 @@ export default {
             return this.$store.getters.selectedTrack;
         },
         height() {
-            return this.blockHeight*2;
+            if(this.track){
+                return (this.titleHeight+this.blockHeight)*this.track.structures.length;
+            }else{
+                return 0;
+            }
         },
         zoomed() {
             return this.$store.getters.isZoomed;
@@ -46,6 +48,9 @@ export default {
     watch: {
         width() {
             this.zoomCanvas.setWidth(this.width);
+        },
+        height() {
+            this.zoomCanvas.setHeight(this.height);
         },
         zoomed() {
             this.zoomCanvas.setZoomed(this.zoomed);
@@ -60,30 +65,26 @@ export default {
     },
     methods: {
         drawStructure() {
-            this.track.structureSections.forEach((section, index) => {
-                this.zoomCanvas.drawRectWithBorder(
-                    section.start,
-                    0,
-                    section.duration,
-                    this.blockHeight,
-                    vis.categoryColor(index),
-                    1,
-                    null
-                );
-            });
-            this.track.optimalStructure.forEach((section, index) => {
-                this.zoomCanvas.drawRectWithBorder(
-                    section.start,
-                    this.blockHeight,
-                    section.duration,
-                    this.blockHeight,
-                    vis.categoryColor(index),
-                    1,
-                    null
-                );
-                this.zoomCanvas.drawText(section.start + 0.5, this.blockHeight + this.blockHeight / 2, section.label);
-
-            });
+            let y = 0;
+            this.track.structures.forEach((structure) => {
+                this.zoomCanvas.drawTitle(y+this.titleHeight-2, structure.name);
+                y+= this.titleHeight;
+                structure.data.forEach((section, index) => {
+                    this.zoomCanvas.drawRectWithBorder(
+                        section.start,
+                        y,
+                        section.duration,
+                        this.blockHeight,
+                        vis.categoryColor(section.label),
+                        1,
+                        null
+                    );
+                    if(section.label){
+                        this.zoomCanvas.drawText(section.start + 0.5, y+4 + this.blockHeight / 2, section.label);
+                    }
+                })
+                y+= this.blockHeight;
+            })
         },
     },
 };

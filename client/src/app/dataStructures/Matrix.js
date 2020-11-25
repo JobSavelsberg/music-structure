@@ -115,8 +115,8 @@ export default class Matrix {
     getValueNormalizedMirrored(x, y) {
         return this.getValueNormalized(x, y);
     }
-    getValueNormalized(x, y) {
-        return this.data[(y * this.width + x) * this.featureAmount] / this.numberType.scale;
+    getValueNormalized(x, y, f=0) {
+        return this.data[(y * this.width + x) * this.featureAmount + f] / this.numberType.scale;
     }
 
     fillByIndex(callback) {
@@ -148,6 +148,16 @@ export default class Matrix {
         }
     }
 
+    fillFeaturesNormalized(callback) {
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                for (let f = 0; f < this.featureAmount; f++) {
+                    this.data[(y * this.width + x) * this.featureAmount + f] = callback(x, y, f)*this.numberType.scale;
+                }
+            }
+        }
+    }
+
     forEach(callback) {
         let i = this.length;
         while (i--) {
@@ -163,16 +173,6 @@ export default class Matrix {
         for (let y = 0; y < this.heigth; y++) {
             for (let x = 0; x < this.width; x++) {
                 this.data[(y * this.width + x) * this.featureAmount] = callback(x, y) * this.numberType.max;
-            }
-        }
-    }
-
-    fillFeaturesNormalized(callback) {
-        for (let y = 0; y < this.height; y++) {
-            for (let x = 0; x < this.width; x++) {
-                for (let f = 0; f < this.featureAmount; f++) {
-                    this.data[(y * this.width + x) * this.featureAmount + f] = callback(x, y, f) * this.numberType.max;
-                }
             }
         }
     }

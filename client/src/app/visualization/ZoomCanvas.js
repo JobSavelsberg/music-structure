@@ -8,6 +8,7 @@ export default class ZoomCanvas {
     ctx = null;
     trackDuration = 0;
     width = 0;
+    height = 0;
     zoomed = false;
     zoomScale = 1;
     drawFunction = null;
@@ -20,11 +21,12 @@ export default class ZoomCanvas {
         }
         this.ctx = canvas.getContext(type);
         this.width = this.canvas.width;
+        this.height = this.canvas.height;
         this.clear();
     }
 
     clear() {
-        this.ctx.clearRect(0, 0, this.width, this.canvas.height);
+        this.ctx.clearRect(0, 0, this.width, this.height);
     }
 
     setTrackDuration(track) {
@@ -39,7 +41,14 @@ export default class ZoomCanvas {
 
     setWidth(width) {
         this.width = width;
-        this.applyRenderMode();
+        this.canvas.width = width;
+        setTimeout(() => this.applyRenderMode(), 0);
+    }
+
+    setHeight(height) {
+        this.height = height;
+        this.canvas.height = height;
+        setTimeout(() => this.applyRenderMode(), 0);
     }
 
     setDrawFunction(drawFunction) {
@@ -102,11 +111,19 @@ export default class ZoomCanvas {
         this.ctx.fillRect(x, y, width, height);
     }
 
-    drawText(start, y, text, color = "white", font = "12px") {
+    drawText(start, y, text, color = "white", font = "12px Roboto") {
         let startNormalized = start / this.trackDuration;
         if (this.zoomed) startNormalized *= this.zoomScale;
 
         const x = (startNormalized + this.getOffsetXNormalized()) * this.width;
+
+        this.ctx.fillStyle = color;
+        this.ctx.font = font;
+        this.ctx.fillText(text, x, y);
+    }
+
+    drawTitle(y, text, color = "white", font = "16px Roboto") {
+        const x = 0;
 
         this.ctx.fillStyle = color;
         this.ctx.font = font;

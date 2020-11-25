@@ -111,11 +111,11 @@ function medianSmoothing(ssm, length, tempoRatio, resolution=128) {
     }
     const smoothedSSM = HalfMatrix.from(ssm);
 
-    smoothedSSM.fillNormalized((x, y) => {
+    smoothedSSM.fillFeaturesNormalized((x, y, f) => {
         let totalValues = 0;
         for (let offset = -l; offset <= l; offset++) {
             if (ssm.hasCell(x + offset, y + tempos[offset + l])) {
-                const value = ssm.getValueNormalized(x + offset, y + tempos[offset + l]);
+                const value = ssm.getValueNormalized(x + offset, y + tempos[offset + l], f);
                 buckets[Math.floor(value * (resolution - 1))]++;
                 totalValues++;
             }

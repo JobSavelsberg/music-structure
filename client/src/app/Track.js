@@ -36,7 +36,7 @@ export default class Track {
     scapePlot = null;
     scapePlotAnchorColor = null;
     graphFeatures = []; // {name, data};
-    structures = []; // {name, [{start, duration, label}]}
+    structures = []; // {name, data: [{start, duration, label}]}
     structureSections = [];
     optimalStructure = [];
 

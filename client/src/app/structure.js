@@ -32,6 +32,8 @@ export function computeStructureCandidates(pathSSM, structureSections, minDurati
     const maxLength = maxRatio*sampleAmount*sampleDuration;
     const scoreMatrix = pathExtraction.createScoreMatrixBuffer(sampleAmount);
 
+    log.info("Calculating fitness for:", sectionAmount*sectionAmount/2, "candidate sections");
+
     const candidates = [];
 
     for(let start = 0; start < sectionAmount; start++){
@@ -51,16 +53,28 @@ export function computeStructureCandidates(pathSSM, structureSections, minDurati
                 normalizedCoverage,
                 pathFamilyLength,
             } = pathExtraction.computeFitness(P, score, sampleAmount, width);
+            const pathFamily = [];
+            P.forEach(path => {
+                const pathCoords = [];
+                for(let i =0; i< path.length; i+=2){
+                    const x = startInSamples+path[i];
+                    const y = path[i+1];
+                    pathCoords.push([x, y]);
+                }
+                pathFamily.push(pathCoords);
+            })
+            
             candidates.push({
                 start: startInSeconds,
                 duration: segmentLengthInSeconds,
                 end: endInSeconds,
+                label: candidates.length,
                 score: score,
                 normalizedScore: normalizedScore,
                 coverage: coverage,
                 normalizedCoverage: normalizedCoverage,
                 fitness: fitness,
-                pathFamily: P,
+                pathFamily: pathFamily,
             })
 
         }
@@ -69,25 +83,34 @@ export function computeStructureCandidates(pathSSM, structureSections, minDurati
     return candidates;
 }
 
-export function findOptimalDecomposition(structureCandidates, property="normalizedScore"){
+export function findGreedyDecomposition(structureCandidates, sampleDuration, property="fitness"){
     const structure = [];
-    log.debug("Finding optimal Decomposition")
+    log.debug("Finding greedy Decomposition")
     let candidates = structureCandidates.sort((a, b) => a[property] > b[property] ? 1 : -1);
 
     while(candidates.length > 0){
         const best = candidates.pop();
-        best.label = structure.length;
+        const label =  structure.length;
+        best.label = label;
         structure.push(best);
-
-        // try to find higher score by nudging sides
+        // TODO: try to find higher score by nudging sides
         // put path family in there
-
-
-        candidates = candidates.filter((section) => {
+        best.pathFamily.forEach(path => {
+            const start = path[path.length-1][1]*sampleDuration;
+            const end = path[0][1]*sampleDuration;
+            const duration = end - start;
+            const section = {start, end, duration, label}
+            if(disjoint(best, section)){
+                structure.push(section);
+            }
+        })
+        log.debug("Structure", structure)
+        break;
+        /*candidates = candidates.filter((section) => {
             // Delete overlapping segments
             const isOverlapping = overlaps(section, best);
             return disjoint(section, best);
-        });
+        });*/
 
     }
     return structure;
