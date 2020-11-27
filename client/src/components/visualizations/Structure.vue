@@ -35,11 +35,20 @@ export default {
             return this.$store.getters.selectedTrack;
         },
         height() {
+            let heightSum = 0;
             if(this.track){
-                return (this.titleHeight+this.blockHeight)*this.track.structures.length;
-            }else{
-                return 0;
+                if(this.track.structures){
+                    this.track.structures.forEach(structure => {
+                        heightSum += this.titleHeight;
+                        let amountOfRows = 1;
+                        if(structure.seperateByLabel){
+                            amountOfRows = this.getAmountOfUniqueLabels(structure);
+                        }
+                        heightSum += this.blockHeight*amountOfRows;
+                    })
+                }
             }
+            return heightSum;
         },
         zoomed() {
             return this.$store.getters.isZoomed;
@@ -69,23 +78,46 @@ export default {
             this.track.structures.forEach((structure) => {
                 this.zoomCanvas.drawTitle(y+this.titleHeight-2, structure.name);
                 y+= this.titleHeight;
-                structure.data.forEach((section, index) => {
-                    this.zoomCanvas.drawRectWithBorder(
-                        section.start,
-                        y,
-                        section.duration,
-                        this.blockHeight,
-                        vis.categoryColor(section.label),
-                        1,
-                        null
-                    );
-                    if(section.label){
-                        this.zoomCanvas.drawText(section.start + 0.5, y+4 + this.blockHeight / 2, section.label);
-                    }
-                })
-                y+= this.blockHeight;
+
+                if(structure.seperateByLabel){
+                    structure.data.forEach((section, index) => {
+                        this.drawSection(section, y + this.blockHeight * section.label);
+                    })
+                    y+= this.blockHeight* this.getAmountOfUniqueLabels(structure);
+                }else{
+                    structure.data.forEach((section, index) => {
+                        this.drawSection(section, y);
+                    })
+                    y+= this.blockHeight;
+                }
+                
             })
         },
+        drawSection(section, y){
+            this.zoomCanvas.drawRectWithBorder(
+                section.start,
+                y,
+                section.duration,
+                this.blockHeight,
+                vis.categoryColor(section.label),
+                1,
+                null
+            );
+            if(section.label !== undefined){
+                this.zoomCanvas.drawText(section.start + 0.5, y+4 + this.blockHeight / 2, section.label);
+            }
+        },
+        getAmountOfUniqueLabels(structure){
+            if(structure.labelAmount) return structure.labelAmount;
+            const labels = [];
+            log.debug("Getting amount of unique labels", structure)
+            structure.data.forEach((section, index) => {
+                if(!labels.includes(section.label)){
+                    labels.push(section.label)
+                }
+            });
+            return labels.length;
+        }
     },
 };
 </script>

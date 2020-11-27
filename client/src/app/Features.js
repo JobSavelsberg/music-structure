@@ -80,8 +80,8 @@ export default class Features {
             s.processPitch();
             s.processTimbre(this.timbreMin, this.timbreMax, this.timbreBiggest, this.timbreTotalBiggest);
             this.processed.pitches.push(s.pitches);
-            this.processed.timbres.push(s.timbres);
-            //this.processed.timbres.push(s.timbresScaled);
+            //this.processed.timbres.push(s.timbres);
+            this.processed.timbres.push(s.timbresScaled);
             this.processed.tonalEnergy.push(s.tonalityEnergy);
             this.processed.tonalRadius.push(s.tonalityRadius);
             this.processed.tonalAngle.push(s.tonalityAngle);

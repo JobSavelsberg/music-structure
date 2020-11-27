@@ -1,10 +1,11 @@
 import * as log from "../../dev/log";
 import * as SSM from "../SSM";
-import * as pathExtraction from "../pathExtraction";
 import * as noveltyDetection from "../noveltyDetection";
 import * as structure from "../structure";
 import * as filter from "../filter";
 import * as scapePlot from "../scapePlot";
+import * as pathExtraction from "../pathExtraction";
+
 import Matrix from "../dataStructures/Matrix";
 import HalfMatrix from "../dataStructures/HalfMatrix";
 
@@ -65,7 +66,7 @@ addEventListener("message", (event) => {
     //showAllEnhancementMethods(ssmPitch, data, matrixes);
 
 
-    const strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.15);
+    const strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.1);
     const strictPathMatrix = Matrix.fromHalfMatrix(strictPathMatrixHalf);
     matrixes.push({
         name: "StrictPath",
@@ -99,13 +100,17 @@ addEventListener("message", (event) => {
 
 
 
-    const structureSections = structure.createSectionsFromNovelty(smoothedCombined, data.sampleDuration);
-    structures.push({name: "Novelty sections", data: structureSections})
+    const structureSegments = structure.createSegmentsFromNovelty(smoothedCombined, data.sampleDuration);
+    structures.push({name: "Novelty segments", data: structureSegments})
 
-    const structureCandidates = structure.computeStructureCandidates(strictPathMatrix, structureSections)
-    const greedyStructure = structure.findGreedyDecomposition(structureCandidates, data.sampleDuration);
-    structures.push({name: "Greedy sections", data: greedyStructure})
+    //const structureCandidates = structure.computeStructureCandidates(strictPathMatrix, structureSections)
 
+    const [greedyStructure, labelAmount] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration);
+    structures.push({name: "Greedy sections", data: greedyStructure, seperateByLabel: true, labelAmount: labelAmount})
+
+    //const sampleStart = Math.floor(greedyStructure[0].start/data.sampleDuration);
+    //const sampleEnd = Math.floor(greedyStructure[0].end/data.sampleDuration);
+    visualizePathExtraction(strictPathMatrix, 150, 200, matrixes)
 
     //visualizeKernel(data, matrixes);
 
@@ -259,7 +264,7 @@ export function computeStructureFeature(pathSSM, matrixes, graphs){
     const timeLagMatrix = Matrix.createTimeLagMatrix(pathSSM);
     matrixes.push({ name: "TL", buffer: timeLagMatrix.getBuffer() });
 
-    const medianTimeLag = filter.median2D(timeLagMatrix, 32, 8, 2);
+    const medianTimeLag = filter.median2D(timeLagMatrix, 32, 16, 2);
     matrixes.push({ name: "Med TL", buffer: medianTimeLag.getBuffer() });
 
     const priorLag = noveltyDetection.computePriorLagHalf(timeLagMatrix, 10);
@@ -302,6 +307,11 @@ export function computeStructureFeature(pathSSM, matrixes, graphs){
     });
 
     return structureFeatureNovelty;
+}
+
+export function visualizePathExtraction(pathSSM, startSample, endSample, matrixes){
+    const pathExtractVis = pathExtraction.visualizationMatrix(pathSSM, pathSSM.getSampleAmount(), startSample, endSample);
+    matrixes.push({name: "PathExtraction", buffer: pathExtractVis.getBuffer()});
 }
 
 export function createScapePlot(pathSSM, data, message){

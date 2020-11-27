@@ -1,7 +1,7 @@
-import { path } from "d3";
+import { image } from "d3";
 import * as log from "../dev/log";
 import Matrix from "./dataStructures/Matrix";
-import { penalizeThreshold } from "./SSM";
+
 
 export function createScoreMatrixBuffer(sampleAmount){
     return new Float32Array(sampleAmount * sampleAmount).fill(Number.NEGATIVE_INFINITY);
@@ -9,16 +9,21 @@ export function createScoreMatrixBuffer(sampleAmount){
 
 export function extractPathFamily(ssm, start, end) {
     const { D, width, height, score } = computeAccumulatedScoreMatrix(ssm, start, end, D);
-    const P = computeOptimalPathFamily(D, width, height);
-    return {P, score};
+    const pathFamily = computeOptimalPathFamily(D, width, height);
+    const pathScores = getScoresForPathFamily(D, width, pathFamily);
+    return [pathFamily, pathScores, score, width];
 }
 
+
+// The ratio between the length of the knight move vs length of a diagonal move
+const knightMoveRatio = Math.sqrt(10)/2+0.01; // plus slight offset to favour diagonal moves when going through penalties
+const knightMoveTweak = 0.9; //Also favouring diagonal moves when accumulating score
 export function computeAccumulatedScoreMatrix(ssm, start, end, D) {
     const sampleAmount = ssm.getSampleAmount(); 
     if (start < 0) log.error("start below 0: ", start);
-    if (end >= sampleAmount) log.error("end above sampleAmount: ", sampleAmount, "end", end);
+    if (end > sampleAmount) log.error("end above sampleAmount: ", sampleAmount, "end", end);
 
-    const length = end - start + 1;
+    const length = end - start;
 
     const width = length + 1;
     const height = sampleAmount;
@@ -42,10 +47,22 @@ export function computeAccumulatedScoreMatrix(ssm, start, end, D) {
         D[y * width + 0] = Math.max(D[(y - 1) * width + 0], D[(y - 1) * width + width - 1]);
         D[y * width + 1] = D[y * width + 0] + penalize(ssm.getValueNormalized(start, y));
         for (let x = 2; x < width; x++) {
-            const down = D[(y - 2) * width + x - 1] || Number.NEGATIVE_INFINITY; // in case undefined
+            let down = D[(y - 2) * width + x - 1] || Number.NEGATIVE_INFINITY; // in case undefined
+            if(down < 0){
+                down *= knightMoveRatio;
+            }else{
+                down *= knightMoveTweak;
+            }
+            let right = D[(y - 1) * width + x - 2]|| Number.NEGATIVE_INFINITY; // in case undefined
+            if(right < 0){
+                right *= knightMoveRatio;
+            }else{
+                right *= knightMoveTweak;
+            }
+            const diag = D[(y - 1) * width + x - 1] || Number.NEGATIVE_INFINITY; // in case undefined
             D[y * width + x] =
                 penalize(ssm.getValueNormalized(start + x - 1, y)) +
-                Math.max(D[(y - 1) * width + x - 1], D[(y - 1) * width + x - 2], down);
+                Math.max(diag, right, down);
         }
     }
 
@@ -60,6 +77,7 @@ export function computeOptimalPathFamily(D, width, height) {
 
     let y = height - 1;
     let x;
+    log.debug(D[y * width + width - 1], D[y * width + 0])
     if (D[y * width + width - 1] < D[y * width + 0]) {
         x = 0;
     } else {
@@ -116,19 +134,43 @@ export function computeOptimalPathFamily(D, width, height) {
             // regular case, obtain best of predecessors
             let max = Number.NEGATIVE_INFINITY;
             for (let i = 0; i < predecessorLength; i++) {
-                const val = D[predecessors[i * 2 + 0] * width + predecessors[i * 2 + 1]]; // value in D of predecessor
+                let val = D[predecessors[i * 2 + 0] * width + predecessors[i * 2 + 1]]; // value in D of predecessor
                 if (val > max) {
                     max = val;
                     y = predecessors[i * 2 + 0];
                     x = predecessors[i * 2 + 1];
                 }
-                path.push(x - 1, y);
             }
+            path.push(x - 1, y);
+
         }
     }
     // add last path to family
     pathFamily.push(path);
     return pathFamily;
+}
+
+let deb = 0;
+export function getScoresForPathFamily(scoreMatrix, width, pathFamily){
+    deb++;
+    let pathScores = [];
+    pathFamily.forEach(path => {
+        let pathScore = 0;
+        for(let i = 0; i < path.length; i+=2){
+            const x = path[i];
+            const y = path[i+1];
+            const value = scoreMatrix[y * width +(x+1)];
+            pathScore += value;
+        }
+        if(deb%300 === 0){
+            log.debug(path)
+            log.debug(pathScores);
+            log.debug(pathScore);
+
+        }
+        pathScores.push(pathScore);
+    });
+    return pathScores;
 }
 
 export function computeFitness(pathFamily, score, sampleAmount, width) {
@@ -186,10 +228,13 @@ export function getInducedSegments(pathFamily) {
 }
 
 export function visualizationMatrix(ssm, sampleAmount, start, end) {
-    log.debug("start", start, "end", end);
-    const { D, width, height, score } = computeAccumulatedScoreMatrix(ssm, sampleAmount, start, end);
+    log.debug("start", start, "end", end, "sampleAmount: ", sampleAmount);
+    const scoreMatrixBuffer = createScoreMatrixBuffer(sampleAmount);
+    const { D, width, height, score } = computeAccumulatedScoreMatrix(ssm, start, end, scoreMatrixBuffer);
     log.debug("SCORE: ", score);
     const P = computeOptimalPathFamily(D, width, height);
+    const PScores = getScoresForPathFamily(D, width, P);
+    log.debug("Path family scores:", PScores);
     const { fitness, normalizedScore, coverage, normalizedCoverage, pathFamilyLength } = computeFitness(
         P,
         score,
@@ -213,7 +258,7 @@ export function visualizationMatrix(ssm, sampleAmount, start, end) {
 
     const length = end - start + 1;
     const visualizationMatrix = new Matrix({
-        width: length * 3,
+        width: sampleAmount,
         height: sampleAmount,
         numberType: Matrix.NumberType.UINT8,
     });
@@ -222,7 +267,7 @@ export function visualizationMatrix(ssm, sampleAmount, start, end) {
         if (x >= length * 2) {
             return 0; // Paths will be set from looping over paths
         } else if (x >= length) {
-            return (Math.max(0, D[y * width + x - length + 1]) / maxVal) * 255; // +1 to remove elevator, * 255 sinze value is
+            return (Math.max(0, D[y * width + x - length]) / maxVal) * 255; // +1 to remove elevator, * 255 sinze value is
         } else {
             return ssm.getValue(start + x, y);
         }
@@ -270,4 +315,63 @@ export function segmentDistance(inducedSegmentsA, inducedSegmentsB) {
         }
     }
     return 1 - maxSimilarity;
+}
+
+let logi = 0;
+export function computeSegmentPathFamilyInfo(pathSSM, startInSamples, endInSamples, scoreMatrixBuffer, pathPruneThreshold){
+    logi++;
+    const sampleAmount = pathSSM.getSampleAmount();
+    if(!scoreMatrixBuffer){
+        scoreMatrixBuffer = createScoreMatrixBuffer(sampleAmount);
+    }
+    const [P, pathScores, score, width] = extractPathFamily(pathSSM, startInSamples, endInSamples, scoreMatrixBuffer)
+    const averagepathScore = score / P.length;
+    let prunedScore = score;
+    if(pathPruneThreshold){
+        if(logi%300 === 0){
+            log.debug("-----------")
+            log.debug(prunedScore);
+            log.debug(P, pathScores)
+        }
+        for(let i = P.length-1; i >= 0; i--){
+            if(logi%300 === 0){
+                log.debug("Pathscore of:", i, pathScores[i]);
+            }
+            if(pathScores[i] < averagepathScore*pathPruneThreshold){
+                prunedScore -= pathScores[i];
+                P.splice(i,1);
+                pathScores.splice(i,1);
+            }
+        }
+        if(logi%300 === 0){
+            log.debug(prunedScore);
+            log.debug(P, pathScores)
+        }
+    }
+    const {
+        fitness,
+        normalizedScore,
+        coverage,
+        normalizedCoverage,
+        pathFamilyLength,
+    } = computeFitness(P, prunedScore, sampleAmount, width);
+    const pathFamily = [];
+    P.forEach(path => {
+        const pathCoords = [];
+        for(let i =0; i< path.length; i+=2){
+            const x = startInSamples+path[i];
+            const y = path[i+1];
+            pathCoords.push([x, y]);
+        }
+        pathFamily.push(pathCoords);
+    })
+    
+    return {
+        score: score,
+        normalizedScore: normalizedScore,
+        coverage: coverage,
+        normalizedCoverage: normalizedCoverage,
+        fitness: fitness,
+        pathFamily: pathFamily,
+    };
 }

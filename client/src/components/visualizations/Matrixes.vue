@@ -10,12 +10,21 @@
         <svg v-if="hasStructures" class="annotations" :height="width" :width="width">
             <g v-for="(section,index) in selectedStructure.data" :key="index" >
                 <rect 
-                :x="section.start*secondsToXPosition + (fillSections ? -1: 0)"
+                v-if="showPathStart"
+                :x="section.start*secondsToXPosition -1"
                 :y="0"
-                :width="fillSections ? section.duration*secondsToXPosition : 2"
+                :width="2"
                 :height="width"
                 :fill="getCategoryColor(section.label)"
-                :opacity="fillSections ? 0.4 : 0.6"></rect>
+                :opacity=" 0.8"></rect>
+                <rect 
+                v-if="fillSections"
+                :x="section.start*secondsToXPosition"
+                :y="0"
+                :width=" section.duration*secondsToXPosition"
+                :height="width"
+                :fill="getCategoryColor(section.label)"
+                :opacity="0.3"></rect>
                 <g v-if="section.pathFamily && showPaths">
                     <g v-for="(path, pathIndex) in section.pathFamily" :key="pathIndex" >
                         <path fill="none" stroke="white" stroke-width="4" :d="generateLine(path)" class="path" stroke-linejoin="round" />
@@ -35,6 +44,7 @@
             solo
           ></v-select>
           <v-spacer></v-spacer>
+        <v-switch v-model="showPathStart" label="Show Path Start" hide-details></v-switch>
         <v-switch v-model="fillSections" label="Fill Sections" hide-details></v-switch>
             <v-switch v-model="showPaths" label="Show Paths" hide-details></v-switch>
         </v-row>
@@ -58,6 +68,7 @@ export default {
         return {
             selectedStructure: {name: "undefined", data: []},
             fillSections: false,
+            showPathStart: true,
             showPaths: true,
             selectedTab: 0,
             drawLoop: null,
