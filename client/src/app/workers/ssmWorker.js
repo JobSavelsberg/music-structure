@@ -66,7 +66,7 @@ addEventListener("message", (event) => {
     //showAllEnhancementMethods(ssmPitch, data, matrixes);
 
 
-    const strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.1);
+    const strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.15);
     const strictPathMatrix = Matrix.fromHalfMatrix(strictPathMatrixHalf);
     matrixes.push({
         name: "StrictPath",

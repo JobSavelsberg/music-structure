@@ -73,6 +73,7 @@ export function computeSeparateStructureCandidates(pathSSM, separateSegmentSets,
 }
 
 // Structure is not sorted, structuresegments is
+const wiggle = false;
 export function findGreedyDecomposition(pathSSM, structureSegments, sampleDuration, comparisonProperty = "fitness", smallestAllowedSize = 1) {
     const trackEnd = structureSegments[structureSegments.length - 1].end;
     let structureSections = [];
@@ -90,10 +91,12 @@ export function findGreedyDecomposition(pathSSM, structureSegments, sampleDurati
         }
         const allCandidatesSorted = allCandidates.sort((a, b) => a[comparisonProperty] > b[comparisonProperty] ? 1 : -1);
 
-        const best = allCandidatesSorted.pop();
+        let best = allCandidatesSorted.pop();
+        if (wiggle) {
+            best = findBetterFit(pathSSM, best, 4, comparisonProperty);
+        }
         const label = i;
         best.label = label;
-        // TODO: try to find higher score by nudging sides
 
         best.pathFamily.forEach(path => {
             const start = path[path.length - 1][1] * sampleDuration;
@@ -101,10 +104,10 @@ export function findGreedyDecomposition(pathSSM, structureSegments, sampleDurati
             const duration = end - start;
             const section = { start, end, duration, label }
             if (!isSameSectionWithinError(best, section, 2)) {
-                // This is debatable, we might want to show this
-                if (!overlapWithStructureSections(section, structureSections)) {
-                    structureSections.push(section);
-                }
+                // This is debatable, we might want to show this (why it got high fitness to begin with)
+                //if (!overlapWithStructureSections(section, structureSections)) {
+                structureSections.push(section);
+                //}
             } else {
                 // It's the best path itself, but use the segment defined by the coverage in the path family
                 best.start = start;
@@ -123,6 +126,45 @@ export function findGreedyDecomposition(pathSSM, structureSegments, sampleDurati
         i++;
     }
     return [structureSections, i, segments];
+}
+
+function findBetterFit(pathSSM, section, sampleOffset = 4, comparisonProperty) {
+    log.debug("Find better fit")
+    const sampleAmount = pathSSM.getSampleAmount();
+    const sampleDuration = pathSSM.sampleDuration;
+
+    const startInSamples = Math.floor(section.start / sampleDuration);
+    const endInSamples = Math.floor(section.end / sampleDuration);
+
+    const scoreMatrixBuffer = pathExtraction.createScoreMatrixBuffer(sampleAmount);
+    let max = 0;
+    let bestFit = null
+
+    for (let startOffset = -sampleOffset; startOffset < sampleOffset; startOffset++) {
+        for (let endOffset = -sampleOffset; endOffset < sampleOffset; endOffset++) {
+            const start = startInSamples + startOffset;
+            const end = endInSamples + endOffset;
+            log.debug("Checking", start, end);
+            // TODO: also check for overlap with existing sections
+            if (start >= 0 && end < sampleAmount) {
+                const segmentPathFamilyInfo = pathExtraction.computeSegmentPathFamilyInfo(pathSSM, start, end, scoreMatrixBuffer)
+
+                segmentPathFamilyInfo.start = start * sampleDuration;
+                segmentPathFamilyInfo.end = end * sampleDuration;
+                segmentPathFamilyInfo.duration = segmentPathFamilyInfo.end - segmentPathFamilyInfo.start;
+
+                if (segmentPathFamilyInfo[comparisonProperty] > max) {
+                    log.debug("Found max", segmentPathFamilyInfo[comparisonProperty]);
+                    // TODO: log how the max moves (maybe it needs more offset to reach optimum)
+                    bestFit = segmentPathFamilyInfo;
+                    log.debug(bestFit.start, bestFit.end)
+                    max = segmentPathFamilyInfo[comparisonProperty];
+                }
+            }
+        }
+    }
+
+    return bestFit;
 }
 
 function overlapWithStructureSections(section, structureSections) {
