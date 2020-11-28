@@ -104,7 +104,7 @@ export default {
                 null
             );
             if(section.label !== undefined){
-                this.zoomCanvas.drawText(section.start + 0.5, y+4 + this.blockHeight / 2, section.label);
+                this.zoomCanvas.drawText(section.start, y+4 + this.blockHeight / 2, section.label);
             }
         },
         getAmountOfUniqueLabels(structure){

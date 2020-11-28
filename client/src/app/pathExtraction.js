@@ -3,7 +3,7 @@ import * as log from "../dev/log";
 import Matrix from "./dataStructures/Matrix";
 
 
-export function createScoreMatrixBuffer(sampleAmount){
+export function createScoreMatrixBuffer(sampleAmount) {
     return new Float32Array(sampleAmount * sampleAmount).fill(Number.NEGATIVE_INFINITY);
 }
 
@@ -16,10 +16,10 @@ export function extractPathFamily(ssm, start, end) {
 
 
 // The ratio between the length of the knight move vs length of a diagonal move
-const knightMoveRatio = Math.sqrt(10)/2+0.01; // plus slight offset to favour diagonal moves when going through penalties
+const knightMoveRatio = Math.sqrt(10) / 2 + 0.01; // plus slight offset to favour diagonal moves when going through penalties
 const knightMoveTweak = 0.9; //Also favouring diagonal moves when accumulating score
 export function computeAccumulatedScoreMatrix(ssm, start, end, D) {
-    const sampleAmount = ssm.getSampleAmount(); 
+    const sampleAmount = ssm.getSampleAmount();
     if (start < 0) log.error("start below 0: ", start);
     if (end > sampleAmount) log.error("end above sampleAmount: ", sampleAmount, "end", end);
 
@@ -48,15 +48,15 @@ export function computeAccumulatedScoreMatrix(ssm, start, end, D) {
         D[y * width + 1] = D[y * width + 0] + penalize(ssm.getValueNormalized(start, y));
         for (let x = 2; x < width; x++) {
             let down = D[(y - 2) * width + x - 1] || Number.NEGATIVE_INFINITY; // in case undefined
-            if(down < 0){
+            if (down < 0) {
                 down *= knightMoveRatio;
-            }else{
+            } else {
                 down *= knightMoveTweak;
             }
-            let right = D[(y - 1) * width + x - 2]|| Number.NEGATIVE_INFINITY; // in case undefined
-            if(right < 0){
+            let right = D[(y - 1) * width + x - 2] || Number.NEGATIVE_INFINITY; // in case undefined
+            if (right < 0) {
                 right *= knightMoveRatio;
-            }else{
+            } else {
                 right *= knightMoveTweak;
             }
             const diag = D[(y - 1) * width + x - 1] || Number.NEGATIVE_INFINITY; // in case undefined
@@ -77,7 +77,6 @@ export function computeOptimalPathFamily(D, width, height) {
 
     let y = height - 1;
     let x;
-    log.debug(D[y * width + width - 1], D[y * width + 0])
     if (D[y * width + width - 1] < D[y * width + 0]) {
         x = 0;
     } else {
@@ -151,21 +150,21 @@ export function computeOptimalPathFamily(D, width, height) {
 }
 
 let deb = 0;
-export function getScoresForPathFamily(scoreMatrix, width, pathFamily){
+export function getScoresForPathFamily(scoreMatrix, width, pathFamily) {
     deb++;
     let pathScores = [];
     pathFamily.forEach(path => {
         let pathScore = 0;
-        for(let i = 0; i < path.length; i+=2){
+        for (let i = 0; i < path.length; i += 2) {
             const x = path[i];
-            const y = path[i+1];
-            const value = scoreMatrix[y * width +(x+1)];
+            const y = path[i + 1];
+            const value = scoreMatrix[y * width + (x + 1)];
             pathScore += value;
         }
-        if(deb%300 === 0){
-            log.debug(path)
-            log.debug(pathScores);
-            log.debug(pathScore);
+        if (deb % 300 === 0) {
+            //log.debug(path)
+            //log.debug(pathScores);
+            //log.debug(pathScore);
 
         }
         pathScores.push(pathScore);
@@ -318,32 +317,32 @@ export function segmentDistance(inducedSegmentsA, inducedSegmentsB) {
 }
 
 let logi = 0;
-export function computeSegmentPathFamilyInfo(pathSSM, startInSamples, endInSamples, scoreMatrixBuffer, pathPruneThreshold){
+export function computeSegmentPathFamilyInfo(pathSSM, startInSamples, endInSamples, scoreMatrixBuffer, pathPruneThreshold) {
     logi++;
     const sampleAmount = pathSSM.getSampleAmount();
-    if(!scoreMatrixBuffer){
+    if (!scoreMatrixBuffer) {
         scoreMatrixBuffer = createScoreMatrixBuffer(sampleAmount);
     }
     const [P, pathScores, score, width] = extractPathFamily(pathSSM, startInSamples, endInSamples, scoreMatrixBuffer)
     const averagepathScore = score / P.length;
     let prunedScore = score;
-    if(pathPruneThreshold){
-        if(logi%300 === 0){
+    if (pathPruneThreshold) {
+        if (logi % 300 === 0) {
             log.debug("-----------")
             log.debug(prunedScore);
             log.debug(P, pathScores)
         }
-        for(let i = P.length-1; i >= 0; i--){
-            if(logi%300 === 0){
+        for (let i = P.length - 1; i >= 0; i--) {
+            if (logi % 300 === 0) {
                 log.debug("Pathscore of:", i, pathScores[i]);
             }
-            if(pathScores[i] < averagepathScore*pathPruneThreshold){
+            if (pathScores[i] < averagepathScore * pathPruneThreshold) {
                 prunedScore -= pathScores[i];
-                P.splice(i,1);
-                pathScores.splice(i,1);
+                P.splice(i, 1);
+                pathScores.splice(i, 1);
             }
         }
-        if(logi%300 === 0){
+        if (logi % 300 === 0) {
             log.debug(prunedScore);
             log.debug(P, pathScores)
         }
@@ -358,14 +357,14 @@ export function computeSegmentPathFamilyInfo(pathSSM, startInSamples, endInSampl
     const pathFamily = [];
     P.forEach(path => {
         const pathCoords = [];
-        for(let i =0; i< path.length; i+=2){
-            const x = startInSamples+path[i];
-            const y = path[i+1];
+        for (let i = 0; i < path.length; i += 2) {
+            const x = startInSamples + path[i];
+            const y = path[i + 1];
             pathCoords.push([x, y]);
         }
         pathFamily.push(pathCoords);
     })
-    
+
     return {
         score: score,
         normalizedScore: normalizedScore,

@@ -30,7 +30,7 @@ addEventListener("message", (event) => {
     //const ssmPitchSinglePitchOffset1 = data.allPitches ? ssmPitch.getFeatureMatrix(1) : ssmPitch;
 
     //createBasicNoveltyFeatures(ssmPitchSinglePitch, ssmTimbre, graphs);
-    
+
 
     // Enhance pitch SSM, diagonal smoothing, still contains 12 pitches
     let startTime = performance.now();
@@ -57,7 +57,7 @@ addEventListener("message", (event) => {
 
     const fullTranspositionInvariant = Matrix.fromHalfMatrix(transpositionInvariant);
 
-    
+
     /*const binaryTranspositionInvariant = SSM.binarize(transpositionInvariant, 0.2);
     matrixes.push({
         name: "Bin Transinv",
@@ -75,7 +75,7 @@ addEventListener("message", (event) => {
 
     const structureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs);
 
-   
+
     //const binaryTimeLagMatrix = SSM.binarize(medianTimeLag, 0.1);
     //matrixes.push({ name: "Bin TL", buffer: binaryTimeLagMatrix.getBuffer() });
 
@@ -101,12 +101,13 @@ addEventListener("message", (event) => {
 
 
     const structureSegments = structure.createSegmentsFromNovelty(smoothedCombined, data.sampleDuration);
-    structures.push({name: "Novelty segments", data: structureSegments})
+    structures.push({ name: "Novelty segments", data: structureSegments })
 
     //const structureCandidates = structure.computeStructureCandidates(strictPathMatrix, structureSections)
 
-    const [greedyStructure, labelAmount] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration);
-    structures.push({name: "Greedy sections", data: greedyStructure, seperateByLabel: true, labelAmount: labelAmount})
+    const [greedyStructure, labelAmount, segments] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration);
+    structures.push({ name: "Greedy sections", data: greedyStructure, seperateByLabel: true, labelAmount: labelAmount })
+    //structures.push({ name: "Greedy segments", data: segments, seperateByLabel: true, labelAmount: labelAmount })
 
     //const sampleStart = Math.floor(greedyStructure[0].start/data.sampleDuration);
     //const sampleEnd = Math.floor(greedyStructure[0].end/data.sampleDuration);
@@ -147,7 +148,7 @@ export function calculateSSM(data, threshold) {
     }
 }
 
-export function createBasicNoveltyFeatures(pitch, timbre, graphs){
+export function createBasicNoveltyFeatures(pitch, timbre, graphs) {
     const blurredTimbre = filter.gaussianBlur2DOptimized(timbre, 12);
 
     //matrixes.push({ name: "Blur T", buffer: blurredTimbre.getBuffer() });
@@ -191,7 +192,7 @@ export function createBasicNoveltyFeatures(pitch, timbre, graphs){
     graphs.push({
         name: "Blur Pitch Column Novelty",
         buffer: blurredPitchNovelty.buffer,
-    }); 
+    });
 }
 
 export function createBeatGraph(data, graphs) {
@@ -221,7 +222,7 @@ export function visualizeKernel(data, matrixes) {
     matrixes.push({ name: "Kernel", buffer: kernelMatrix.getBuffer() });
 }
 
-export function showAllEnhancementMethods(ssmPitch, data, matrixes){
+export function showAllEnhancementMethods(ssmPitch, data, matrixes) {
     const enhancedSSMLin = SSM.enhanceSSM(
         ssmPitch,
         { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: 'linear' },
@@ -260,7 +261,7 @@ export function showAllEnhancementMethods(ssmPitch, data, matrixes){
 
 }
 
-export function computeStructureFeature(pathSSM, matrixes, graphs){
+export function computeStructureFeature(pathSSM, matrixes, graphs) {
     const timeLagMatrix = Matrix.createTimeLagMatrix(pathSSM);
     matrixes.push({ name: "TL", buffer: timeLagMatrix.getBuffer() });
 
@@ -309,48 +310,48 @@ export function computeStructureFeature(pathSSM, matrixes, graphs){
     return structureFeatureNovelty;
 }
 
-export function visualizePathExtraction(pathSSM, startSample, endSample, matrixes){
+export function visualizePathExtraction(pathSSM, startSample, endSample, matrixes) {
     const pathExtractVis = pathExtraction.visualizationMatrix(pathSSM, pathSSM.getSampleAmount(), startSample, endSample);
-    matrixes.push({name: "PathExtraction", buffer: pathExtractVis.getBuffer()});
+    matrixes.push({ name: "PathExtraction", buffer: pathExtractVis.getBuffer() });
 }
 
-export function createScapePlot(pathSSM, data, message){
-        let startTime = performance.now();
-        const SP = scapePlot.create(pathSSM, data.sampleAmount, data.SPminSize, data.SPstepSize);
-        log.debug("ScapePlot Time", performance.now() - startTime);
+export function createScapePlot(pathSSM, data, message) {
+    let startTime = performance.now();
+    const SP = scapePlot.create(pathSSM, data.sampleAmount, data.SPminSize, data.SPstepSize);
+    log.debug("ScapePlot Time", performance.now() - startTime);
 
-        // Anchorpoint selection for segment family similarity
-        startTime = performance.now();
-        const anchorNeighborhoodSize = 7 / data.SPstepSize;
-        const anchorMinSize = Math.max(1, 7 - data.SPminSize);
-        const { anchorPoints, anchorPointAmount } = scapePlot.sampleAnchorPointsMax(
-            SP,
-            250,
-            anchorNeighborhoodSize,
-            anchorMinSize,
-            0.1
-        );
-        log.debug("anchorPoints Time", performance.now() - startTime);
-        log.debug("AnchorPoint Amount: ", anchorPointAmount);
+    // Anchorpoint selection for segment family similarity
+    startTime = performance.now();
+    const anchorNeighborhoodSize = 7 / data.SPstepSize;
+    const anchorMinSize = Math.max(1, 7 - data.SPminSize);
+    const { anchorPoints, anchorPointAmount } = scapePlot.sampleAnchorPointsMax(
+        SP,
+        250,
+        anchorNeighborhoodSize,
+        anchorMinSize,
+        0.1
+    );
+    log.debug("anchorPoints Time", performance.now() - startTime);
+    log.debug("AnchorPoint Amount: ", anchorPointAmount);
 
-        // Optional visualization of anchorpoint locations
-        //SP.multiply(0.9);
-        for (let i = 0; i < anchorPointAmount; i++) {
-            //SP.setValue(anchorPoints[i * 2], anchorPoints[i * 2 + 1], 1);
-        }
+    // Optional visualization of anchorpoint locations
+    //SP.multiply(0.9);
+    for (let i = 0; i < anchorPointAmount; i++) {
+        //SP.setValue(anchorPoints[i * 2], anchorPoints[i * 2 + 1], 1);
+    }
 
-        // Mapping colors by similarity to anchorpoints
-        startTime = performance.now();
-        const SPAnchorColor = scapePlot.mapColors(
-            pathSSM,
-            data.sampleAmount,
-            data.SPminSize,
-            data.SPstepSize,
-            anchorPoints,
-            anchorPointAmount
-        );
-        log.debug("colorMap Time", performance.now() - startTime);
+    // Mapping colors by similarity to anchorpoints
+    startTime = performance.now();
+    const SPAnchorColor = scapePlot.mapColors(
+        pathSSM,
+        data.sampleAmount,
+        data.SPminSize,
+        data.SPstepSize,
+        anchorPoints,
+        anchorPointAmount
+    );
+    log.debug("colorMap Time", performance.now() - startTime);
 
-        message.scapePlot = SP.getBuffer();
-        message.scapePlotAnchorColor = SPAnchorColor.buffer;
+    message.scapePlot = SP.getBuffer();
+    message.scapePlotAnchorColor = SPAnchorColor.buffer;
 }
