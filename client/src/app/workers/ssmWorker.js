@@ -73,8 +73,8 @@ addEventListener("message", (event) => {
         buffer: strictPathMatrix.getBuffer(),
     });
 
+    log.debug(fullTranspositionInvariant)
     const structureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs);
-
 
     //const binaryTimeLagMatrix = SSM.binarize(medianTimeLag, 0.1);
     //matrixes.push({ name: "Bin TL", buffer: binaryTimeLagMatrix.getBuffer() });
@@ -105,13 +105,22 @@ addEventListener("message", (event) => {
 
     //const structureCandidates = structure.computeStructureCandidates(strictPathMatrix, structureSections)
 
-    const [greedyStructure, labelAmount, segments] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration);
-    structures.push({ name: "Greedy sections", data: greedyStructure, seperateByLabel: true, labelAmount: labelAmount })
-    //structures.push({ name: "Greedy segments", data: segments, seperateByLabel: true, labelAmount: labelAmount })
+    const [greedyStructure, labelAmount, segments] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "classic");
+    structures.push({ name: "Greedy sections classic", data: greedyStructure, seperateByLabel: true, labelAmount: labelAmount })
 
+    log.debug(greedyStructure)
+
+    const [greedyStructure1, labelAmount1, segments1] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "pruned");
+    structures.push({ name: "Greedy sections pruned", data: greedyStructure1, seperateByLabel: true, labelAmount: labelAmount1 })
+
+    const [greedyStructure2, labelAmount2, segments2] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "custom");
+    structures.push({ name: "Greedy sections custom", data: greedyStructure2, seperateByLabel: true, labelAmount: labelAmount2 })
+
+    const [greedyStructure3, labelAmount3, segments3] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "customPruned");
+    structures.push({ name: "Greedy sections custom pruned", data: greedyStructure3, seperateByLabel: true, labelAmount: labelAmount3 })
     //const sampleStart = Math.floor(greedyStructure[0].start/data.sampleDuration);
     //const sampleEnd = Math.floor(greedyStructure[0].end/data.sampleDuration);
-    visualizePathExtraction(strictPathMatrix, 150, 200, matrixes)
+    //visualizePathExtraction(strictPathMatrix, 352, 388, matrixes)
 
     //visualizeKernel(data, matrixes);
 
@@ -307,7 +316,7 @@ export function computeStructureFeature(pathSSM, matrixes, graphs) {
         buffer: structureFeatureNoveltyNorm.buffer,
     });
 
-    return structureFeatureNovelty;
+    return structureFeatureNoveltyNorm;
 }
 
 export function visualizePathExtraction(pathSSM, startSample, endSample, matrixes) {

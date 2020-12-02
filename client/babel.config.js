@@ -1,10 +1,11 @@
 module.exports = {
   presets: [
-    '@vue/cli-plugin-babel/preset',
-    "@babel/preset-env"
+    ['@vue/cli-plugin-babel/preset'],
+    ["@babel/preset-env", {"useBuiltIns": false}]
   ],
   plugins: [
-      ["@babel/transform-runtime"],
-      ["@babel/plugin-proposal-class-properties"],
+    ["dynamic-import-node"],
+    ["@babel/plugin-transform-runtime"],
+    ["@babel/plugin-proposal-class-properties"],
   ]
 }

@@ -26,7 +26,10 @@ export const divergingColor = d3
     .domain([-1, 0, 1])
     .interpolator(d3.interpolateRdBu);
 export const categoryColor = d3.scaleOrdinal().range(d3.schemeCategory10);
-
+export function categoryColorWithOpacity(color, opacity){
+    const c = d3.rgb(categoryColor(color));
+    return `rgba(${c.r},${c.g},${c.b},${opacity})`;
+}
 export function lightness(color, lightness) {
     const hslColor = d3.hsl(color);
     hslColor.l = lightness;

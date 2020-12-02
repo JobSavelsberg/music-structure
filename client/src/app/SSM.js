@@ -218,6 +218,26 @@ export function autoThreshold(ssm, percentage) {
     return thresholdSSM;
 }
 
+export function threshold(ssm, threshold){
+    let thresholdSSM;
+    if (ssm instanceof Matrix) {
+        thresholdSSM = Matrix.from(ssm);
+    } else {
+        thresholdSSM = HalfMatrix.from(ssm);
+    }
+    
+    thresholdSSM.fillNormalized((x,y) => {
+        const originalValue = ssm.getValueNormalizedMirrored(x,y);
+        if(originalValue <= threshold){
+            return 0;
+        }else{
+            return (originalValue-threshold) / (1-threshold);
+        }
+    })
+
+    return thresholdSSM;
+}
+
 export function rowColumnAutoThreshold(ssm, percentageRow, percentageCol = percentageRow) {
     log.debug("rowColumnAutoThreshold: row %:", percentageRow, "col %:", percentageCol);
     const typeScale = ssm.numberType.scale;

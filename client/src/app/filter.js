@@ -77,7 +77,6 @@ export function linearBlur2DOptimized(matrix, size){
 }
 
 export function gaussianBlur2DOptimized(matrix, size) {
-    log.debug("Performing gaussian", size);
     const matrixSize = matrix.getSize();
     const fullKernelSize = size * 2 + 1;
     const kernel1D = generate1DgaussianKernel(fullKernelSize, size / 2);
@@ -94,7 +93,9 @@ export function gaussianBlur2DOptimized(matrix, size) {
             } else if (x + kx >= matrixSize) {
                 sum += matrix.getValueMirrored(matrixSize - 1, y) * kernel1D[kx + size];
             }
+            
         }
+        
         return sum;
     });
     const blurredMatrixSecondPass = Matrix.from(matrix);

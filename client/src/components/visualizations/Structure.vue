@@ -78,6 +78,13 @@ export default {
             this.track.structures.forEach((structure) => {
                 this.zoomCanvas.drawTitle(y+this.titleHeight-2, structure.name);
                 y+= this.titleHeight;
+                this.zoomCanvas.drawRectWithBorder(0,
+                y,
+                this.width,
+                this.blockHeight*structure.labelAmount,
+                "rgba(32,32,32)",
+                1,
+                "rgb(72,72,72)")
 
                 if(structure.seperateByLabel){
                     structure.data.forEach((section, index) => {
@@ -90,8 +97,9 @@ export default {
                     })
                     y+= this.blockHeight;
                 }
-                
             })
+
+           
         },
         drawSection(section, y){
             this.zoomCanvas.drawRectWithBorder(
@@ -99,7 +107,7 @@ export default {
                 y,
                 section.duration,
                 this.blockHeight,
-                vis.categoryColor(section.label),
+                vis.categoryColorWithOpacity(section.label,Math.sqrt(section.confidence !== undefined ? section.confidence : 1)),
                 1,
                 null
             );

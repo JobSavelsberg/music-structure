@@ -1,22 +1,22 @@
 import * as noveltyDetection from "./noveltyDetection";
 import * as log from "../dev/log";
 import * as pathExtraction from "./pathExtraction";
-import { stratify } from "d3";
+import assert from "assert"
 
 export function createSegmentsFromNovelty(novelty, sampleDuration, threshold) {
     log.debug("Create sections from novelty");
-    const maxima = noveltyDetection.findLocalMaxima(novelty, threshold);
-
+    //const maxima = noveltyDetection.findLocalMaxima(novelty, threshold);
+    let peaks= noveltyDetection.findPeaks(novelty);
+    peaks = peaks.filter(peak => peak.confidence > 0.1);
     const structureSegments = [];
 
-    for (let i = 0; i < maxima.length; i++) {
-        const maximaIndex = maxima[i];
-        const start = maximaIndex * sampleDuration;
+    for (let i = 0; i < peaks.length; i++) {
+        const peak = peaks[i];
+        const start = peak.sample * sampleDuration;
         const end =
-            i < maxima.length - 1 ? sampleDuration * maxima[i + 1] : sampleDuration * novelty.length;
-
+            i < peaks.length - 1 ? sampleDuration * peaks[i + 1].sample : sampleDuration * novelty.length;
         const duration = end - start;
-        const confidence = novelty[maximaIndex];
+        const confidence = peak.confidence;
         const label = structureSegments.length;
         structureSegments.push({
             start,
@@ -30,13 +30,14 @@ export function createSegmentsFromNovelty(novelty, sampleDuration, threshold) {
 }
 
 
-export function computeStructureCandidates(pathSSM, structureSegments, minDurationSeconds = 5, maxRatio = 0.4) {
+export function computeStructureCandidates(pathSSM, structureSegments, minDurationSeconds = 1, maxRatio = 0.4, strategy) {
     const sampleAmount = pathSSM.getSampleAmount();
     const segmentAmount = structureSegments.length;
     const sampleDuration = pathSSM.sampleDuration;
     const maxLength = maxRatio * sampleAmount * sampleDuration;
     const scoreMatrixBuffer = pathExtraction.createScoreMatrixBuffer(sampleAmount);
     const candidates = [];
+
 
     for (let start = 0; start < segmentAmount; start++) {
         for (let end = start; end < segmentAmount; end++) {
@@ -47,8 +48,8 @@ export function computeStructureCandidates(pathSSM, structureSegments, minDurati
             if (segmentLengthInSeconds < minDurationSeconds || segmentLengthInSeconds > maxLength) continue;
             const startInSamples = Math.floor(startInSeconds / sampleDuration);
             const endInSamples = Math.floor(endInSeconds / sampleDuration);
-
-            const segmentPathFamilyInfo = pathExtraction.computeSegmentPathFamilyInfo(pathSSM, startInSamples, endInSamples, scoreMatrixBuffer)
+            
+            const segmentPathFamilyInfo = pathExtraction.computeSegmentPathFamilyInfo(pathSSM, startInSamples, endInSamples, scoreMatrixBuffer, strategy)
 
             segmentPathFamilyInfo.start = startInSeconds;
             segmentPathFamilyInfo.duration = segmentLengthInSeconds;
@@ -62,10 +63,10 @@ export function computeStructureCandidates(pathSSM, structureSegments, minDurati
     return candidates;
 }
 
-export function computeSeparateStructureCandidates(pathSSM, separateSegmentSets, minDurationSeconds = 4, maxRatio = 0.4) {
+export function computeSeparateStructureCandidates(pathSSM, separateSegmentSets, strategy, minDurationSeconds = 1, maxRatio = 0.4) {
     const separateCandidateSets = []
     separateSegmentSets.forEach(segments => {
-        const candidates = computeStructureCandidates(pathSSM, segments, minDurationSeconds, maxRatio);
+        const candidates = computeStructureCandidates(pathSSM, segments, minDurationSeconds, maxRatio, strategy);
         separateCandidateSets.push(candidates);
     })
 
@@ -73,8 +74,8 @@ export function computeSeparateStructureCandidates(pathSSM, separateSegmentSets,
 }
 
 // Structure is not sorted, structuresegments is
-const wiggle = false;
-export function findGreedyDecomposition(pathSSM, structureSegments, sampleDuration, comparisonProperty = "fitness", smallestAllowedSize = 1) {
+const wiggle = true;
+export function findGreedyDecomposition(pathSSM, structureSegments, sampleDuration, strategy = "classic", comparisonProperty = "fitness", smallestAllowedSize = 2) {
     const trackEnd = structureSegments[structureSegments.length - 1].end;
     let structureSections = [];
     const segments = []
@@ -82,9 +83,9 @@ export function findGreedyDecomposition(pathSSM, structureSegments, sampleDurati
     let separateSegmentSets = [structureSegments];
 
     let i = 0;
-    const maxRepeats = 3;
+    const maxRepeats = 10;
     while (separateSegmentSets.length > 0 && i < maxRepeats) {
-        let separateCandidateSets = computeSeparateStructureCandidates(pathSSM, separateSegmentSets)
+        let separateCandidateSets = computeSeparateStructureCandidates(pathSSM, separateSegmentSets, strategy)
         const allCandidates = [].concat.apply([], separateCandidateSets);
         if (allCandidates.length === 0) {
             break;
@@ -93,17 +94,20 @@ export function findGreedyDecomposition(pathSSM, structureSegments, sampleDurati
 
         let best = allCandidatesSorted.pop();
         if (wiggle) {
-            best = findBetterFit(pathSSM, best, 4, comparisonProperty);
+            best = findBetterFit(pathSSM, best, 4, comparisonProperty, strategy, structureSections);
+        }
+        if(best === null || best[comparisonProperty] <= 0 || isNaN(best[comparisonProperty])) {
+            break;
         }
         const label = i;
         best.label = label;
 
-        best.pathFamily.forEach(path => {
+        best.pathFamily.forEach((path, index) => {
             const start = path[path.length - 1][1] * sampleDuration;
             const end = (path[0][1] + 1) * sampleDuration;
             const duration = end - start;
-            const section = { start, end, duration, label }
-            if (!isSameSectionWithinError(best, section, 2)) {
+            const section = { start, end, duration, label, confidence: best.pathScores[index] }
+            /*if (!isSameSectionWithinError(best, section, 2)) {
                 // This is debatable, we might want to show this (why it got high fitness to begin with)
                 //if (!overlapWithStructureSections(section, structureSections)) {
                 structureSections.push(section);
@@ -113,8 +117,11 @@ export function findGreedyDecomposition(pathSSM, structureSegments, sampleDurati
                 best.start = start;
                 best.end = end;
                 best.duration = duration;
+                best.confidence = 1;
                 structureSections.push(best);
-            }
+            }*/
+            section.pathFamily = best.pathFamily
+            structureSections.push(section);
         })
         // sort structuresections
         structureSections = structureSections.sort((a, b) => a.start > b.start ? 1 : -1);
@@ -128,8 +135,7 @@ export function findGreedyDecomposition(pathSSM, structureSegments, sampleDurati
     return [structureSections, i, segments];
 }
 
-function findBetterFit(pathSSM, section, sampleOffset = 4, comparisonProperty) {
-    log.debug("Find better fit")
+function findBetterFit(pathSSM, section, sampleOffset = 4, comparisonProperty, strategy, structureSections = []) {
     const sampleAmount = pathSSM.getSampleAmount();
     const sampleDuration = pathSSM.sampleDuration;
 
@@ -137,27 +143,28 @@ function findBetterFit(pathSSM, section, sampleOffset = 4, comparisonProperty) {
     const endInSamples = Math.floor(section.end / sampleDuration);
 
     const scoreMatrixBuffer = pathExtraction.createScoreMatrixBuffer(sampleAmount);
-    let max = 0;
-    let bestFit = null
+    let max = section[comparisonProperty];
+    let bestFit = section;
 
     for (let startOffset = -sampleOffset; startOffset < sampleOffset; startOffset++) {
         for (let endOffset = -sampleOffset; endOffset < sampleOffset; endOffset++) {
             const start = startInSamples + startOffset;
             const end = endInSamples + endOffset;
-            log.debug("Checking", start, end);
+            
+            const startInSeconds = start*sampleDuration;
+            const endInSeconds = end*sampleDuration;
             // TODO: also check for overlap with existing sections
-            if (start >= 0 && end < sampleAmount) {
-                const segmentPathFamilyInfo = pathExtraction.computeSegmentPathFamilyInfo(pathSSM, start, end, scoreMatrixBuffer)
+            
+            if (start >= 0 && end < sampleAmount && startOffset < endOffset && !overlapWithStructureSections({start: startInSeconds, end: endInSeconds}, structureSections)) {
+                const segmentPathFamilyInfo = pathExtraction.computeSegmentPathFamilyInfo(pathSSM, start, end, scoreMatrixBuffer, strategy)
 
                 segmentPathFamilyInfo.start = start * sampleDuration;
                 segmentPathFamilyInfo.end = end * sampleDuration;
                 segmentPathFamilyInfo.duration = segmentPathFamilyInfo.end - segmentPathFamilyInfo.start;
 
                 if (segmentPathFamilyInfo[comparisonProperty] > max) {
-                    log.debug("Found max", segmentPathFamilyInfo[comparisonProperty]);
                     // TODO: log how the max moves (maybe it needs more offset to reach optimum)
                     bestFit = segmentPathFamilyInfo;
-                    log.debug(bestFit.start, bestFit.end)
                     max = segmentPathFamilyInfo[comparisonProperty];
                 }
             }
@@ -293,15 +300,14 @@ function subtractStructureFromSegmentsOld(separateSegmentSets, structureSections
 }
 
 export function overlaps(a, b) {
-    return (a.start <= b.start && a.end > b.start) || (a.start < b.start && a.end >= b.end) || (a.start >= b.start && a.end <= b.end)
+    return (a.start <= b.start && a.end > b.start) ||
+     (a.start < b.start && a.end >= b.end) ||
+     (b.start <= a.start && b.end > a.start)  || 
+     (b.start < a.start && b.end >= a.end) || 
+     (a.start >= b.start && a.end <= b.end) || 
+     (b.start >= a.start && b.end <= a.end)
 }
 
-export function overlapsOld(a, b) {
-    return (a.start <= b.start && a.end >= b.end) ||
-        (a.start >= b.start && a.end <= b.end) ||
-        (a.end >= b.start && a.end < b.end) ||
-        (a.start > b.start && a.start <= b.end)
-}
 
 export function disjoint(a, b) {
     return a.start >= b.end || a.end <= b.start

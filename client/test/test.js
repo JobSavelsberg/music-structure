@@ -1,38 +1,51 @@
 var assert = require('assert');
-const audioUtil = require('../src/app/audioUtil');
-const chalk = require('chalk');
+import * as structure from "../src/app/structure";
 
+describe('structure', function () {
+  describe('overlaps()', function () {
+    it('should not detect overlap when completely disjoint', function(){
+      const a = {start: 2, end: 5};
+      const b = {start: 8, end: 10};
 
-describe('audioUtil', function () {
-  describe('tonalVectorColor()', function () {
-    it('should give entire color wheel', function(){
-      for(let i = 0; i < 13; i++){
-        const note = audioUtil.circleOfFifths[i%12];
-        let pitches = new Array(13).fill(0);
-        pitches[note] = 1;
-        const color = audioUtil.tonalVectorColor(pitches);
-        console.log(chalk.bgHex(color)(`\t ${audioUtil.getNoteName(note)}    `));
-      }
+      assert(!structure.overlaps(a,b));
+      assert(!structure.overlaps(b,a));
     });
-    it('should give pure grey tones for tritone chords', function(){
-        let pitches = new Array(12).fill(0);
-        pitches[0] = 1;
-        pitches[1] = 1;
-        pitches[6] = 1;
-        pitches[7] = 1;
-        const color = audioUtil.tonalVectorColor(pitches);
-        console.log(chalk.bgHex(color)(`\t atonal chord `));
-    });
-    it('should give greyish tones for weird chords', function(){
-      let pitches = new Array(12).fill(0);
-      pitches[0] = 1;
-      pitches[2] = .7;
-      pitches[6] = .8;
-      pitches[8] = 1;
-      pitches[9] = .5;
+    it('should not detect overlap when touching but disjoint', function(){
+      const a = {start: 2, end: 5};
+      const b = {start: 5, end: 10};
 
-      const color = audioUtil.tonalVectorColor(pitches);
-      console.log(chalk.bgHex(color)(`\t atonal chord `));
-  });
+      assert(!structure.overlaps(a,b));
+      assert(!structure.overlaps(b,a));
+    });
+    it('should detect overlap when they are the same', function(){
+      const a = {start: 2, end: 5};
+      const b = {start: 2, end: 5};
+
+      assert(structure.overlaps(a,b));
+      assert(structure.overlaps(b,a));
+    });
+    it('should detect overlap when they encapsulate', function(){
+      const a = {start: 2, end: 5};
+      const b = {start: 3, end: 4};
+
+      assert(structure.overlaps(a,b));
+      assert(structure.overlaps(b,a));
+    });
+    it('should detect overlap when they encapsulate and one side touches', function(){
+      const a = {start: 2, end: 5};
+      const b = {start: 3, end: 5};
+      const c = {start: 2, end: 4};
+      const d = {start: 2, end: 5};
+      assert(structure.overlaps(a,b));
+      assert(structure.overlaps(b,a));
+      assert(structure.overlaps(c,d));
+      assert(structure.overlaps(d,c));
+    });
+    it('should detect overlap when they overlap while endpoints are outside', function(){
+      const a = {start: 2, end: 5};
+      const b = {start: 4, end: 7};
+      assert(structure.overlaps(a,b));
+      assert(structure.overlaps(b,a));
+    });
   });
 });
