@@ -73,7 +73,9 @@ addEventListener("message", (event) => {
         buffer: strictPathMatrix.getBuffer(),
     });
 
-    log.debug(fullTranspositionInvariant)
+    const simplePaths = pathExtraction.simplePathDetect(strictPathMatrix);
+    log.debug("Simple Paths", simplePaths)
+
     const structureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs);
 
     //const binaryTimeLagMatrix = SSM.binarize(medianTimeLag, 0.1);
@@ -120,7 +122,8 @@ addEventListener("message", (event) => {
     structures.push({ name: "Greedy sections custom pruned", data: greedyStructure3, seperateByLabel: true, labelAmount: labelAmount3 })
     //const sampleStart = Math.floor(greedyStructure[0].start/data.sampleDuration);
     //const sampleEnd = Math.floor(greedyStructure[0].end/data.sampleDuration);
-    //visualizePathExtraction(strictPathMatrix, 352, 388, matrixes)
+    
+    visualizePathExtraction(strictPathMatrix, 352, 388, matrixes)
 
     //visualizeKernel(data, matrixes);
 
@@ -288,10 +291,10 @@ export function computeStructureFeature(pathSSM, matrixes, graphs) {
         buffer: columnDensity.buffer,
     });
     const blurredBinaryTimeLagMatrix = filter.gaussianBlur2DOptimized(medianTimeLag, 2);
-    matrixes.push({
+    /*matrixes.push({
         name: "Blur TL",
         buffer: blurredBinaryTimeLagMatrix.getBuffer(),
-    });
+    });*/
 
     const structureFeatureNovelty = noveltyDetection.computeNoveltyFromTimeLag(blurredBinaryTimeLagMatrix);
     graphs.push({
@@ -300,15 +303,15 @@ export function computeStructureFeature(pathSSM, matrixes, graphs) {
     });
 
     const normalizedMedianTimeLag = noveltyDetection.normalizeByColumnDensity(medianTimeLag);
-    matrixes.push({
+    /*matrixes.push({
         name: "Norm TL",
         buffer: normalizedMedianTimeLag.getBuffer(),
-    });
+    });*/
     const blurredBinaryTimeLagMatrixNorm = filter.gaussianBlur2DOptimized(normalizedMedianTimeLag, 2);
-    matrixes.push({
+    /*matrixes.push({
         name: "Blur Norm TL",
         buffer: blurredBinaryTimeLagMatrixNorm.getBuffer(),
-    });
+    });*/
 
     const structureFeatureNoveltyNorm = noveltyDetection.computeNoveltyFromTimeLag(blurredBinaryTimeLagMatrixNorm);
     graphs.push({
@@ -321,7 +324,7 @@ export function computeStructureFeature(pathSSM, matrixes, graphs) {
 
 export function visualizePathExtraction(pathSSM, startSample, endSample, matrixes) {
     const pathExtractVis = pathExtraction.visualizationMatrix(pathSSM, pathSSM.getSampleAmount(), startSample, endSample);
-    matrixes.push({ name: "PathExtraction", buffer: pathExtractVis.getBuffer() });
+    matrixes.push({ name: "DTW", buffer: pathExtractVis.getBuffer() });
 }
 
 export function createScapePlot(pathSSM, data, message) {

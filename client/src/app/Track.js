@@ -120,28 +120,36 @@ export default class Track {
         for (const matrix of this.matrixes) {
             if (matrix.name === name) return matrix;
         }
+        log.error("Could not find matrix with name", name)
     }
 
-    updateScoreMatrix(size, start) {
-        start = Math.max(0, Math.min(this.features.sampleAmount, start));
-        log.debug("size", size, "start", start);
+    updateDTW(start, end) {
+        log.debug("start", start, "end", end);
+        let index = -1;
         for (var i = this.matrixes.length - 1; i >= 0; --i) {
-            if (this.matrixes[i].name == "Score Matrix") {
-                this.matrixes.splice(i, 1);
+            if (this.matrixes[i].name == "DTW") {
+                index = i;
             }
         }
+        log.debug(this.matrixes);
 
-        const fullTranspositionInvariant = Matrix.fromHalfMatrix(
-            this.getMatrixByName("Transposition Invariant SSM").matrix
-        );
+        const strictpath = this.getMatrixByName("StrictPath").matrix;
+    
+        log.debug(strictpath);
+        
         const scoreMatrix = pathExtraction.visualizationMatrix(
-            fullTranspositionInvariant,
-            this.features.sampleAmount,
+            strictpath,
+            strictpath.getSampleAmount(),
             start,
-            start + size - 1
+            end
         );
+        
 
-        this.matrixes.push({ name: "Score Matrix", matrix: scoreMatrix });
+        if(index < 0){
+            this.matrixes.push({ name: "DTW", matrix: scoreMatrix });
+        }else{
+            this.matrixes[index] ={ name: "DTW", matrix: scoreMatrix }
+        }
         window.eventBus.$emit("readyForVis");
     }
 

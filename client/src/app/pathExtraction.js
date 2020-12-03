@@ -11,14 +11,18 @@ export function extractPathFamily(ssm, start, end) {
     const { D, width, height, score } = computeAccumulatedScoreMatrix(ssm, start, end, D);
     const pathFamily = computeOptimalPathFamily(D, width, height);
     const pathScores = getScoresForPathFamily(D, width, pathFamily);
+
+    if(start > 345 && end < 350){
+        log.debug(pathFamily, pathScores, score)
+    }
     return [pathFamily, pathScores, score, width];
 }
 
 
 // The ratio between the length of the knight move vs length of a diagonal move
-const knightMoveRatio = 1;//Math.sqrt(10) / 2 ; // plus slight offset to favour diagonal moves when going through penalties
-const knightMoveTweak =  1;//0.97; //Also favouring diagonal moves when accumulating score
-export function computeAccumulatedScoreMatrix(ssm, start, end, D) {
+const knightMoveRatio = Math.sqrt(10) / 2 + .1 ; // plus slight offset to favour diagonal moves when going through penalties
+const knightMoveTweak = 0.97; //Also favouring diagonal moves when accumulating score
+export function computeAccumulatedScoreMatrix(ssm, start, end, D, thresh = 0.2) {
     const sampleAmount = ssm.getSampleAmount();
     if (start < 0) log.error("start below 0: ", start);
     if (end > sampleAmount) log.error("end above sampleAmount: ", sampleAmount, "end", end);
@@ -31,13 +35,18 @@ export function computeAccumulatedScoreMatrix(ssm, start, end, D) {
     if (!D) {
         D = new Float32Array(height * width).fill(Number.NEGATIVE_INFINITY);
     }
-    for (let i = 0; i < width + 1; i++) {
-        D[i] = Number.NEGATIVE_INFINITY;
-    }
 
-    const penalty = -4;
+    const penalty = -2; 
     const penalize = (value) => {
-        return value === 0 ? penalty : value;
+        return value <= thresh ? penalty: value;//(value-thresh)*(1/(1-thresh));
+        //return value < thresh ?  (thresh-value)*(1/thresh)*penalty : (value-thresh)*(1/thresh);
+        /*if(value <= 0.5){
+             return penalty;
+        }else if(value < thresh){
+            return  (-thresh+value);
+        }else{
+            return (value - thresh);
+        }*/
     };
 
     D[0] = 0;
@@ -47,19 +56,25 @@ export function computeAccumulatedScoreMatrix(ssm, start, end, D) {
         D[y * width + 0] = Math.max(D[(y - 1) * width + 0], D[(y - 1) * width + width - 1]);
         D[y * width + 1] = D[y * width + 0] + penalize(ssm.getValueNormalized(start, y));
         for (let x = 2; x < width; x++) {
-            let down = D[(y - 2) * width + x - 1] || Number.NEGATIVE_INFINITY; // in case undefined
+            let down;
+            if(y === 1){
+                down =Number.NEGATIVE_INFINITY;
+            }else{
+                down = D[(y - 2) * width + x - 1]
+            }
             if (down < 0) {
                 down *= knightMoveRatio;
             } else {
                 down *= knightMoveTweak;
             }
-            let right = D[(y - 1) * width + x - 2] || Number.NEGATIVE_INFINITY; // in case undefined
+            let right = D[(y - 1) * width + x - 2] //|| Number.NEGATIVE_INFINITY; // in case undefined
             if (right < 0) {
                 right *= knightMoveRatio;
             } else {
                 right *= knightMoveTweak;
             }
-            const diag = D[(y - 1) * width + x - 1] || Number.NEGATIVE_INFINITY; // in case undefined
+            const diag = D[(y - 1) * width + x - 1] //|| Number.NEGATIVE_INFINITY; // in case undefined
+            
             D[y * width + x] =
                 penalize(ssm.getValueNormalized(start + x - 1, y)) +
                 Math.max(diag, right, down);
@@ -207,13 +222,13 @@ export function computeCustomFitness(pathFamily, pathScores, score, sampleAmount
 
     // fitness
     let fitness = (2 * normalizedScore * normalizedCoverage) / (normalizedScore + normalizedCoverage + error);
-    fitness = normalizedScore;
+    fitness = pathAmount * normalizedScore * normalizedCoverage;
 
     return { fitness, normalizedScore, coverage, normalizedCoverage, pathFamilyLength,prunedPathFamily: pathFamily };
 }
 
 export function computeCustomPrunedFitness(pathFamily, pathScores, score, sampleAmount, width) {
-    const [prunedPathFamily, prunedPathScores, totalScore] = prunePathFamily(pathFamily, pathScores, width, 0.3, 0.3);
+    const [prunedPathFamily, prunedPathScores, totalScore] = prunePathFamily(pathFamily, pathScores, width, 0.5, 0.1);
     //pathFamily = prunedPathFamily;
     //pathScores = prunedPathScores;
     //score = totalScore;
@@ -235,12 +250,8 @@ export function computeCustomPrunedFitness(pathFamily, pathScores, score, sample
 
     // fitness
     let fitness = (2 * normalizedScore * normalizedCoverage) / (normalizedScore + normalizedCoverage + error);
-    if(prunedPathFamily.length <= 1){
-        fitness = 0;
-    }else{
-        fitness = normalizedScore;
+    fitness = pathAmount * normalizedScore * normalizedCoverage;
 
-    }
 
 
     return { fitness, normalizedScore, coverage, normalizedCoverage, pathFamilyLength, prunedPathFamily, prunedPathScores};
@@ -341,12 +352,12 @@ export function visualizationMatrix(ssm, sampleAmount, start, end) {
     log.debug("start", start, "end", end, "sampleAmount: ", sampleAmount);
     const scoreMatrixBuffer = createScoreMatrixBuffer(sampleAmount);
     const { D, width, height, score } = computeAccumulatedScoreMatrix(ssm, start, end, scoreMatrixBuffer);
-    log.debug("SCORE: ", score);
     const P = computeOptimalPathFamily(D, width, height);
     const PScores = getScoresForPathFamily(D, width, P);
     log.debug("Path family scores:", PScores);
     const { fitness, normalizedScore, coverage, normalizedCoverage, pathFamilyLength } = computeFitness(
         P,
+        PScores,
         score,
         sampleAmount,
         width
@@ -359,12 +370,19 @@ export function visualizationMatrix(ssm, sampleAmount, start, end) {
     log.debug("FITNESS: ", fitness);
 
     let maxVal = Number.NEGATIVE_INFINITY;
+    let minVal = Number.POSITIVE_INFINITY;
     const sizeD = width * height;
     for (let i = 0; i < sizeD; i++) {
         if (D[i] > maxVal) {
             maxVal = D[i];
         }
+       
+        if(i%width === 0 && D[i] !== Number.NEGATIVE_INFINITY && D[i] < minVal){
+            minVal = D[i];
+        }
     }
+    minVal = 0;
+    log.debug(minVal, maxVal)
 
     const length = end - start + 1;
     const visualizationMatrix = new Matrix({
@@ -377,7 +395,7 @@ export function visualizationMatrix(ssm, sampleAmount, start, end) {
         if (x >= length * 2) {
             return 0; // Paths will be set from looping over paths
         } else if (x >= length) {
-            return (Math.max(0, D[y * width + x - length]) / maxVal) * 255; // +1 to remove elevator, * 255 sinze value is
+            return (Math.max(0, D[y * width + x - length]-minVal) / (maxVal-minVal)) * 255; // +1 to remove elevator, * 255 sinze value is
         } else {
             return ssm.getValue(start + x, y);
         }
@@ -480,4 +498,20 @@ export function computeSegmentPathFamilyInfo(pathSSM, startInSamples, endInSampl
         fitness: fitness,
         pathFamily: pathFamily,
     };
+}
+
+
+export function simplePathDetect(pathSSM, threshold = 0.1){
+    const size = pathSSM.getSize();
+    const paths = [];
+
+    for(let y = 0; y < size; y++){
+        let path = [];
+        for(let i = 0; i+y < size; i++){
+            const value = pathSSM.getValueNormalized(i, i+y);
+            if(value > threshold){
+                path.push(i, i+y)
+            }
+        }
+    }
 }

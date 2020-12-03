@@ -1,7 +1,7 @@
 import * as log from "../dev/log";
 import * as audioUtil from "./audioUtil";
 
-const tryRemovePercussion = false;
+const tryRemovePercussion = true;
 
 export default class Segment {
     segment = null;
@@ -34,6 +34,7 @@ export default class Segment {
         this.loudness_max_time = segment.loudness_max_time;
         this.loudness_end = segment.loudness_end;
         this.processPitch();
+        this.processPitchEqualizeBass();
     }
 
     processedPitch = false;
@@ -63,8 +64,32 @@ export default class Segment {
                 (1 - this.percussiony) * this.pitches[p] +
                 this.percussiony * prevSegment.pitches[p] * this.pitches[p] +
                 (nextSegment.pitches[p] * this.pitches[p]) / 2;
+
         }
+
         this.processedPitchSmooth = true;
+    }
+
+    processPitchEqualizeBass(){
+        let maxPitch = 0;
+        this.pitches.forEach(pitch => {
+            if(pitch > maxPitch){
+                maxPitch = pitch
+            }
+        })
+
+        let secondMaxPitch = 0;
+        this.pitches.forEach(pitch => {
+            if(pitch< maxPitch && pitch > secondMaxPitch){
+                secondMaxPitch = pitch;
+            }
+        })
+
+        const equalizeAmount = .5 // 1 is full equalize: loudest is same as second loudest, 0 is none
+        const scale = 1/(1-(maxPitch - secondMaxPitch)*equalizeAmount);
+        for (let p = 0; p < this.pitches.length; p++) {
+            this.pitches[p] = Math.min(1,this.pitches[p]*scale);
+        }
     }
 
     processedTimbre = false;

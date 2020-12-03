@@ -64,7 +64,7 @@ export function computeStructureCandidates(pathSSM, structureSegments, minDurati
 }
 
 export function computeSeparateStructureCandidates(pathSSM, separateSegmentSets, strategy, minDurationSeconds = 1, maxRatio = 0.4) {
-    const separateCandidateSets = []
+    const separateCandidateSets = [];
     separateSegmentSets.forEach(segments => {
         const candidates = computeStructureCandidates(pathSSM, segments, minDurationSeconds, maxRatio, strategy);
         separateCandidateSets.push(candidates);
@@ -83,7 +83,7 @@ export function findGreedyDecomposition(pathSSM, structureSegments, sampleDurati
     let separateSegmentSets = [structureSegments];
 
     let i = 0;
-    const maxRepeats = 10;
+    const maxRepeats = 14;
     while (separateSegmentSets.length > 0 && i < maxRepeats) {
         let separateCandidateSets = computeSeparateStructureCandidates(pathSSM, separateSegmentSets, strategy)
         const allCandidates = [].concat.apply([], separateCandidateSets);
@@ -99,6 +99,7 @@ export function findGreedyDecomposition(pathSSM, structureSegments, sampleDurati
         if(best === null || best[comparisonProperty] <= 0 || isNaN(best[comparisonProperty])) {
             break;
         }
+        //log.debug("BEST", i, best);
         const label = i;
         best.label = label;
 

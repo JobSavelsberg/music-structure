@@ -27,8 +27,8 @@
                 :opacity="0.3"></rect>
                 <g v-if="section.pathFamily && showPaths">
                     <g v-for="(path, pathIndex) in section.pathFamily" :key="pathIndex" >
-                        <path fill="none" stroke="white" stroke-width="4" :d="generateLine(path)" class="path" stroke-linejoin="round" />
-                        <path fill="none" :stroke="getCategoryColor(section.label)" stroke-width="2" :d="generateLine(path)" class="path" stroke-linejoin="round"/>
+                        <path fill="none" stroke="black" stroke-width="8" :d="generateLine(path)" class="path" stroke-linejoin="round" />
+                        <path fill="none" :stroke="getCategoryColor(section.label)" stroke-width="4" :d="generateLine(path)" class="path" stroke-linejoin="round"/>
                     </g>
                 </g>
             </g>
@@ -68,8 +68,8 @@ export default {
         return {
             selectedStructure: {name: "undefined", data: []},
             fillSections: false,
-            showPathStart: true,
-            showPaths: true,
+            showPathStart: false,
+            showPaths: false,
             selectedTab: 0,
             drawLoop: null,
             webGLMatrixPool: null,
@@ -132,7 +132,7 @@ export default {
         this.webGLMatrixPool = new WebGLMatrixPool(document.getElementById("gl-canvas"));
         window.eventBus.$on("readyForVis", () => {
             if (!this.track) log.error("SSM done but track does not exist");
-
+            clearInterval(this.drawLoop);
             this.selectedStructure = this.track.structures[this.track.structures.length-1];
 
             this.webGLMatrixPool.fillMatrixBufferPool(this.track, this.selectedTab);
