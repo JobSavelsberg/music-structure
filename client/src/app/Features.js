@@ -1,6 +1,6 @@
 import * as log from "../dev/log";
 import Segment from "./Segment";
-
+import * as chordDetection from "./chordDetection";
 export default class Features {
     timbreMax = new Array(12).fill(0);
     timbreMin = new Array(12).fill(0);
@@ -48,6 +48,7 @@ export default class Features {
         this.calculateMaxMin();
         this.processSegments();
         this.sampleFeatures();
+        this.processSamples();
     }
 
     /**
@@ -106,6 +107,15 @@ export default class Features {
                 this.processed.tonalRadius[i],
                 ...this.processed.loudness[i],
             ]);
+        }
+    }
+
+    processSamples(){
+        this.sampled.chords = [];
+        this.sampled.majorminor = [];
+        for(let i = 0; i < this.sampleAmount; i++){
+            this.sampled.chords[i] = chordDetection.getPopChord(this.sampled.pitches[i]);
+            this.sampled.majorminor[i] = chordDetection.getMajorMinorNess(this.sampled.pitches[i]);
         }
     }
 

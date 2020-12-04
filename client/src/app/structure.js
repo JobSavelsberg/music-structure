@@ -75,7 +75,7 @@ export function computeSeparateStructureCandidates(pathSSM, separateSegmentSets,
 
 // Structure is not sorted, structuresegments is
 const wiggle = true;
-export function findGreedyDecomposition(pathSSM, structureSegments, sampleDuration, strategy = "classic", comparisonProperty = "fitness", smallestAllowedSize = 2) {
+export function findGreedyDecomposition(pathSSM, structureSegments, sampleDuration, strategy = "classic", comparisonProperty = "fitness", smallestAllowedSize = 4) {
     const trackEnd = structureSegments[structureSegments.length - 1].end;
     let structureSections = [];
     const segments = []
@@ -86,6 +86,7 @@ export function findGreedyDecomposition(pathSSM, structureSegments, sampleDurati
     const maxRepeats = 14;
     while (separateSegmentSets.length > 0 && i < maxRepeats) {
         let separateCandidateSets = computeSeparateStructureCandidates(pathSSM, separateSegmentSets, strategy)
+
         const allCandidates = [].concat.apply([], separateCandidateSets);
         if (allCandidates.length === 0) {
             break;

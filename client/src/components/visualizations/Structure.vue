@@ -1,16 +1,9 @@
 <template>
     <div>
-        <!--<canvas
-            id="StructureCanvas"
-            ref="StructureCanvas"
-            class="StructureCanvas pa-0 ma-0"
-            :height="height"
-            :width="width"
-        ></canvas>-->
         <div v-if="hasStructure">
             <div class="structure" v-for="structure in track.structures" :key="structure.name" >
                 <p>{{structure.name}}</p>
-                <Seeker class="seeker" :ref="'seeker'+structure.name" :width="width" :height="heightOfStructure(structure)" :useZoom="true" />
+                <Seeker class="seeker" :ref="'seeker'+structure.name" :width="width" :height="heightOfStructure(structure)" />
                 <svg class="structureSVG" :width="width" :height="heightOfStructure(structure)" @mouseout="unhover()">
                     <rect x="0" y="0" :width="width" :height="heightOfStructure(structure)" @click="clickBackground($event, structure)"  @mouseover="unhover()" @mouseout="unhover()" fill="#1a1a1a">
                     </rect>
@@ -43,7 +36,6 @@ export default {
         return {
             titleHeight: 16,
             blockHeight: 20,
-            zoomCanvas: null,
             showTooltip: false,
             tooltipTimeout: null,
             toolTipText: "",
@@ -65,63 +57,11 @@ export default {
         }
     },
     watch: {
-        width() {
-            this.zoomCanvas.setWidth(this.width);
-        },
-        zoomed() {
-            this.zoomCanvas.setZoomed(this.zoomed);
-        },
     },
     mounted() {
-        //this.zoomCanvas = new ZoomCanvas(document.getElementById("StructureCanvas"));
-        window.eventBus.$on("readyForVis", () => {
-            //this.zoomCanvas.setTrackDuration(this.track);
-            //this.zoomCanvas.setDrawFunction(this.drawStructure);
-        });
+
     },
     methods: {
-        drawStructure() {
-            let y = 0;
-            this.track.structures.forEach((structure) => {
-                this.zoomCanvas.drawTitle(y+this.titleHeight-2, structure.name);
-                y+= this.titleHeight;
-                this.zoomCanvas.drawRectWithBorder(0,
-                y,
-                this.width,
-                this.blockHeight*structure.labelAmount,
-                "rgba(32,32,32)",
-                1,
-                "rgb(72,72,72)")
-
-                if(structure.seperateByLabel){
-                    structure.data.forEach((section, index) => {
-                        this.drawSection(section, y + this.blockHeight * section.label);
-                    })
-                    y+= this.blockHeight* this.getAmountOfUniqueLabels(structure);
-                }else{
-                    structure.data.forEach((section, index) => {
-                        this.drawSection(section, y);
-                    })
-                    y+= this.blockHeight;
-                }
-            })
-
-           
-        },
-        drawSection(section, y){
-            this.zoomCanvas.drawRectWithBorder(
-                section.start,
-                y,
-                section.duration,
-                this.blockHeight,
-                vis.categoryColorWithOpacity(section.label,Math.sqrt(section.confidence !== undefined ? section.confidence : 1)),
-                1,
-                null
-            );
-            if(section.label !== undefined){
-                this.zoomCanvas.drawText(section.start, y+4 + this.blockHeight / 2, section.label);
-            }
-        },
         getAmountOfUniqueLabels(structure){
             if(structure.labelAmount) return structure.labelAmount;
             const labels = [];

@@ -28,7 +28,8 @@ export default class WebGLPitchTimbre extends WebGL {
                 track,
                 featureObject.data,
                 featureObject.sampled,
-                featureObject.range
+                featureObject.range,
+                featureObject.featureAmount,
             );
         });
     }
@@ -50,10 +51,10 @@ export default class WebGLPitchTimbre extends WebGL {
         }
     }
 
-    createSegmentFeatureDataArray(track, feature, sampled, range) {
+    createSegmentFeatureDataArray(track, feature, sampled, range, featureAmount) {
         const startDuration = sampled ? track.features.sampleStartDuration : track.features.segmentStartDuration;
         const segmentAmount = startDuration.length;
-        const vectorSize = feature[0].length;
+        const vectorSize = featureAmount || feature[0].length || 1;
         const inverseVectorSize = 1 / vectorSize;
         range = range || [0, 1];
         const centeredRange = range[0] === -range[1];
@@ -71,6 +72,25 @@ export default class WebGLPitchTimbre extends WebGL {
         const featureVertices = [];
         const colors = [];
         for (let s = 0; s < segmentAmount; s++) {
+            if(vectorSize === 1){
+                const y = .8;
+                const left = st(startDuration[s][0]);
+                const top = y;
+                const right = st(startDuration[s][0] + startDuration[s][1]);
+                const bottom = .3;
+                let value, color;
+                value = feature[s];
+                if (centeredRange) {
+                    color = d3.rgb(vis.divergingColor(value / range[1]));
+                } else {
+                    color = d3.rgb(vis.pitchColor(value));
+                }
+                const r = color.r / 255;
+                const g = color.g / 255;
+                const b = color.b / 255;
+                featureVertices.push(left, top, left, bottom, right, top, right, top, left, bottom, right, bottom);
+                colors.push(r, g, b, r, g, b, r, g, b, r, g, b, r, g, b, r, g, b);
+            }
             for (let i = 0; i < vectorSize; i++) {
                 const y = -1 + 2 * i * inverseVectorSize;
                 const left = st(startDuration[s][0]);
@@ -78,11 +98,10 @@ export default class WebGLPitchTimbre extends WebGL {
                 const right = st(startDuration[s][0] + startDuration[s][1]);
                 const bottom = y - 2 * inverseVectorSize;
                 let value, color;
+                value = feature[s][i];
                 if (centeredRange) {
-                    value = feature[s][i];
                     color = d3.rgb(vis.divergingColor(value / range[1]));
                 } else {
-                    value = feature[s][i];
                     color = d3.rgb(vis.pitchColor(value));
                 }
                 const r = color.r / 255;

@@ -85,7 +85,7 @@ export default class Segment {
             }
         })
 
-        const equalizeAmount = .5 // 1 is full equalize: loudest is same as second loudest, 0 is none
+        const equalizeAmount = 0. // 1 is full equalize: loudest is same as second loudest, 0 is none
         const scale = 1/(1-(maxPitch - secondMaxPitch)*equalizeAmount);
         for (let p = 0; p < this.pitches.length; p++) {
             this.pitches[p] = Math.min(1,this.pitches[p]*scale);

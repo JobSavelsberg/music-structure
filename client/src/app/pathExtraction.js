@@ -250,11 +250,11 @@ export function computeCustomPrunedFitness(pathFamily, pathScores, score, sample
 
     // fitness
     let fitness = (2 * normalizedScore * normalizedCoverage) / (normalizedScore + normalizedCoverage + error);
-    fitness = pathAmount * normalizedScore * normalizedCoverage;
+    fitness = pathAmount * fitness;
 
 
 
-    return { fitness, normalizedScore, coverage, normalizedCoverage, pathFamilyLength, prunedPathFamily, prunedPathScores};
+    return { fitness, normalizedScore, coverage, normalizedCoverage, pathFamilyLength, prunedPathFamily: pathFamily, prunedPathScores};
 }
 
 export function computePrunedFitness(pathFamily, pathScores, score, sampleAmount, width) {

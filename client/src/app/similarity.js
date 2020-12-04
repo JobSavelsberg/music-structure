@@ -7,6 +7,7 @@ export const measures = {
 
 const maxEuclidianPitchDistance = Math.sqrt(12);
 
+
 export function cosine(a, b) {
     var adotv = 0;
     var amag = 0;

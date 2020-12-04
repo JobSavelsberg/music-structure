@@ -9,7 +9,8 @@
     "test": "mocha --require @babel/register"
   },
   "dependencies": {
-    "@babel/runtime": "^7.11.2",
+    "@babel/core": "^7.12.9",
+    "@babel/runtime": "^7.12.5",
     "@types/node": "^14.6.2",
     "asciichart": "^1.5.25",
     "axios": "^0.20.0",
@@ -36,7 +37,7 @@
   },
   "devDependencies": {
     "@babel/plugin-transform-runtime": "^7.11.5",
-    "@babel/register": "^7.11.5",
+    "@babel/register": "^7.12.1",
     "@vue/cli-plugin-babel": "~4.5.0",
     "@vue/cli-plugin-eslint": "~4.5.0",
     "@vue/cli-plugin-router": "~4.5.0",

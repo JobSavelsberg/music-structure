@@ -74,21 +74,24 @@ export default {
             if (!this.track) log.error("Processing done but track does not exist");
 
             this.selectedFeatures = [
-                { name: "Pitch raw", data: this.track.features.raw.pitches, sampled: false },
-                { name: "Pitch processed", data: this.track.features.processed.pitches, sampled: false },
-                { name: "Pitch sampled", data: this.track.features.sampled.pitches, sampled: true },
-                { name: "Timbre raw", data: this.track.features.raw.timbres, sampled: false, range: [-300, 300] },
+                { name: "Pitch raw", data: this.track.features.raw.pitches, sampled: false, featureAmount: 12 },
+                { name: "Pitch processed", data: this.track.features.processed.pitches, sampled: false, featureAmount: 12 },
+                { name: "Pitch sampled", data: this.track.features.sampled.pitches, sampled: true, featureAmount: 12 },
+                { name: "Major / Minor", data: this.track.features.sampled.majorminor, sampled: true, featureAmount: 1, range: [-1, 1]},
+                { name: "Timbre raw", data: this.track.features.raw.timbres, sampled: false, range: [-300, 300],  featureAmount: 12 },
                 {
                     name: "Timbre processed",
                     data: this.track.features.processed.timbres,
                     sampled: false,
                     range: [-1, 1],
+                     featureAmount: 12
                 },
                 {
                     name: "Timbre Sampled",
                     data: this.track.features.sampled.timbres,
                     sampled: true,
                     range: [-1, 1],
+                     featureAmount: 12
                 },
             ];
             this.webGLPitchTimbre.setHeight(this.height);

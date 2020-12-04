@@ -290,7 +290,7 @@ export function computeStructureFeature(pathSSM, matrixes, graphs) {
         name: "Column Density",
         buffer: columnDensity.buffer,
     });
-    const blurredBinaryTimeLagMatrix = filter.gaussianBlur2DOptimized(medianTimeLag, 2);
+    const blurredBinaryTimeLagMatrix = filter.gaussianBlur2DOptimized(medianTimeLag, 8);
     /*matrixes.push({
         name: "Blur TL",
         buffer: blurredBinaryTimeLagMatrix.getBuffer(),
@@ -307,7 +307,7 @@ export function computeStructureFeature(pathSSM, matrixes, graphs) {
         name: "Norm TL",
         buffer: normalizedMedianTimeLag.getBuffer(),
     });*/
-    const blurredBinaryTimeLagMatrixNorm = filter.gaussianBlur2DOptimized(normalizedMedianTimeLag, 2);
+    const blurredBinaryTimeLagMatrixNorm = filter.gaussianBlur2DOptimized(normalizedMedianTimeLag, 8);
     /*matrixes.push({
         name: "Blur Norm TL",
         buffer: blurredBinaryTimeLagMatrixNorm.getBuffer(),
