@@ -36,7 +36,7 @@ addEventListener("message", (event) => {
     let startTime = performance.now();
     const enhancedSSM = SSM.enhanceSSM(
         ssmPitch,
-        { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: 'linmed' },
+        { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: 'lin' },
         data.allPitches
     );
     matrixes.push({ name: "Enhanced", buffer: enhancedSSM.getBuffer() });
@@ -122,7 +122,7 @@ addEventListener("message", (event) => {
     structures.push({ name: "Greedy sections custom pruned", data: greedyStructure3, seperateByLabel: true, labelAmount: labelAmount3 })
     //const sampleStart = Math.floor(greedyStructure[0].start/data.sampleDuration);
     //const sampleEnd = Math.floor(greedyStructure[0].end/data.sampleDuration);
-    
+
     visualizePathExtraction(strictPathMatrix, 352, 388, matrixes)
 
     //visualizeKernel(data, matrixes);

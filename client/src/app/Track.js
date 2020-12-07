@@ -16,7 +16,7 @@ export const samples = 500;
 export const sampleDuration = 0.5;
 export const sampleBlur = 1; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
 
-export const enhanceBlurLength = 10;
+export const enhanceBlurLength = 7;
 export const threshold = 0.65;
 export const thresholdPercentage = 0.35;
 export const tempoRatios = [0.66, 0.81, 1, 1.22, 1.5];
@@ -134,21 +134,21 @@ export default class Track {
         log.debug(this.matrixes);
 
         const strictpath = this.getMatrixByName("StrictPath").matrix;
-    
+
         log.debug(strictpath);
-        
+
         const scoreMatrix = pathExtraction.visualizationMatrix(
             strictpath,
             strictpath.getSampleAmount(),
             start,
             end
         );
-        
 
-        if(index < 0){
+
+        if (index < 0) {
             this.matrixes.push({ name: "DTW", matrix: scoreMatrix });
-        }else{
-            this.matrixes[index] ={ name: "DTW", matrix: scoreMatrix }
+        } else {
+            this.matrixes[index] = { name: "DTW", matrix: scoreMatrix }
         }
         window.eventBus.$emit("readyForVis");
     }

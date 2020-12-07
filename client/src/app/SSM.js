@@ -30,14 +30,14 @@ export function enhanceSSM(ssm, options, allPitches = false) {
 
     const enhancementPasses = [];
     for (const tempoRatio of tempoRatios) {
-        if(strategy === "onedir")enhancementPasses.push(onedirectionalSmoothing(ssm, 1, Math.floor(blurLength / 2), tempoRatio));
-        if(strategy === "onedir")enhancementPasses.push(onedirectionalSmoothing(ssm, -1, Math.floor(blurLength / 2), tempoRatio));
-        if(strategy === "linear" || strategy === "lin")enhancementPasses.push(linearSmoothing(ssm, blurLength, tempoRatio));
-        if(strategy === "gauss") enhancementPasses.push(gaussianSmoothing(ssm, blurLength, tempoRatio));
-        if(strategy === "onedirmed")enhancementPasses.push(medianSmoothing( onedirectionalSmoothing(ssm, 1, Math.floor(blurLength / 2), tempoRatio), blurLength, tempoRatio));
-        if(strategy === "onedirmed")enhancementPasses.push(medianSmoothing( onedirectionalSmoothing(ssm, -1, Math.floor(blurLength / 2), tempoRatio), blurLength, tempoRatio));
-        if(strategy === "linmed")enhancementPasses.push(medianSmoothing( linearSmoothing(ssm, blurLength, tempoRatio), blurLength*1.5, tempoRatio));
-        
+        if (strategy === "onedir") enhancementPasses.push(onedirectionalSmoothing(ssm, 1, Math.floor(blurLength / 2), tempoRatio));
+        if (strategy === "onedir") enhancementPasses.push(onedirectionalSmoothing(ssm, -1, Math.floor(blurLength / 2), tempoRatio));
+        if (strategy === "linear" || strategy === "lin") enhancementPasses.push(linearSmoothing(ssm, blurLength, tempoRatio));
+        if (strategy === "gauss") enhancementPasses.push(gaussianSmoothing(ssm, blurLength, tempoRatio));
+        if (strategy === "onedirmed") enhancementPasses.push(medianSmoothing(onedirectionalSmoothing(ssm, 1, Math.floor(blurLength / 2), tempoRatio), blurLength, tempoRatio));
+        if (strategy === "onedirmed") enhancementPasses.push(medianSmoothing(onedirectionalSmoothing(ssm, -1, Math.floor(blurLength / 2), tempoRatio), blurLength, tempoRatio));
+        if (strategy === "linmed") enhancementPasses.push(medianSmoothing(linearSmoothing(ssm, blurLength, tempoRatio), blurLength, tempoRatio));
+
     }
 
     const enhancedSSM = HalfMatrix.from(ssm);
@@ -99,7 +99,7 @@ function linearSmoothing(ssm, length, tempoRatio) {
     return smoothedSSM;
 }
 
-function medianSmoothing(ssm, length, tempoRatio, resolution=128) {
+function medianSmoothing(ssm, length, tempoRatio, resolution = 128) {
     log.debug("Median Smoothing: length", length, "tempoRatio", tempoRatio);
     const buckets = new Float32Array(resolution);
 
@@ -218,20 +218,20 @@ export function autoThreshold(ssm, percentage) {
     return thresholdSSM;
 }
 
-export function threshold(ssm, threshold){
+export function threshold(ssm, threshold) {
     let thresholdSSM;
     if (ssm instanceof Matrix) {
         thresholdSSM = Matrix.from(ssm);
     } else {
         thresholdSSM = HalfMatrix.from(ssm);
     }
-    
-    thresholdSSM.fillNormalized((x,y) => {
-        const originalValue = ssm.getValueNormalizedMirrored(x,y);
-        if(originalValue <= threshold){
+
+    thresholdSSM.fillNormalized((x, y) => {
+        const originalValue = ssm.getValueNormalizedMirrored(x, y);
+        if (originalValue <= threshold) {
             return 0;
-        }else{
-            return (originalValue-threshold) / (1-threshold);
+        } else {
+            return (originalValue - threshold) / (1 - threshold);
         }
     })
 
@@ -267,7 +267,7 @@ export function rowColumnAutoThreshold(ssm, percentageRow, percentageCol = perce
                     row,
                     Math.min(
                         (Math.max(ssm.getValue(col, row) - thresholdValue, 0) / (typeScale - thresholdValue)) *
-                            typeScale,
+                        typeScale,
                         typeScale
                     )
                 );
@@ -297,7 +297,7 @@ export function rowColumnAutoThreshold(ssm, percentageRow, percentageCol = perce
                     row,
                     Math.min(
                         (Math.max(ssm.getValue(col, row) - thresholdValue, 0) / (typeScale - thresholdValue)) *
-                            typeScale,
+                        typeScale,
                         typeScale
                     )
                 );
