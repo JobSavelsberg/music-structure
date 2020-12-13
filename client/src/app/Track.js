@@ -18,11 +18,11 @@ export const sampleBlur = 1; // smaller than 1 => no blur, e.g. when 2 every sam
 
 export const enhanceBlurLength = 7;
 export const threshold = 0.65;
-export const thresholdPercentage = 0.35;
+export const thresholdPercentage = 0.5;
 export const tempoRatios = [0.66, 0.81, 1, 1.22, 1.5];
 
-export const SPminSize = 16; // Minimal size of segment in scape plot
-export const SPstepSize = 4; // Size of the step between segment start and size in scape plot
+export const SPminSize = 2; // Minimal size of segment in scape plot
+export const SPstepSize = 2; // Size of the step between segment start and size in scape plot
 export const createScapePlot = false;
 
 const useSampled = true;

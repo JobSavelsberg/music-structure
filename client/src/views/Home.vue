@@ -41,7 +41,7 @@
                 <v-container>
                     <v-slider
                         @click:prepend="clickVolume"
-                        :prepend-icon="getVolumeIcon(volume)"
+                        :prepend-icon="getVolumeIcon()"
                         v-model="volume"
                         :min="0"
                         :max="1"
@@ -81,7 +81,7 @@ export default {
         return {
             searchQuery: "",
             synthesizerString: "",
-            volume: 0.75,
+            volume: 0,
             prevVolume: 0.75,
             padding: 20 * 4, // vuetify padding only goes per 4 px
             windowWidth: window.innerWidth,
@@ -130,6 +130,10 @@ export default {
             this.loadTestSet(newTestSet);
         },
         volume(newVol, oldVol) {
+            if(!player.autoConnect){
+                player.transferPlayback();
+                player.autoConnect = true;
+            }
             player.setVolume(Math.pow(this.volume, 2));
         },
     },
@@ -151,10 +155,10 @@ export default {
         loadTestSet() {
             app.loadTestSet(this.selectedTestSet);
         },
-        getVolumeIcon(volume) {
-            if (volume > 0.6) return "mdi-volume-high";
-            if (volume > 0.2) return "mdi-volume-medium";
-            if (volume > 0) return "mdi-volume-low";
+        getVolumeIcon() {
+            if (this.volume > 0.6) return "mdi-volume-high";
+            if (this.volume > 0.2) return "mdi-volume-medium";
+            if (this.volume > 0) return "mdi-volume-low";
             return "mdi-volume-off";
         },
         clickVolume() {

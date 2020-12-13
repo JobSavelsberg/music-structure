@@ -1,6 +1,7 @@
 import { image } from "d3";
 import * as log from "../dev/log";
 import Matrix from "./dataStructures/Matrix";
+import HalfMatrix from "./dataStructures/HalfMatrix";
 
 
 export function createScoreMatrixBuffer(sampleAmount) {
@@ -20,8 +21,8 @@ export function extractPathFamily(ssm, start, end) {
 
 
 // The ratio between the length of the knight move vs length of a diagonal move
-const knightMoveRatio = Math.sqrt(10) / 2 + .1 ; // plus slight offset to favour diagonal moves when going through penalties
-const knightMoveTweak = 0.97; //Also favouring diagonal moves when accumulating score
+const knightMoveRatio = Math.sqrt(10) / 2 + .01 ; // plus slight offset to favour diagonal moves when going through penalties
+const knightMoveTweak =  0.99; //Also favouring diagonal moves when accumulating score
 export function computeAccumulatedScoreMatrix(ssm, start, end, D, thresh = 0.2) {
     const sampleAmount = ssm.getSampleAmount();
     if (start < 0) log.error("start below 0: ", start);
@@ -36,7 +37,7 @@ export function computeAccumulatedScoreMatrix(ssm, start, end, D, thresh = 0.2) 
         D = new Float32Array(height * width).fill(Number.NEGATIVE_INFINITY);
     }
 
-    const penalty = -2; 
+    const penalty = -5; 
     const penalize = (value) => {
         return value <= thresh ? penalty: value;//(value-thresh)*(1/(1-thresh));
         //return value < thresh ?  (thresh-value)*(1/thresh)*penalty : (value-thresh)*(1/thresh);
@@ -207,6 +208,7 @@ export function computeFitness(pathFamily, pathScores, score, sampleAmount, widt
 export function computeCustomFitness(pathFamily, pathScores, score, sampleAmount, width) {
     const pathAmount = pathFamily.length;
     const error = 1e-16;
+    const normalizedPathAmount = (pathAmount-1);
 
     // normalized score
     // we subtract the given self similarity path, and divide by total length of all paths (+ error to prevent divide by 0)
@@ -222,19 +224,21 @@ export function computeCustomFitness(pathFamily, pathScores, score, sampleAmount
 
     // fitness
     let fitness = (2 * normalizedScore * normalizedCoverage) / (normalizedScore + normalizedCoverage + error);
-    fitness = pathAmount * normalizedScore * normalizedCoverage;
+    fitness = Math.sqrt(pathAmount) * fitness;
 
     return { fitness, normalizedScore, coverage, normalizedCoverage, pathFamilyLength,prunedPathFamily: pathFamily };
 }
 
 export function computeCustomPrunedFitness(pathFamily, pathScores, score, sampleAmount, width) {
-    const [prunedPathFamily, prunedPathScores, totalScore] = prunePathFamily(pathFamily, pathScores, width, 0.5, 0.1);
+    //const [prunedPathFamily, prunedPathScores, totalScore] = prunePathFamily(pathFamily, pathScores, width, 0.5, 0.1);
     //pathFamily = prunedPathFamily;
     //pathScores = prunedPathScores;
     //score = totalScore;
-
-    const pathAmount = pathFamily.length;
     const error = 1e-16;
+
+    // normalize pathAmount
+    const pathAmount = pathFamily.length;
+    const normalizedPathAmount = (pathAmount-1);
 
     // normalized score
     // we subtract the given self similarity path, and divide by total length of all paths (+ error to prevent divide by 0)
@@ -248,13 +252,15 @@ export function computeCustomPrunedFitness(pathFamily, pathScores, score, sample
     const coverage = computeInducedCoverage(pathFamily);
     const normalizedCoverage = (coverage - width) / (sampleAmount + error);
 
+
     // fitness
     let fitness = (2 * normalizedScore * normalizedCoverage) / (normalizedScore + normalizedCoverage + error);
-    fitness = pathAmount * fitness;
+    fitness = Math.log(pathAmount) * fitness;
 
+    //fitness =  Math.sqrt(normalizedPathAmount*normalizedScore*normalizedCoverage);
+    //fitness = normalizedPathAmount*normalizedCoverage*normalizedScore;
 
-
-    return { fitness, normalizedScore, coverage, normalizedCoverage, pathFamilyLength, prunedPathFamily: pathFamily, prunedPathScores};
+    return { fitness, normalizedScore, coverage, normalizedCoverage, pathFamilyLength, prunedPathFamily: pathFamily};
 }
 
 export function computePrunedFitness(pathFamily, pathScores, score, sampleAmount, width) {
@@ -412,6 +418,30 @@ export function visualizationMatrix(ssm, sampleAmount, start, end) {
     return visualizationMatrix;
 }
 
+export function getInducedSegmentsFromSampleRange(start, end, pathSSM ){
+    const { D, width, height, score } = computeAccumulatedScoreMatrix(
+        pathSSM,
+        start,
+        end
+    );
+    const pathFamily = computeOptimalPathFamily(D, width, height);
+    const inducedSegments = getInducedSegments(pathFamily);
+    return inducedSegments;
+}
+
+export function getDistanceBetween(segmentA, segmentB, pathSSM){
+    const startSampleA = Math.floor(segmentA.start/pathSSM.getSampleDuration());
+    const endSampleA = Math.floor(segmentA.end/pathSSM.getSampleDuration());
+
+    const startSampleB = Math.floor(segmentB.start/pathSSM.getSampleDuration());
+    const endSampleB = Math.floor(segmentB.end/pathSSM.getSampleDuration());
+
+    const inducedSegmentsA = getInducedSegmentsFromSampleRange(startSampleA, endSampleA, pathSSM);
+    const inducedSegmentsB = getInducedSegmentsFromSampleRange(startSampleB, endSampleB, pathSSM);
+
+    return segmentDistance(inducedSegmentsA, inducedSegmentsB);
+}
+
 /**
  * Similar if they are aproximately repetitions of each other (overlap)
  * @param inducedSegmentsA in the form of a flat Uint16Array with pairs of start and end position of segments
@@ -484,6 +514,12 @@ export function computeSegmentPathFamilyInfo(pathSSM, startInSamples, endInSampl
         }
         pathFamily.push(pathCoords);
     })
+
+    if(logi%220 === 0){
+
+        log.debug(score)
+        log.debug(pathScores);
+    }
     const normalizedPathScores = [];
     (prunedPathScores || pathScores).forEach(score => {
         normalizedPathScores.push(score/width);
@@ -514,4 +550,23 @@ export function simplePathDetect(pathSSM, threshold = 0.1){
             }
         }
     }
+}
+
+export function getDistanceMatrix(segments, pathSSM){
+    const amount = segments.length;
+    const distanceMatrix = new HalfMatrix({ size: amount, numberType: HalfMatrix.NumberType.FLOAT32 });
+
+    const segmentInducedSegments = [];
+
+    segments.forEach(segment => {
+        const sampleStart = Math.floor(segment.start / pathSSM.getSampleDuration());
+        const sampleEnd = Math.floor(segment.end / pathSSM.getSampleDuration());
+        const inducedSegments = getInducedSegmentsFromSampleRange(sampleStart, sampleEnd, pathSSM)
+        segmentInducedSegments.push(inducedSegments);
+    })        
+
+    distanceMatrix.fill((x, y) => {
+        return segmentDistance(segmentInducedSegments[x], segmentInducedSegments[y]);
+    });
+    return distanceMatrix;
 }

@@ -19,7 +19,7 @@ export function create(fullSSM, sampleAmount, minSize, step) {
     let maxVal = 0;
     log.debug("SPCreate, sampleAmount", sampleAmount, "size", plotSize, "minSize", minSize, "step", step);
     fitnessScapePlot.fill((x, y) => {
-        if (y < plotSize *0.7) {
+        if (y < plotSize *0.4) {
             return 0;
         }
         const segmentSize = (plotSize - y) * step + minSize;
@@ -37,7 +37,7 @@ export function create(fullSSM, sampleAmount, minSize, step) {
             coverage,
             normalizedCoverage,
             pathFamilyLength,
-        } = pathExtraction.computeFitness(pathFamily, score, sampleAmount, width);
+        } = pathExtraction.computeCustomPrunedFitness(pathFamily, null, score, sampleAmount, width);
         const val = fitness;
         if (val > maxVal) {
             maxVal = val;
@@ -49,9 +49,12 @@ export function create(fullSSM, sampleAmount, minSize, step) {
     return fitnessScapePlot;
 }
 
+export function findLocalMaxima(scapePlot, maxAmount, minValue){
+
+}
+
 /**
- * Not inmplemented
- * @param {*} scapePlot
+* @param {*} scapePlot
  */
 export function sampleAnchorPointsMax(scapePlot, maxAmount, minSpacing, minSize, minValue) {
     const maxY = scapePlot.size;
@@ -147,29 +150,22 @@ export function sampleAnchorPoints(scapePlot, amount, minValue, minSize) {
 export function mapColors(fullSSM, sampleAmount, minSize, step, anchorPoints, anchorPointAmount) {
     const plotSize = Math.floor((sampleAmount - minSize) / step);
 
-    const distanceMatrix = new HalfMatrix({ size: anchorPointAmount, numberType: HalfMatrix.NumberType.FLOAT32 });
-
-    const anchorPointInducedSegments = [];
-
+    const segments = [];
     for (let i = 0; i < anchorPointAmount; i++) {
         const x = anchorPoints[i * 2];
         const y = anchorPoints[i * 2 + 1];
 
         const segmentSize = (plotSize - y) * step + minSize;
         const segmentStart = x * step;
-        const { D, width, height, score } = pathExtraction.computeAccumulatedScoreMatrix(
-            fullSSM,
-            segmentStart,
-            segmentStart + segmentSize - 1
-        );
-        const pathFamily = pathExtraction.computeOptimalPathFamily(D, width, height);
-        const inducedSegments = pathExtraction.getInducedSegments(pathFamily);
-        anchorPointInducedSegments.push(inducedSegments);
+
+        const segmentEnd = segmentStart + segmentSize;
+
+        const startInSeconds = segmentStart * fullSSM.getSampleDuration();
+        const endInSeconds = segmentEnd * fullSSM.getSampleDuration();
+        segments.push({start: startInSeconds, end: endInSeconds});
     }
 
-    distanceMatrix.fill((x, y) => {
-        return pathExtraction.segmentDistance(anchorPointInducedSegments[x], anchorPointInducedSegments[y]);
-    });
+    const distanceMatrix = pathExtraction.getDistanceMatrix(segments, fullSSM);
 
     const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
 

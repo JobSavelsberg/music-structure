@@ -224,6 +224,10 @@ export default class HalfMatrix {
         return this.size;
     }
 
+    getSampleDuration(){
+        return this.sampleDuration;
+    }
+
     getNestedArray() {
         const nestedArray = new Array(this.size);
         for (let y = 0; y < this.size; y++) {

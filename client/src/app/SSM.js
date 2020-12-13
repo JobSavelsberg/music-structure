@@ -36,7 +36,7 @@ export function enhanceSSM(ssm, options, allPitches = false) {
         if (strategy === "gauss") enhancementPasses.push(gaussianSmoothing(ssm, blurLength, tempoRatio));
         if (strategy === "onedirmed") enhancementPasses.push(medianSmoothing(onedirectionalSmoothing(ssm, 1, Math.floor(blurLength / 2), tempoRatio), blurLength, tempoRatio));
         if (strategy === "onedirmed") enhancementPasses.push(medianSmoothing(onedirectionalSmoothing(ssm, -1, Math.floor(blurLength / 2), tempoRatio), blurLength, tempoRatio));
-        if (strategy === "linmed") enhancementPasses.push(medianSmoothing(linearSmoothing(ssm, blurLength, tempoRatio), blurLength, tempoRatio));
+        if (strategy === "linmed") enhancementPasses.push(medianSmoothing(linearSmoothing(ssm, blurLength, tempoRatio), blurLength*1.5, tempoRatio));
 
     }
 

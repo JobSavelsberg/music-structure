@@ -228,6 +228,10 @@ export default class Matrix {
         return this.height;
     }
 
+    getSampleDuration(){
+        return this.sampleDuration;
+    }
+
     normalize() {
         let min = this.numberType.max;
         let max = this.numberType.min;

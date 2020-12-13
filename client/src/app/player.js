@@ -2,7 +2,7 @@ import * as log from "../dev/log";
 import { spotify } from "./app";
 import store from "../store";
 
-const autoConnect = true;
+export const autoConnect = false;
 
 export let deviceId = null;
 let player = null;
@@ -200,6 +200,11 @@ export async function initialize(token) {
                 log.error("Could not connect");
             });
     });
+}
+
+export function transferPlayback(){
+    const deviceIdArray = [deviceId];
+    spotify.transferMyPlayback(deviceIdArray)
 }
 
 async function waitForSpotifyWebPlaybackSDKToLoad() {

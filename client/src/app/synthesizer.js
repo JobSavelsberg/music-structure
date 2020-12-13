@@ -7,7 +7,7 @@ import Features from "./Features";
 import * as workers from "./workers/workers";
 
 const preset1 = "AABB";
-const sampleAmount = 500;
+const sampleAmount = 250;
 const sampleDuration = 1;
 const templateSegment = {
     start: 0,

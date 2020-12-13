@@ -17,6 +17,10 @@ export const rainbowColor = d3
     .scaleSequential()
     .domain([0, 11])
     .interpolator(d3.interpolateRainbow);
+export const sinebowColorNormalized = d3
+    .scaleSequential()
+    .domain([0, 1])
+    .interpolator(d3.interpolateSinebow);
 export const rawTimbreColor = d3
     .scaleDiverging()
     .domain([-300, 0, 300])

@@ -36,7 +36,7 @@ addEventListener("message", (event) => {
     let startTime = performance.now();
     const enhancedSSM = SSM.enhanceSSM(
         ssmPitch,
-        { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: 'lin' },
+        { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: 'linmed' },
         data.allPitches
     );
     matrixes.push({ name: "Enhanced", buffer: enhancedSSM.getBuffer() });
@@ -66,8 +66,11 @@ addEventListener("message", (event) => {
     //showAllEnhancementMethods(ssmPitch, data, matrixes);
 
 
-    const strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.15);
+    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.2);
+    //strictPathMatrixHalf = SSM.threshold(strictPathMatrixHalf, 0.1);
+
     const strictPathMatrix = Matrix.fromHalfMatrix(strictPathMatrixHalf);
+
     matrixes.push({
         name: "StrictPath",
         buffer: strictPathMatrix.getBuffer(),
@@ -76,7 +79,7 @@ addEventListener("message", (event) => {
     const simplePaths = pathExtraction.simplePathDetect(strictPathMatrix);
     log.debug("Simple Paths", simplePaths)
 
-    const structureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs);
+    //const structureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs, 4, [6,2]);
 
     //const binaryTimeLagMatrix = SSM.binarize(medianTimeLag, 0.1);
     //matrixes.push({ name: "Bin TL", buffer: binaryTimeLagMatrix.getBuffer() });
@@ -86,42 +89,68 @@ addEventListener("message", (event) => {
         createScapePlot(strictPathMatrix, data, message);
     }
 
-    const noveltyCombined = new Float32Array(data.sampleAmount);
+    /*const noveltyCombined = new Float32Array(data.sampleAmount);
     for (let i = 0; i < noveltyCombined.length; i++) {
         noveltyCombined[i] = structureFeature[i]; //+ timbreNoveltyMedium[i] * 2 + pitchNoveltyMedium[i] * 2
         //blurredPitchNovelty[i] * 0.5 +
         //blurredTimbreNovelty[i] * 0.5;
-    }
-    graphs.push({ name: "Combined Novelty", buffer: noveltyCombined.buffer });
+    }*/
+    //graphs.push({ name: "Combined Novelty", buffer: noveltyCombined.buffer });
 
-    const smoothedCombined = filter.gaussianBlur1D(noveltyCombined, 1);
+    /*const smoothedCombined = filter.gaussianBlur1D(noveltyCombined, 1);
     graphs.push({
         name: "Smoothed Combined Novelty",
         buffer: smoothedCombined.buffer,
-    });
+    });*/
 
 
+    const courseStructureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs, 8, [10,2]);
+    let courseSegments = structure.createSegmentsFromNovelty(courseStructureFeature, data.sampleDuration, 0.25);
+    //structures.push({ name: "Structure segments", data: courseSegments })
 
-    const structureSegments = structure.createSegmentsFromNovelty(smoothedCombined, data.sampleDuration);
-    structures.push({ name: "Novelty segments", data: structureSegments })
+    const fineStructureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs, 4, [6,2]);
+    let fineSegments = structure.createSegmentsFromNovelty(fineStructureFeature, data.sampleDuration, 0.05);
+    //structures.push({ name: "Fine segments", data: fineSegments })
+
+    const duration = 2; // samples
+    const sampledSegments = structure.createFixedDurationStructureSegments(data.sampleAmount, data.sampleDuration, duration)
+    structures.push({ name: "Samled segments", data: sampledSegments })
 
     //const structureCandidates = structure.computeStructureCandidates(strictPathMatrix, structureSections)
 
-    const [greedyStructure, labelAmount, segments] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "classic");
+    const courseSegmentLabeled = structure.labelSimilarSegments(courseSegments, strictPathMatrix);
+    structures.push({ name: "Course Segment labels", data: courseSegmentLabeled})
+
+    const fineSegmentLabeled = structure.labelSimilarSegments(fineSegments, strictPathMatrix);
+    structures.push({ name: "Fine Segment labels", data: fineSegmentLabeled})
+
+    const courseSegmentColored = structure.MDSColorSegments(courseSegments, strictPathMatrix);
+    structures.push({ name: "Course Segment MDS colored", data: courseSegmentColored})
+
+    const fineSegmentColored = structure.MDSColorSegments(fineSegments, strictPathMatrix);
+    structures.push({ name: "Fine Segment MDS colored", data: fineSegmentColored})
+
+    const [greedyStructure, labelAmount, segments] = structure.findGreedyDecomposition(strictPathMatrix, fineSegments, data.sampleDuration, "classic");
     structures.push({ name: "Greedy sections classic", data: greedyStructure, seperateByLabel: true, labelAmount: labelAmount })
 
-    log.debug(greedyStructure)
+    const [greedyStructure1, labelAmount1, segments1] = structure.findGreedyDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "classic");
+    structures.push({ name: "Greedy sections classic sampled", data: greedyStructure1, seperateByLabel: true, labelAmount: labelAmount1 })
 
-    const [greedyStructure1, labelAmount1, segments1] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "pruned");
-    structures.push({ name: "Greedy sections pruned", data: greedyStructure1, seperateByLabel: true, labelAmount: labelAmount1 })
+    //log.debug(greedyStructure)
 
-    const [greedyStructure2, labelAmount2, segments2] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "custom");
+    //const [greedyStructure1, labelAmount1, segments1] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "pruned");
+    //structures.push({ name: "Greedy sections pruned", data: greedyStructure1, seperateByLabel: true, labelAmount: labelAmount1 })
+
+    const [greedyStructure2, labelAmount2, segments2] = structure.findGreedyDecomposition(strictPathMatrix, fineSegments, data.sampleDuration, "custom");
     structures.push({ name: "Greedy sections custom", data: greedyStructure2, seperateByLabel: true, labelAmount: labelAmount2 })
 
-    const [greedyStructure3, labelAmount3, segments3] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "customPruned");
-    structures.push({ name: "Greedy sections custom pruned", data: greedyStructure3, seperateByLabel: true, labelAmount: labelAmount3 })
+    const [greedyStructure3, labelAmount3, segments3] = structure.findGreedyDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "custom");
+    structures.push({ name: "Greedy sections custom sampled", data: greedyStructure3, seperateByLabel: true, labelAmount: labelAmount3 })
     //const sampleStart = Math.floor(greedyStructure[0].start/data.sampleDuration);
     //const sampleEnd = Math.floor(greedyStructure[0].end/data.sampleDuration);
+
+    //const [allFit, labelAmount4] = structure.findAllFitSections(strictPathMatrix, structureSegments, data.sampleDuration, "classic");
+    //structures.push({ name: "All fit sections", data: allFit, seperateByLabel: true, labelAmount: labelAmount4 })
 
     visualizePathExtraction(strictPathMatrix, 352, 388, matrixes)
 
@@ -273,14 +302,14 @@ export function showAllEnhancementMethods(ssmPitch, data, matrixes) {
 
 }
 
-export function computeStructureFeature(pathSSM, matrixes, graphs) {
+export function computeStructureFeature(pathSSM, matrixes, graphs, blurLength, medianBlurDimensions = [16,2]) {
     const timeLagMatrix = Matrix.createTimeLagMatrix(pathSSM);
-    matrixes.push({ name: "TL", buffer: timeLagMatrix.getBuffer() });
+   //matrixes.push({ name: "TL", buffer: timeLagMatrix.getBuffer() });
 
-    const medianTimeLag = filter.median2D(timeLagMatrix, 32, 16, 2);
-    matrixes.push({ name: "Med TL", buffer: medianTimeLag.getBuffer() });
+    const medianTimeLag = filter.median2D(timeLagMatrix, 32, medianBlurDimensions[0], medianBlurDimensions[1]);
+    //matrixes.push({ name: "Med TL", buffer: medianTimeLag.getBuffer() });
 
-    const priorLag = noveltyDetection.computePriorLagHalf(timeLagMatrix, 10);
+    /*const priorLag = noveltyDetection.computePriorLagHalf(timeLagMatrix, 10);
     graphs.push({
         name: "Prior Lag Feature",
         buffer: priorLag.buffer,
@@ -290,24 +319,24 @@ export function computeStructureFeature(pathSSM, matrixes, graphs) {
         name: "Column Density",
         buffer: columnDensity.buffer,
     });
-    const blurredBinaryTimeLagMatrix = filter.gaussianBlur2DOptimized(medianTimeLag, 8);
-    /*matrixes.push({
+    const blurredBinaryTimeLagMatrix = filter.gaussianBlur2DOptimized(medianTimeLag, blurLength);
+    matrixes.push({
         name: "Blur TL",
         buffer: blurredBinaryTimeLagMatrix.getBuffer(),
-    });*/
+    });
 
     const structureFeatureNovelty = noveltyDetection.computeNoveltyFromTimeLag(blurredBinaryTimeLagMatrix);
     graphs.push({
         name: "Structure Feature Novelty",
         buffer: structureFeatureNovelty.buffer,
-    });
+    });*/
 
     const normalizedMedianTimeLag = noveltyDetection.normalizeByColumnDensity(medianTimeLag);
     /*matrixes.push({
         name: "Norm TL",
         buffer: normalizedMedianTimeLag.getBuffer(),
     });*/
-    const blurredBinaryTimeLagMatrixNorm = filter.gaussianBlur2DOptimized(normalizedMedianTimeLag, 8);
+    const blurredBinaryTimeLagMatrixNorm = filter.gaussianBlur2DOptimized(normalizedMedianTimeLag, blurLength);
     /*matrixes.push({
         name: "Blur Norm TL",
         buffer: blurredBinaryTimeLagMatrixNorm.getBuffer(),
@@ -315,7 +344,7 @@ export function computeStructureFeature(pathSSM, matrixes, graphs) {
 
     const structureFeatureNoveltyNorm = noveltyDetection.computeNoveltyFromTimeLag(blurredBinaryTimeLagMatrixNorm);
     graphs.push({
-        name: "Structure Feature Novelty (Norm)",
+        name: `Structure Feature Novelty (Norm) ${blurLength}`,
         buffer: structureFeatureNoveltyNorm.buffer,
     });
 
@@ -367,3 +396,4 @@ export function createScapePlot(pathSSM, data, message) {
     message.scapePlot = SP.getBuffer();
     message.scapePlotAnchorColor = SPAnchorColor.buffer;
 }
+

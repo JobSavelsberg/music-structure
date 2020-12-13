@@ -380,3 +380,12 @@ function classicalMDS(distances, dimensions) {
         return numeric.mul(row, eigenValues).splice(0, dimensions);
     });
 }
+
+export function getAngleAndRadius(mdsCoordinate){
+    const x = mdsCoordinate[0]
+    const y = mdsCoordinate[1];
+    let angle = Math.atan2(y,x) / (2 * Math.PI);
+    angle = angle < 0 ? 1 + angle : angle;
+    const radius = Math.sqrt(Math.pow(x,2) + Math.pow(y,2));
+    return [angle, radius];
+}
