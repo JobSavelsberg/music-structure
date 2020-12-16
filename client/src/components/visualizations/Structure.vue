@@ -8,7 +8,7 @@
                     <rect x="0" y="0" :width="width" :height="heightOfStructure(structure)" @click="clickBackground($event, structure)"  @mouseover="unhover()" @mouseout="unhover()" fill="#1a1a1a">
                     </rect>
                     <g v-for="(section, index) in structure.data" :key="index">
-                        <rect class="section" stroke="black" stroke-width=".5" rx="5" @mouseover="hoverSection($event, section, structure)" @mouseout="unhoverSection(section)" @click="clickSection($event, section)" :x="section.start*scale" :y="structure.seperateByLabel ? section.label*blockHeight: 0" :width="section.duration*scale" :height="blockHeight"  :fill="sectionColor(section)">
+                        <rect class="section" stroke="black" stroke-width=".5" rx="5" @mouseover="hoverSection($event, section, structure)" @mouseout="unhoverSection(section)" @click="clickSection($event, section)" :x="section.start*scale" :y="structure.seperateByGroup ? section.groupID*blockHeight: 0" :width="(section.end-section.start)*scale" :height="blockHeight"  :fill="sectionColor(section)">
                         </rect>                        
                     </g>
                 </svg>
@@ -63,41 +63,45 @@ export default {
     },
     methods: {
         getAmountOfUniqueLabels(structure){
-            if(structure.labelAmount) return structure.labelAmount;
-            const labels = [];
-            log.debug("Getting amount of unique labels", structure)
+            if(structure.groupAmount) return structure.groupAmount;
+            const groupIDs = [];
+            log.debug("Getting amount of unique groupIDs", structure)
             structure.data.forEach((section, index) => {
-                if(!labels.includes(section.label)){
-                    labels.push(section.label)
+                if(!groupIDs.includes(section.groupID)){
+                    groupIDs.push(section.groupID)
                 }
             });
-            return labels.length;
+            return groupIDs.length;
         },
         heightOfStructure(structure){
-            return (structure.seperateByLabel ? this.getAmountOfUniqueLabels(structure) : 1)*this.blockHeight;
+            return (structure.seperateByGroup ? this.getAmountOfUniqueLabels(structure) : 1)*this.blockHeight;
         },
         sectionColor(section){
             if(section.colorAngle !== undefined){
                 return vis.sinebowColorNormalized(section.colorAngle);
             }else{
-                return vis.categoryColorWithOpacity(section.label,Math.sqrt(section.confidence !== undefined ? section.confidence : 1));
+                return vis.categoryColorWithOpacity(section.groupID,Math.sqrt(section.confidence !== undefined ? section.confidence : 1));
             }
         },
         sectionBorderColor(section){
-            return vis.categoryColorWithOpacity(section.label,Math.max(0,Math.sqrt(section.confidence !== undefined ? section.confidence : 1)-0.5));
+            return vis.categoryColorWithOpacity(section.groupID,Math.max(0,Math.sqrt(section.confidence !== undefined ? section.confidence : 1)-0.5));
         },
         hoverSection(event, section, structure){
             this.tooltipTimeout = setTimeout(() => {
                 this.toolTipText = `
-                Label: ${section.label} <br /> 
+                Label: ${section.groupID} <br /> 
                 Confidence: ${parseFloat(section.confidence).toFixed(2)} <br /> 
-                [${parseFloat(section.start).toFixed(2)}, ${parseFloat(section.end).toFixed(2)}]
+                [${parseFloat(section.start).toFixed(2)}, ${parseFloat(section.end).toFixed(2)}] <br /> 
+                Duration: ${parseFloat(section.end-section.start).toFixed(2)} <br /> 
+                NormScore: ${parseFloat(section.normalizedScore).toFixed(2)} <br /> 
+                NormCoverage: ${parseFloat(section.normalizedCoverage).toFixed(2)} <br /> 
+                Fitness: ${parseFloat(section.fitness).toFixed(2)}
                 `
                 setTimeout(() => {
                     let tooltips = document.getElementsByClassName("v-tooltip__content");
                     tooltips.forEach(tool => {
                         tool.style.left = event.pageX - event.offsetX + section.start*this.scale +  'px'
-                        tool.style.top = event.pageY - event.offsetY + (structure.seperateByLabel ? section.label+1 : 1)*this.blockHeight + 'px'
+                        tool.style.top = event.pageY - event.offsetY + (structure.seperateByGroup ? section.groupID+1 : 1)*this.blockHeight + 'px'
                     })
                 },0)
                 this.showTooltip = true}

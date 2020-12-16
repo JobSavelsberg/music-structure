@@ -119,6 +119,14 @@ export default class Matrix {
         return this.data[(y * this.width + x) * this.featureAmount + f] / this.numberType.scale;
     }
 
+    getColumnNormalized(x){
+        const values = new Float32Array(this.height);
+        for (let y = 0; y < this.height; y++) {
+            values[y] = this.data[(y * this.width + x) * this.featureAmount ] / this.numberType.scale;
+        }
+        return values;
+    }
+
     fillByIndex(callback) {
         let i = this.length;
         while (i--) {

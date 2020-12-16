@@ -96,6 +96,14 @@ export default class HalfMatrix {
         return this.data[((y * y + y) / 2) * this.featureAmount + x * this.featureAmount + f] / this.numberType.scale;
     }
 
+    getColumnNormalized(x){
+        const values = new Float32Array(this.size);
+        for (let y = 0; y < this.size; y++) {
+            values[y] = this.getValueNormalizedMirrored(x,y);
+        }
+        return values;
+    }
+
     fillByIndex(callback) {
         let i = this.length;
         while (i--) {

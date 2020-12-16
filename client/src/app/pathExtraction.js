@@ -11,18 +11,19 @@ export function createScoreMatrixBuffer(sampleAmount) {
 export function extractPathFamily(ssm, start, end) {
     const { D, width, height, score } = computeAccumulatedScoreMatrix(ssm, start, end, D);
     const pathFamily = computeOptimalPathFamily(D, width, height);
-    const pathScores = getScoresForPathFamily(D, width, pathFamily);
+    //const pathScores = getScoresForPathFamily(D, width, pathFamily);
+    const pathScores = getBrightnessForPathFamily(ssm, pathFamily, start);
 
     if(start > 345 && end < 350){
-        log.debug(pathFamily, pathScores, score)
+        //log.debug(pathFamily, pathScores, score)
     }
     return [pathFamily, pathScores, score, width];
 }
 
 
 // The ratio between the length of the knight move vs length of a diagonal move
-const knightMoveRatio = Math.sqrt(10) / 2 + .01 ; // plus slight offset to favour diagonal moves when going through penalties
-const knightMoveTweak =  0.99; //Also favouring diagonal moves when accumulating score
+const knightMoveRatio = 1//Math.sqrt(10) / 2 + .01 ; // plus slight offset to favour diagonal moves when going through penalties
+const knightMoveTweak =  1//0.99; //Also favouring diagonal moves when accumulating score
 export function computeAccumulatedScoreMatrix(ssm, start, end, D, thresh = 0.2) {
     const sampleAmount = ssm.getSampleAmount();
     if (start < 0) log.error("start below 0: ", start);
@@ -37,7 +38,7 @@ export function computeAccumulatedScoreMatrix(ssm, start, end, D, thresh = 0.2) 
         D = new Float32Array(height * width).fill(Number.NEGATIVE_INFINITY);
     }
 
-    const penalty = -5; 
+    const penalty = -2; 
     const penalize = (value) => {
         return value <= thresh ? penalty: value;//(value-thresh)*(1/(1-thresh));
         //return value < thresh ?  (thresh-value)*(1/thresh)*penalty : (value-thresh)*(1/thresh);
@@ -165,23 +166,40 @@ export function computeOptimalPathFamily(D, width, height) {
     return pathFamily;
 }
 
-let deb = 0;
 export function getScoresForPathFamily(scoreMatrix, width, pathFamily) {
-    deb++;
     let pathScores = [];
     pathFamily.forEach(path => {
             const endX = path[0];
             const endY = path[0 + 1];
-            const endValue = scoreMatrix[endY * width + (endX + 1)];
+            const endValue = scoreMatrix[endY * (width) + (endX )];
             const startX = path[path.length-2];
             const startY = path[path.length-2 + 1];
-            const startValue = scoreMatrix[startY * width + (startX + 1)];
+            const startValue = scoreMatrix[startY * (width) + (startX )];
             const pathScore = endValue - startValue;
         
-        pathScores.push(pathScore);
+        pathScores.push(pathScore/width);
     });
     return pathScores;
 }
+
+let deb = 0;
+export function getBrightnessForPathFamily(pathSSM, pathFamily,start) {
+    deb++;
+    let pathScores = [];
+    pathFamily.forEach(path => {
+        let sum = 0;
+        for(let i = 0; i < path.length; i+=2){
+            const x = start+path[i+0];
+            const y = path[i+1];
+            const val = pathSSM.getValueNormalized(x,y);
+            sum += val;
+        }
+        const average = sum / (path.length/2);
+        pathScores.push(average);
+    });
+    return pathScores;
+}
+
 
 export function computeFitness(pathFamily, pathScores, score, sampleAmount, width) {
     const pathAmount = pathFamily.length;
@@ -220,11 +238,11 @@ export function computeCustomFitness(pathFamily, pathScores, score, sampleAmount
 
     // normalized coverage
     const coverage = computeInducedCoverage(pathFamily);
-    const normalizedCoverage = (coverage - width) / (sampleAmount + error);
+    let normalizedCoverage = (coverage - width) / (sampleAmount + error);
+    normalizedCoverage *= pathAmount;
 
     // fitness
     let fitness = (2 * normalizedScore * normalizedCoverage) / (normalizedScore + normalizedCoverage + error);
-    fitness = Math.sqrt(pathAmount) * fitness;
 
     return { fitness, normalizedScore, coverage, normalizedCoverage, pathFamilyLength,prunedPathFamily: pathFamily };
 }
@@ -247,16 +265,17 @@ export function computeCustomPrunedFitness(pathFamily, pathScores, score, sample
         pathFamilyLength += pathFamily[p].length / 2; // /2 because we store x and y flat
     }
     const normalizedScore = Math.max(0, (score - width) / (pathFamilyLength + error));
-
+    if(normalizedScore <= 0){
+        //log.debug(score, width, pathAmount, pathFamilyLength)
+    }
     // normalized coverage
     const coverage = computeInducedCoverage(pathFamily);
-    const normalizedCoverage = (coverage - width) / (sampleAmount + error);
-
+    let normalizedCoverage = (coverage - width) / (sampleAmount + error);
+    //normalizedCoverage *= (normalizedPathAmount);
 
     // fitness
     let fitness = (2 * normalizedScore * normalizedCoverage) / (normalizedScore + normalizedCoverage + error);
-    fitness = Math.log(pathAmount) * fitness;
-
+    fitness*=normalizedPathAmount;
     //fitness =  Math.sqrt(normalizedPathAmount*normalizedScore*normalizedCoverage);
     //fitness = normalizedPathAmount*normalizedCoverage*normalizedScore;
 
@@ -398,7 +417,9 @@ export function visualizationMatrix(ssm, sampleAmount, start, end) {
     });
 
     visualizationMatrix.fill((x, y) => {
-        if (x >= length * 2) {
+        if(x >= length*3 && x < length*4){
+            return ssm.getValue(start + x - length*3, y);
+        }else if (x >= length * 2) {
             return 0; // Paths will be set from looping over paths
         } else if (x >= length) {
             return (Math.max(0, D[y * width + x - length]-minVal) / (maxVal-minVal)) * 255; // +1 to remove elevator, * 255 sinze value is
@@ -409,9 +430,12 @@ export function visualizationMatrix(ssm, sampleAmount, start, end) {
 
     for (const path of P) {
         for (let i = 0; i < path.length / 2; i++) {
-            const x = length * 2 - 1 + path[i * 2];
+            const x = length * 2 + path[i * 2];
             const y = path[i * 2 + 1];
             visualizationMatrix.setValue(x, y, 255);
+            const x2 = length * 3 + path[i * 2];
+            visualizationMatrix.setValue(x2, y, 0);
+
         }
     }
 
@@ -515,19 +539,9 @@ export function computeSegmentPathFamilyInfo(pathSSM, startInSamples, endInSampl
         pathFamily.push(pathCoords);
     })
 
-    if(logi%220 === 0){
-
-        log.debug(score)
-        log.debug(pathScores);
-    }
-    const normalizedPathScores = [];
-    (prunedPathScores || pathScores).forEach(score => {
-        normalizedPathScores.push(score/width);
-    });
-
     return {
         score: score,
-        pathScores: normalizedPathScores,
+        pathScores: pathScores,
         normalizedScore: normalizedScore,
         coverage: coverage,
         normalizedCoverage: normalizedCoverage,

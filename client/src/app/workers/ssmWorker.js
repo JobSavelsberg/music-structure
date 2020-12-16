@@ -112,50 +112,93 @@ addEventListener("message", (event) => {
     let fineSegments = structure.createSegmentsFromNovelty(fineStructureFeature, data.sampleDuration, 0.05);
     //structures.push({ name: "Fine segments", data: fineSegments })
 
-    const duration = 2; // samples
+    const duration = 4; // samples
     const sampledSegments = structure.createFixedDurationStructureSegments(data.sampleAmount, data.sampleDuration, duration)
-    structures.push({ name: "Samled segments", data: sampledSegments })
+    structures.push({ name: "Sampled segments", data: sampledSegments })
 
     //const structureCandidates = structure.computeStructureCandidates(strictPathMatrix, structureSections)
 
-    const courseSegmentLabeled = structure.labelSimilarSegments(courseSegments, strictPathMatrix);
-    structures.push({ name: "Course Segment labels", data: courseSegmentLabeled})
+    const courseSegmentLabeled = structure.groupSimilarSegments(courseSegments, strictPathMatrix);
+    structures.push({ name: "Course Segment groups", data: courseSegmentLabeled})
 
-    const fineSegmentLabeled = structure.labelSimilarSegments(fineSegments, strictPathMatrix);
-    structures.push({ name: "Fine Segment labels", data: fineSegmentLabeled})
+    const fineSegmentLabeled = structure.groupSimilarSegments(fineSegments, strictPathMatrix);
+    structures.push({ name: "Fine Segment groups", data: fineSegmentLabeled})
 
+
+    const [greedyStructure, groupAmount, segments] = structure.findGreedyDecomposition(strictPathMatrix, fineSegments, data.sampleDuration, "classic");
+    structures.push({ name: "Greedy sections classic", data: greedyStructure, seperateByGroup: true, groupAmount: groupAmount })
+
+    const [greedyStructureSampled, groupAmountSampled, segmentsSampled] = structure.findGreedyDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "classic");
+    structures.push({ name: "Greedy sections classic sampled", data: greedyStructureSampled, seperateByGroup: true, groupAmount: groupAmountSampled })
+
+    //log.debug(greedyStructure)
+
+    //const [greedyStructure1, groupAmount1, segments1] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "pruned");
+    //structures.push({ name: "Greedy sections pruned", data: greedyStructure1, seperateByGroup: true, groupAmount: groupAmount1 })
+
+    const [greedyStructureCustom, groupAmountCustom, segmentsCustom] = structure.findGreedyDecomposition(strictPathMatrix, fineSegments, data.sampleDuration, "custom");
+    structures.push({ name: "Greedy sections custom", data: greedyStructureCustom, seperateByGroup: true, groupAmount: groupAmountCustom })
+
+    const [greedyStructureCustomSampled, groupAmountCustomSampled, segmentsCustomSampled] = structure.findGreedyDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "custom");
+    structures.push({ name: "Greedy sections custom sampled", data: greedyStructureCustomSampled, seperateByGroup: true, groupAmount: groupAmountCustomSampled })
+    
+    
+    const [greedyStructureCustom2Sampled, groupAmountCustom2Sampled, segmentsCustom2Sampled] = structure.findGreedyDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "customPruned");
+    structures.push({ name: "Greedy sections custom 2 sampled", data: greedyStructureCustom2Sampled, seperateByGroup: true, groupAmount: groupAmountCustom2Sampled })
+
+        
+    const [greedyStructureCustom2, groupAmountCustom2, segmentsCustom2] = structure.findGreedyDecomposition(strictPathMatrix, fineSegments, data.sampleDuration, "customPruned");
+    structures.push({ name: "Greedy sections custom 2 ", data: greedyStructureCustom2, seperateByGroup: true, groupAmount: groupAmountCustom2 })
+    //const sampleStart = Math.floor(greedyStructure[0].start/data.sampleDuration);
+    //const sampleEnd = Math.floor(greedyStructure[0].end/data.sampleDuration);
+
+    //const [allFit, groupAmount4] = structure.findAllFitSections(strictPathMatrix, structureSegments, data.sampleDuration, "classic");
+    //structures.push({ name: "All fit sections", data: allFit, seperateByGroup: true, groupAmount: groupAmount4 })
+
+    const classicSquashedStructureNoOverlap = structure.squash('no-overlap',greedyStructureSampled, groupAmountCustom2Sampled);
+    structures.push({ name: "Classic Squashed structure no-overlap", data: classicSquashedStructureNoOverlap})
+
+    const squashedStructureFillGap = structure.squash('fill-gap',greedyStructureCustomSampled, groupAmountCustomSampled);
+    structures.push({ name: "Custom Squashed structure fill-gap", data: squashedStructureFillGap})
+    const squashedStructureFillGapMDS = structure.MDSColorSegments(squashedStructureFillGap, strictPathMatrix);
+    structures.push({ name: "Custom Squashed structure fill-gap MDS color", data: squashedStructureFillGapMDS})
+
+    //const squashedStructureNoOverlap = structure.squash('no-overlap',greedyStructureCustom2Sampled, groupAmountCustom2Sampled);
+    //structures.push({ name: "Custom2 Squashed structure no-overlap", data: squashedStructureNoOverlap})
+    const squashedStructureFillGap2 = structure.squash('fill-gap',greedyStructureCustom2Sampled, groupAmountCustom2Sampled);
+    structures.push({ name: "Custom2 Squashed structure fill-gap", data: squashedStructureFillGap2})
+    const squashedStructureFillGap2MDS = structure.MDSColorSegments(squashedStructureFillGap2, strictPathMatrix);
+    structures.push({ name: "Custom2 Squashed structure fill-gap MDS color", data: squashedStructureFillGap2MDS})
+    
     const courseSegmentColored = structure.MDSColorSegments(courseSegments, strictPathMatrix);
     structures.push({ name: "Course Segment MDS colored", data: courseSegmentColored})
 
     const fineSegmentColored = structure.MDSColorSegments(fineSegments, strictPathMatrix);
     structures.push({ name: "Fine Segment MDS colored", data: fineSegmentColored})
-
-    const [greedyStructure, labelAmount, segments] = structure.findGreedyDecomposition(strictPathMatrix, fineSegments, data.sampleDuration, "classic");
-    structures.push({ name: "Greedy sections classic", data: greedyStructure, seperateByLabel: true, labelAmount: labelAmount })
-
-    const [greedyStructure1, labelAmount1, segments1] = structure.findGreedyDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "classic");
-    structures.push({ name: "Greedy sections classic sampled", data: greedyStructure1, seperateByLabel: true, labelAmount: labelAmount1 })
-
-    //log.debug(greedyStructure)
-
-    //const [greedyStructure1, labelAmount1, segments1] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "pruned");
-    //structures.push({ name: "Greedy sections pruned", data: greedyStructure1, seperateByLabel: true, labelAmount: labelAmount1 })
-
-    const [greedyStructure2, labelAmount2, segments2] = structure.findGreedyDecomposition(strictPathMatrix, fineSegments, data.sampleDuration, "custom");
-    structures.push({ name: "Greedy sections custom", data: greedyStructure2, seperateByLabel: true, labelAmount: labelAmount2 })
-
-    const [greedyStructure3, labelAmount3, segments3] = structure.findGreedyDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "custom");
-    structures.push({ name: "Greedy sections custom sampled", data: greedyStructure3, seperateByLabel: true, labelAmount: labelAmount3 })
-    //const sampleStart = Math.floor(greedyStructure[0].start/data.sampleDuration);
-    //const sampleEnd = Math.floor(greedyStructure[0].end/data.sampleDuration);
-
-    //const [allFit, labelAmount4] = structure.findAllFitSections(strictPathMatrix, structureSegments, data.sampleDuration, "classic");
-    //structures.push({ name: "All fit sections", data: allFit, seperateByLabel: true, labelAmount: labelAmount4 })
-
     visualizePathExtraction(strictPathMatrix, 352, 388, matrixes)
 
-    //visualizeKernel(data, matrixes);
+    const blurredTimbre = filter.gaussianBlur2DOptimized(ssmTimbre, 8);
+    matrixes.push({
+        name: "BlurTimbre",
+        buffer: blurredTimbre.getBuffer(),
+    });
+    //const timbreNovelty = noveltyDetection.detect(blurredTimbre, 10);
+    /*graphs.push({
+        name: "Timbre Novelty",
+        buffer: timbreNovelty.buffer,
+    });*/
+    const timbreNoveltyColumn = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbre);
+    graphs.push({ name: "Timbre Column Novelty", buffer: timbreNoveltyColumn.buffer });
 
+    
+    const smoothTimbreNoveltyColumn = filter.gaussianBlur1D(timbreNoveltyColumn, 3);
+    graphs.push({ name: "Timbre Column Novelty Smooth", buffer: smoothTimbreNoveltyColumn.buffer });
+    const timbreSegments = structure.createSegmentsFromNovelty(smoothTimbreNoveltyColumn, data.sampleDuration, 0.2);
+    const coloredTimbreSegments = structure.MDSColorTimbreSegments(blurredTimbre, timbreSegments);
+    log.debug("coloredTimbreSegments", coloredTimbreSegments)
+    structures.push({ name: "Timbre segments", data: coloredTimbreSegments})
+
+    //visualizeKernel(data, matrixes);
     message.matrixes = matrixes;
     message.graphs = graphs;
     message.structures = structures;

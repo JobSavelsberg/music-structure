@@ -1,21 +1,19 @@
 import * as noveltyDetection from "./noveltyDetection";
 import * as log from "../dev/log";
 import * as pathExtraction from "./pathExtraction";
+import * as similarity from "./similarity";
 import * as mds from "./mds";
-
+import Matrix from "./dataStructures/Matrix";
+import HalfMatrix from "./dataStructures/HalfMatrix";
 import assert from "assert"
+import Section from "./Section";
 
 
 export function createFixedDurationStructureSegments(sampleAmount, sampleDuration, duration){
     const structureSegments = [];
     let start = 0;
-    while(start < sampleAmount){
-        structureSegments.push({
-            start: start*sampleDuration,
-            duration: duration*sampleDuration,
-            end: start+duration,
-            confidence: 1,
-        });
+    while(start+duration < sampleAmount){
+        structureSegments.push(new Section({start: start*sampleDuration, end: (start+duration)*sampleDuration}));
         start += duration;
     }
     return structureSegments;
@@ -33,16 +31,14 @@ export function createSegmentsFromNovelty(novelty, sampleDuration, threshold = 0
         const start = peak.sample * sampleDuration;
         const end =
             i < peaks.length - 1 ? sampleDuration * peaks[i + 1].sample : sampleDuration * novelty.length;
-        const duration = end - start;
         const confidence = peak.confidence;
-        const label = structureSegments.length;
-        structureSegments.push({
+        const groupID = structureSegments.length;
+        structureSegments.push(new Section({
             start,
-            duration,
             end,
             confidence,
-            label,
-        });
+            groupID,
+        }));
     }
     return structureSegments;
 }
@@ -56,7 +52,6 @@ export function computeStructureCandidates(pathSSM, structureSegments, minDurati
     const scoreMatrixBuffer = pathExtraction.createScoreMatrixBuffer(sampleAmount);
     const candidates = [];
 
-
     for (let start = 0; start < segmentAmount; start++) {
         for (let end = start; end < segmentAmount; end++) {
 
@@ -69,12 +64,16 @@ export function computeStructureCandidates(pathSSM, structureSegments, minDurati
 
             const segmentPathFamilyInfo = pathExtraction.computeSegmentPathFamilyInfo(pathSSM, startInSamples, endInSamples, scoreMatrixBuffer, strategy)
 
-            segmentPathFamilyInfo.start = startInSeconds;
-            segmentPathFamilyInfo.duration = segmentLengthInSeconds;
-            segmentPathFamilyInfo.end = endInSeconds;
-            segmentPathFamilyInfo.label = candidates.length;
+            const candidate = new Section({start: startInSeconds, end: endInSamples, groupID: candidates.length})
+            candidate.pathFamily = segmentPathFamilyInfo.pathFamily;
+            candidate.pathFamilyScores = segmentPathFamilyInfo.pathScores;
+            candidate.score = segmentPathFamilyInfo.score;
+            candidate.normalizedScore = segmentPathFamilyInfo.normalizedScore;
+            candidate.coverage = segmentPathFamilyInfo.coverage;
+            candidate.normalizedCoverage = segmentPathFamilyInfo.normalizedCoverage;
+            candidate.fitness = segmentPathFamilyInfo.fitness;
 
-            candidates.push(segmentPathFamilyInfo);
+            candidates.push(candidate);
         }
     }
 
@@ -94,41 +93,64 @@ export function computeSeparateStructureCandidates(pathSSM, separateSegmentSets,
 
 // Structure is not sorted, structuresegments is
 const wiggle = true;
-const wiggleSize = 2;
-export function findGreedyDecomposition(pathSSM, structureSegments, sampleDuration, strategy = "classic", comparisonProperty = "fitness", minDurationSeconds = 2) {
+const wiggleSize = 4;
+export function findGreedyDecomposition(pathSSM, structureSegments, sampleDuration, strategy = "classic", comparisonProperty = "fitness", minDurationSeconds = 2, minFitness = 0.1) {
     const trackEnd = structureSegments[structureSegments.length - 1].end;
     let structureSections = [];
     const segments = []
-    log.debug("Finding greedy Decomposition")
+    log.debug("Finding greedy Decomposition.   Strategy:", strategy, "ComparisonProperty:", comparisonProperty, "MinDuration", minDurationSeconds);
     let separateSegmentSets = [structureSegments];
 
     let i = 0;
     const maxRepeats = 14;
     while (separateSegmentSets.length > 0 && i < maxRepeats) {
+        //log.debug("segmentSets", separateSegmentSets)
         let separateCandidateSets = computeSeparateStructureCandidates(pathSSM, separateSegmentSets, strategy, minDurationSeconds)
-
+        //log.debug("candidatesets", separateCandidateSets);
         const allCandidates = [].concat.apply([], separateCandidateSets);
         if (allCandidates.length === 0) {
             break;
         }
-        const allCandidatesSorted = allCandidates.sort((a, b) => a[comparisonProperty] > b[comparisonProperty] ? 1 : -1);
-        log.debug(allCandidatesSorted)
+        const allCandidatesSorted = allCandidates.sort((a, b) => {
+            if ( a[comparisonProperty] < b[comparisonProperty] ){
+                return 1;
+              }
+              if ( a[comparisonProperty] > b[comparisonProperty]){
+                return -1;
+              }
+              return 0;
+        });
+        //log.debug("candidates sorted", allCandidatesSorted)
 
-        let best = allCandidatesSorted.pop();
+        allCandidatesSorted.forEach(candidate => {
+            if(candidate.start > 174 && candidate.start < 177 && candidate.end > 192 && candidate.end < 195){
+                log.debug(candidate);
+            }
+        })
+
+        let best = allCandidatesSorted.shift();
+        const initialFitness = best.fitness;
         if (wiggle) {
             best = findBetterFit(pathSSM, best, wiggleSize, comparisonProperty, strategy, structureSections, minDurationSeconds);
         }
-        if (best === null || best[comparisonProperty] <= 0 || isNaN(best[comparisonProperty])) {
+        if (best === null || best[comparisonProperty] <= minFitness || isNaN(best[comparisonProperty])) {
+            log.debug("Terminating search", best)
             break;
         }
         log.debug("BEST", i, best);
-        const label = i;
-        best.label = label;
+        const groupID = i;
+        best.groupID = groupID;
 
-        const pathFamily = getPathFamily(best, sampleDuration, label);
-        const extendedPathFamily = getExtendedPathFamily(best,sampleDuration, label, pathSSM, strategy);
+        const pathFamily = getPathFamily(best, sampleDuration, groupID);
+        const extendedPathFamily = getExtendedPathFamily(best,sampleDuration, groupID, pathSSM, strategy);
         const nonOverlappingExtendedPathFamily = addNonOverlapping(pathFamily , extendedPathFamily);
-        const prunedPaths = pruneLowConfidence(nonOverlappingExtendedPathFamily, 0.1);
+        const prunedPaths = pruneLowConfidence(nonOverlappingExtendedPathFamily, 0.15);
+        prunedPaths.forEach(path => {
+            path.normalizedScore = best.normalizedScore;
+            path.normalizedCoverage = best.normalizedCoverage;
+            path.fitness = best.fitness;
+            path.initFitness = initialFitness;
+        })
         structureSections.push(...prunedPaths)
 
         // sort structuresections
@@ -136,7 +158,7 @@ export function findGreedyDecomposition(pathSSM, structureSegments, sampleDurati
 
         separateSegmentSets = subtractStructureFromSegments(JSON.parse(JSON.stringify(separateSegmentSets)), structureSections, trackEnd, minDurationSeconds);
         const allSegments = [].concat.apply([], separateSegmentSets);
-        allSegments.forEach(segment => segment.label = i);
+        allSegments.forEach(segment => segment.groupID = i);
         segments.push(...allSegments);
         i++;
     }
@@ -158,10 +180,10 @@ export function findAllFitSections(pathSSM, structureSegments, sampleDuration, s
         if (best === null || best[comparisonProperty] <= 0 || isNaN(best[comparisonProperty])) {
             break;
         }
-        const label = i;
+        const groupID = i;
 
         // add family 
-        const prunedSections = pruneLowConfidence(getExtendedPathFamily(best,sampleDuration, label, pathSSM, strategy), 0.2);
+        const prunedSections = pruneLowConfidence(getExtendedPathFamily(best,sampleDuration, groupID, pathSSM, strategy), 0.2);
         const mergedSections = mergeOverlap(prunedSections);
         structureSections.push(...mergedSections)
 
@@ -171,15 +193,15 @@ export function findAllFitSections(pathSSM, structureSegments, sampleDuration, s
 
             // if any section is similar ? remove candidate
             const hasSimilarSection = structureSections.some((section) => {
-                const candidateMiddle = candidate.start + candidate.duration/2;
-                const sectionMiddle = section.start + section.duration/2;
+                const candidateMiddle = candidate.start + candidate.getDuration()/2;
+                const sectionMiddle = section.start + section.getDuration()/2;
 
                 const diffMiddle = Math.abs(candidateMiddle - sectionMiddle);
-                const diffSize = Math.abs(candidate.duration - section.duration);
+                const diffSize = Math.abs(candidate.getDuration() - section.getDuration());
 
                 // define circle base on size
                 const distFactor = 0.5; // 0.5 sizeFactor means candidate size or offset needs to be at least half as small as the section size to be considered
-                const maxDist = section.duration*distFactor;
+                const maxDist = section.getDuration()*distFactor;
 
                 const dist = Math.sqrt(Math.pow(diffMiddle,2) + Math.pow(diffSize,2))
                 //log.debug(dist, "<", maxDist,  "?:", candidate, section );
@@ -195,13 +217,12 @@ export function findAllFitSections(pathSSM, structureSegments, sampleDuration, s
 }
 
 
-function getPathFamily(section, sampleDuration, label){
+function getPathFamily(section, sampleDuration, groupID){
     const pathFamilySections = []
     section.pathFamily.forEach((path, index) => {
         const start = path[path.length - 1][1] * sampleDuration;
         const end = (path[0][1] + 1) * sampleDuration;
-        const duration = end - start;
-        const newSection = { start, end, duration, label, confidence: section.pathScores[index] }
+        const newSection = new Section({ start, end, groupID, confidence: section.pathFamilyScores[index] })
         /*if (!isSameSectionWithinError(best, section, 2)) {
             // This is debatable, we might want to show this (why it got high fitness to begin with)
             //if (!overlapWithStructureSections(section, structureSections)) {
@@ -211,7 +232,6 @@ function getPathFamily(section, sampleDuration, label){
             // It's the best path itself, but use the segment defined by the coverage in the path family
             best.start = start;
             best.end = end;
-            best.duration = duration;
             best.confidence = 1;
             structureSections.push(best);
         }*/
@@ -223,15 +243,14 @@ function getPathFamily(section, sampleDuration, label){
 
 // multiply confidence?
 // includes regular family
-function getExtendedPathFamily(section, sampleDuration, label, pathSSM, strategy){
+function getExtendedPathFamily(section, sampleDuration, groupID, pathSSM, strategy){
     const scoreMatrixBuffer = pathExtraction.createScoreMatrixBuffer(pathSSM.getSampleAmount());
 
     const pathFamilySections = []
     section.pathFamily.forEach((path, index) => {
         const start = path[path.length - 1][1] * sampleDuration;
         const end = (path[0][1] + 1) * sampleDuration;
-        const duration = end - start;
-        const newSection = { start, end, duration, label, confidence: section.pathScores[index] }
+        const newSection = new Section({ start, end, groupID, confidence: section.pathFamilyScores[index] });
         
         newSection.pathFamily = section.pathFamily
         pathFamilySections.push(newSection);
@@ -245,8 +264,7 @@ function getExtendedPathFamily(section, sampleDuration, label, pathSSM, strategy
         pathFamilyInfo.pathFamily.forEach((path, index) => {
             const start = path[path.length - 1][1] * sampleDuration;
             const end = (path[0][1] + 1) * sampleDuration;
-            const duration = end - start;
-            const newSection = { start, end, duration, label, confidence: familySection.confidence * pathFamilyInfo.pathScores[index]}
+            const newSection = new Section({ start, end, groupID, confidence: familySection.confidence * pathFamilyInfo.pathScores[index]});
             
             newSection.pathFamily = section.pathFamily
             pathFamilySections.push(newSection);
@@ -333,7 +351,7 @@ function mergeOverlap(sections){
 function mergeSection(sectionA, sectionB){
     const start = Math.min(sectionA.start, sectionB.start);
     const end = Math.max(sectionA.end, sectionB.end);
-    return {start, end, duration: end-start,label: sectionA.label, confidence: sectionA.confidence} 
+    return new Section({start, end,groupID: sectionA.groupID, confidence: sectionA.confidence});
 }
 
 function findBetterFit(pathSSM, section, sampleOffset = 4, comparisonProperty, strategy, structureSections = [], minDurationSeconds) {
@@ -361,7 +379,6 @@ function findBetterFit(pathSSM, section, sampleOffset = 4, comparisonProperty, s
 
                 segmentPathFamilyInfo.start = start * sampleDuration;
                 segmentPathFamilyInfo.end = end * sampleDuration;
-                segmentPathFamilyInfo.duration = segmentPathFamilyInfo.end - segmentPathFamilyInfo.start;
 
                 if (segmentPathFamilyInfo[comparisonProperty] > max) {
                     // TODO: log how the max moves (maybe it needs more offset to reach optimum)
@@ -396,19 +413,17 @@ function subtractStructureFromSegments(separateSegmentSets, sortedStructureSecti
         let previousBorder = rangeStart;
         allSegments.forEach(segment => {
             if (segment.start > previousBorder && segment.start < rangeEnd) {
-                segmentSet.push({
+                segmentSet.push(new Section({
                     start: previousBorder,
                     end: segment.start,
-                    duration: segment.start - previousBorder,
-                })
+                }))
                 previousBorder = segment.start;
             }
         })
-        segmentSet.push({
+        segmentSet.push(new Section({
             start: previousBorder,
             end: rangeEnd,
-            duration: rangeEnd - previousBorder,
-        })
+        }));
         newSeparateSegmentSets.push(segmentSet);
     })
 
@@ -462,25 +477,25 @@ function getFreeRanges(structureSections, trackEnd, smallestAllowedSize) {
 
 
 /**
- * Picks highest similarity pair, labels segments not yet labeled, repeat
+ * Picks highest similarity pair, groupIDs segments not yet groupIDed, repeat
  * @param {*} segments 
  */
-export function labelSimilarSegments(segments, pathSSM, maxDistance = 0.75){
-    const labeledSegments = JSON.parse(JSON.stringify(segments)); 
-    labeledSegments.forEach(segment => {
-        delete segment.label;
+export function groupSimilarSegments(segments, pathSSM, maxDistance = 0.75){
+    const groupedSegments = JSON.parse(JSON.stringify(segments)); 
+    groupedSegments.forEach(segment => {
+        delete segment.groupID;
         segment.confidence = 1;
     });
 
-    let labeled = 0;
-    let newLabel = 0;
-    while(labeled < segments.length){
+    let groupIDed = 0;
+    let newGroupID = 0;
+    while(groupIDed < segments.length){
         let minDistance = Number.POSITIVE_INFINITY;
         let bestSegmentA = null;
         let bestSegmentB = null;
-        labeledSegments.forEach(segmentA => {
-            labeledSegments.forEach(segmentB => {
-                if((segmentA.label  === undefined  || segmentB.label  === undefined ) && segmentA !== segmentB){
+        groupedSegments.forEach(segmentA => {
+            groupedSegments.forEach(segmentB => {
+                if((segmentA.groupID  === undefined  || segmentB.groupID  === undefined ) && segmentA !== segmentB){
                     const distance = pathExtraction.getDistanceBetween(segmentA, segmentB, pathSSM)
                     if(distance < minDistance){
                         minDistance = distance;
@@ -494,31 +509,31 @@ export function labelSimilarSegments(segments, pathSSM, maxDistance = 0.75){
             break;
         }
         if(minDistance > maxDistance){
-            if(bestSegmentA.label === undefined && bestSegmentB.label  === undefined ){
-                bestSegmentA.label = newLabel;
-                newLabel++;
-                bestSegmentB.label = newLabel;
-            }else if(bestSegmentA.label  === undefined ){
-                bestSegmentA.label = newLabel;
-            }else if(bestSegmentB.label  === undefined ){
-                bestSegmentB.label = newLabel;
+            if(bestSegmentA.groupID === undefined && bestSegmentB.groupID  === undefined ){
+                bestSegmentA.groupID = newGroupID;
+                newGroupID++;
+                bestSegmentB.groupID = newGroupID;
+            }else if(bestSegmentA.groupID  === undefined ){
+                bestSegmentA.groupID = newGroupID;
+            }else if(bestSegmentB.groupID  === undefined ){
+                bestSegmentB.groupID = newGroupID;
             }
-            newLabel++;
+            newGroupID++;
         }else{
-            if(bestSegmentA.label  === undefined && bestSegmentB.label  === undefined ){
-                bestSegmentA.label = newLabel;
-                bestSegmentB.label = newLabel;
-                newLabel++;
-            }else if( bestSegmentA.label  === undefined ){
-                bestSegmentA.label = bestSegmentB.label;
+            if(bestSegmentA.groupID  === undefined && bestSegmentB.groupID  === undefined ){
+                bestSegmentA.groupID = newGroupID;
+                bestSegmentB.groupID = newGroupID;
+                newGroupID++;
+            }else if( bestSegmentA.groupID  === undefined ){
+                bestSegmentA.groupID = bestSegmentB.groupID;
                 bestSegmentA.confidence = 1-minDistance;
-            }else if(bestSegmentB.label  === undefined ){
-                bestSegmentB.label = bestSegmentA.label;
+            }else if(bestSegmentB.groupID  === undefined ){
+                bestSegmentB.groupID = bestSegmentA.groupID;
                 bestSegmentB.confidence = 1-minDistance;
             }
         }
     }
-    return labeledSegments;
+    return groupedSegments;
 }
 
 export function MDSColorSegments(segments, pathSSM){
@@ -527,9 +542,9 @@ export function MDSColorSegments(segments, pathSSM){
     const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
     segments.forEach((segment, index) => {
         const [angle, radius] = mds.getAngleAndRadius(MdsCoordinates[index]);
-        segment.colorAngle = angle;
-        coloredSegments.push(segment);
-        log.debug(radius);
+        const newSegment = JSON.parse(JSON.stringify(segment));
+        newSegment.colorAngle = angle;
+        coloredSegments.push(newSegment);
     })
 
     return coloredSegments;
@@ -550,7 +565,131 @@ export function disjoint(a, b) {
 }
 
 export function isSameSectionWithinError(a, b, errorInSamples) {
-    const middleA = a.start + a.duration / 2;
-    const middleB = b.start + b.duration / 2;
+    const middleA = a.start + a.getDuration() / 2;
+    const middleB = b.start + b.getDuration() / 2;
     return Math.abs(middleB - middleA) < errorInSamples
+}
+
+export function squash(strategy, sections, groupAmount){
+    const squashed = [];
+    const maxGroups = 10;
+
+    for(let i = 0; i < groupAmount && i < maxGroups; i++){
+        const groupIDSections = sections.filter(section => section.groupID === i);
+        groupIDSections.forEach(groupSection => {
+            if(strategy === 'no-overlap'){
+                const overlap = squashed.some(squashedSection => {
+                    if(overlaps(groupSection, squashedSection)) return true
+                })
+                if(!overlap){
+                    squashed.push(groupSection)
+                }
+            }else if(strategy === 'overwrite'){
+                let overlap = false;
+                squashed.forEach((squashedSection, index) => {
+                    if(overlaps(groupSection, squashedSection) && squashedSection !== groupSection){
+                        overlap = true;
+                        if(squashedSection.start < groupSection.start && squashedSection.end > groupSection.end && groupSection.confidence > squashedSection.confidence){
+                            // split squashed
+                            const squashedSectionBefore = clone(squashedSection);
+                            const squashedSectionAfter = clone(squashedSection);
+                            squashedSectionBefore.end = groupSection.start;
+                            squashedSectionAfter.start = groupSection.end;
+                            squashed[index] = squashedSectionBefore;
+                            squashed.push(squashedSectionAfter);
+                            squashed.push(clone(groupSection));
+                        }else if(squashedSection.start < groupSection.start && squashedSection.end > groupSection.start && squashedSection.end <= groupSection.end && groupSection.confidence > squashedSection.confidence){
+                            // groupID cuts off squashed end
+                            squashedSection.end = groupSection.start;
+                            squashed.push(clone(groupSection));
+                        }else if(groupSection.start <= squashedSection.start && groupSection.end > squashedSection.start && groupSection.end < squashedSection.end && groupSection.confidence > squashedSection.confidence){
+                            // groupID cuts off squashed start
+                            squashedSection.start = groupSection.end;
+                            squashed.push(clone(groupSection));
+                        }else if(groupSection.start < squashedSection.start && groupSection.end > squashedSection.end){
+                            // groupID is bigger than squashed  TBD
+                        }
+                    }
+                })
+                if(!overlap){
+                    squashed.push(clone(groupSection))
+                }
+            }
+            else if(strategy === 'smart-overwrite'){
+                squashed.forEach(squashedSection => {
+                    if(overlaps(groupSection, squashedSection)){
+                        // align ends
+                        if(squashedSection.start < groupSection.start && squashedSection.end > groupSection.end){
+                            // split squashed
+                        }
+                    }
+                })
+            }else if(strategy === 'fill-gap'){
+                let thereIsSpace = true;
+                const newGroupSection = clone(groupSection)
+                squashed.forEach((squashedSection, index) => {
+                    if(overlaps(groupSection, squashedSection) && squashedSection !== groupSection){
+                        if(squashedSection.start < groupSection.start && squashedSection.end > groupSection.end){
+                            // no gap
+                            thereIsSpace = false;
+                        }else if(squashedSection.start < groupSection.start && squashedSection.end > groupSection.start && squashedSection.end <= groupSection.end){
+                            // groupID is cut off by squashed end
+                            newGroupSection.start = squashedSection.end;
+                        }else if(groupSection.start <= squashedSection.start && groupSection.end > squashedSection.start && groupSection.end < squashedSection.end){
+                            // groupID is cut off by squashed start
+                            newGroupSection.end = squashedSection.start;
+                        }else if(groupSection.start < squashedSection.start && groupSection.end > squashedSection.end){
+                            // groupID is bigger than squashed  TBD
+                            thereIsSpace = false;
+                        }
+                    }
+                    if(newGroupSection.end <= newGroupSection.start){
+                        thereIsSpace = false;
+                    }
+                })
+                if(thereIsSpace){
+                    squashed.push(newGroupSection)
+                }
+            }
+            
+        })
+    }
+    
+    return squashed;
+}
+
+
+export function clone(object){
+    return JSON.parse(JSON.stringify(object))
+}
+
+// each segment 
+export function MDSColorTimbreSegments(blurredTimbreSSM, segments){
+    const coloredSegments = [];
+
+    const amount = segments.length;
+    const distanceMatrix = new HalfMatrix({ size: amount, numberType: HalfMatrix.NumberType.FLOAT32 });
+
+    const segmentVectors = [];
+    segments.forEach(segment => {
+        const middleSeconds = segment.start + segment.getDuration()/2;
+        const middleSample = Math.floor(middleSeconds / blurredTimbreSSM.getSampleDuration());
+        const segmentVector = blurredTimbreSSM.getColumnNormalized(middleSample);
+        segmentVectors.push(segmentVector);
+    })
+
+    distanceMatrix.fill((x, y) => {
+        return similarity.cosine(segmentVectors[x],segmentVectors[y]);
+    });    
+        
+    const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
+    segments.forEach((segment, index) => {
+        const [angle, radius] = mds.getAngleAndRadius(MdsCoordinates[index]);
+        const newSegment = JSON.parse(JSON.stringify(segment));
+        newSegment.colorAngle = angle;
+        coloredSegments.push(newSegment);
+    })
+
+    
+    return coloredSegments;
 }
