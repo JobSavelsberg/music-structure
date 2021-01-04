@@ -40,6 +40,13 @@ export function lightness(color, lightness) {
     return hslColor.hex();
 }
 
+export function sinebowColorNormalizedRadius(angle, radius){
+    const color = sinebowColorNormalized(angle);
+    const colorHSL = d3.hsl(color);
+    colorHSL.s = Math.pow(radius,0.2);
+    return colorHSL.formatHex();
+}
+
 export function renderRawPitch(track, left, width, yOffset, height, ctx) {
     const scale = width / track.getAnalysis().track.duration;
     track.getSegments().forEach((segment) => {

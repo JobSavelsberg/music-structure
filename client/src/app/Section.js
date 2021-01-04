@@ -39,5 +39,9 @@ export default class Section {
         return this.end - this.start;
     }
 
+    getVerticalPosition(){
+        
+    }
+
 
 }

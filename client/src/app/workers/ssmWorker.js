@@ -106,11 +106,11 @@ addEventListener("message", (event) => {
 
     const courseStructureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs, 8, [10,2]);
     let courseSegments = structure.createSegmentsFromNovelty(courseStructureFeature, data.sampleDuration, 0.25);
-    //structures.push({ name: "Structure segments", data: courseSegments })
+    structures.push({ name: "Course segments", data: courseSegments })
 
     const fineStructureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs, 4, [6,2]);
     let fineSegments = structure.createSegmentsFromNovelty(fineStructureFeature, data.sampleDuration, 0.05);
-    //structures.push({ name: "Fine segments", data: fineSegments })
+    structures.push({ name: "Fine segments", data: fineSegments })
 
     const duration = 4; // samples
     const sampledSegments = structure.createFixedDurationStructureSegments(data.sampleAmount, data.sampleDuration, duration)
@@ -194,10 +194,10 @@ addEventListener("message", (event) => {
     const smoothTimbreNoveltyColumn = filter.gaussianBlur1D(timbreNoveltyColumn, 3);
     graphs.push({ name: "Timbre Column Novelty Smooth", buffer: smoothTimbreNoveltyColumn.buffer });
     const timbreSegments = structure.createSegmentsFromNovelty(smoothTimbreNoveltyColumn, data.sampleDuration, 0.2);
-    const coloredTimbreSegments = structure.MDSColorTimbreSegments(blurredTimbre, timbreSegments);
-    log.debug("coloredTimbreSegments", coloredTimbreSegments)
-    structures.push({ name: "Timbre segments", data: coloredTimbreSegments})
-
+    const coloredTimbreSegmentsSSM = structure.MDSColorTimbreSegmentsWithSSM(blurredTimbre, timbreSegments);
+    structures.push({ name: "Timbre segments SSM", data: coloredTimbreSegmentsSSM})
+    const coloredTimbreSegments = structure.MDSColorTimbreSegmentsWithFeatures(data.timbreFeatures, timbreSegments, data.sampleDuration);
+    structures.push({ name: "Timbre segments Features", data: coloredTimbreSegments, verticalPosition: true})
     //visualizeKernel(data, matrixes);
     message.matrixes = matrixes;
     message.graphs = graphs;

@@ -135,7 +135,7 @@ export function findGreedyDecomposition(pathSSM, structureSegments, sampleDurati
 
         const pathFamily = getPathFamily(best, sampleDuration, groupID);
         const extendedPathFamily = getExtendedPathFamily(best, sampleDuration, groupID, pathSSM, strategy);
-        const nonOverlappingExtendedPathFamily = addNonOverlapping(pathFamily, extendedPathFamily);
+        const nonOverlappingExtendedPathFamily = addNonOverlapping(pathFamily , extendedPathFamily);
         const prunedPaths = pruneLowConfidence(nonOverlappingExtendedPathFamily, 0);
         prunedPaths.forEach(path => {
             path.normalizedScore = best.normalizedScore;
@@ -425,8 +425,8 @@ function getFreeRanges(structureSections, trackEnd, smallestAllowedSize) {
  * Picks highest similarity pair, groupIDs segments not yet groupIDed, repeat
  * @param {*} segments 
  */
-export function groupSimilarSegments(segments, pathSSM, maxDistance = 0.75) {
-    const groupedSegments = JSON.parse(JSON.stringify(segments));
+export function groupSimilarSegments(segments, pathSSM, maxDistance = 0.80){
+    const groupedSegments = JSON.parse(JSON.stringify(segments)); 
     groupedSegments.forEach(segment => {
         delete segment.groupID;
         segment.confidence = 1;
@@ -489,6 +489,7 @@ export function MDSColorSegments(segments, pathSSM) {
         const [angle, radius] = mds.getAngleAndRadius(MdsCoordinates[index]);
         const newSegment = JSON.parse(JSON.stringify(segment));
         newSegment.colorAngle = angle;
+        newSegment.colorRadius = radius;
         coloredSegments.push(newSegment);
     })
 
@@ -608,8 +609,8 @@ export function clone(object) {
     return JSON.parse(JSON.stringify(object))
 }
 
-// each segment 
-export function MDSColorTimbreSegments(blurredTimbreSSM, segments) {
+
+export function MDSColorTimbreSegmentsWithSSM(blurredTimbreSSM, segments){
     const coloredSegments = [];
 
     const amount = segments.length;
@@ -632,9 +633,49 @@ export function MDSColorTimbreSegments(blurredTimbreSSM, segments) {
         const [angle, radius] = mds.getAngleAndRadius(MdsCoordinates[index]);
         const newSegment = JSON.parse(JSON.stringify(segment));
         newSegment.colorAngle = angle;
+        newSegment.colorRadius = radius;
         coloredSegments.push(newSegment);
     })
 
+    return coloredSegments;
+}
+
+export function MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sampleDuration){
+    const coloredSegments = [];
+
+    const amount = segments.length;
+    const distanceMatrix = new HalfMatrix({ size: amount, numberType: HalfMatrix.NumberType.FLOAT32 });
+
+    const segmentVectors = [];
+    segments.forEach(segment => {
+        const vector = new Float32Array(12).fill(0);
+
+        const startSample = Math.floor(segment.start / sampleDuration);
+        const endSample = Math.floor(segment.end / sampleDuration);
+        const sampleAmount = endSample- startSample;
+        for(let i = startSample; i < endSample; i++){
+            for(let f = 0; f < 12; f++){
+                vector[f] += timbreFeatures[i][f];
+            }
+        }
+        for(let f = 0; f < 12; f++){
+            vector[f] /=  sampleAmount;
+        }
+        segmentVectors.push(vector);
+    })
+
+    distanceMatrix.fill((x, y) => {
+        return similarity.cosine(segmentVectors[x],segmentVectors[y]);
+    });    
+        
+    const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
+    segments.forEach((segment, index) => {
+        const [angle, radius] = mds.getAngleAndRadius(MdsCoordinates[index]);
+        const newSegment = JSON.parse(JSON.stringify(segment));
+        newSegment.colorAngle = angle;
+        newSegment.colorRadius = radius;
+        coloredSegments.push(newSegment);
+    })
 
     return coloredSegments;
 }
