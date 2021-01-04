@@ -22,6 +22,7 @@ setInterval(() => {
 export async function requestFirstToken(code) {
     await api
         .post("spotify/token", {
+            grant_type: "authorization_code",
             code: code,
         })
         .then((res) => {
@@ -48,6 +49,7 @@ export async function requestRefreshToken() {
     }
     await api
         .post("spotify/token", {
+            grant_type: "refresh_token",
             refresh_token: refreshToken,
         })
         .then((res) => {
