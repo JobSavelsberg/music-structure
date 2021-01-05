@@ -1,3 +1,4 @@
+import { thresholdFreedmanDiaconis } from "d3";
 import * as log from "../dev/log";
 import * as audioUtil from "./audioUtil";
 
@@ -141,5 +142,17 @@ export default class Segment {
             this.loudness_max_time,
             audioUtil.loudness(this.loudness_end),
         ];
+    }
+    getAverageLoudness(nextSegmentLoudness){
+        const loudnessFeatures = this.getLoudnessFeatures();
+        const start = loudnessFeatures[0];
+        const end = nextSegmentLoudness;
+        const max = loudnessFeatures[1];
+        const maxTime = loudnessFeatures[2];
+
+        const avgFirst = (max+start)/2 ;
+        const avgSecond = (max+end)/2 ;
+        const avg = avgFirst*maxTime+avgSecond* (1-maxTime);
+        return avg;
     }
 }

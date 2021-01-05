@@ -80,6 +80,7 @@ export default class Track {
                 this.getID(),
                 features.pitches,
                 features.timbres,
+                features.avgLoudness,
                 this.features.sampleDuration,
                 this.getSegmentStartDuration(),
                 this.features.beatsStartDuration,

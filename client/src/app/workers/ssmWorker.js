@@ -16,6 +16,10 @@ addEventListener("message", (event) => {
     const graphs = [];
     const structures = [];
 
+    const averageLoudness = new Float32Array(data.avgLoudness);
+    const smoothedAverageLoudness = filter.gaussianBlur1D(averageLoudness, 5);
+    graphs.push({ name: "Average Loudness", buffer: smoothedAverageLoudness.buffer });
+
     //createBeatGraph(data, graphs);
 
     const { ssmPitch, ssmTimbre } = calculateSSM(data, 0.4);
@@ -66,8 +70,8 @@ addEventListener("message", (event) => {
     //showAllEnhancementMethods(ssmPitch, data, matrixes);
 
 
-    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.2);
-    //strictPathMatrixHalf = SSM.threshold(strictPathMatrixHalf, 0.1);
+    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.15);
+    //let strictPathMatrixHalf = SSM.threshold(transpositionInvariantPre, 0.6);
 
     const strictPathMatrix = Matrix.fromHalfMatrix(strictPathMatrixHalf);
 
@@ -199,6 +203,9 @@ addEventListener("message", (event) => {
     const coloredTimbreSegments = structure.MDSColorTimbreSegmentsWithFeatures(data.timbreFeatures, timbreSegments, data.sampleDuration);
     structures.push({ name: "Timbre segments Features", data: coloredTimbreSegments, verticalPosition: true})
     //visualizeKernel(data, matrixes);
+
+
+
     message.matrixes = matrixes;
     message.graphs = graphs;
     message.structures = structures;

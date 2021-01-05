@@ -8,6 +8,9 @@
                             {{structure.verticalPosition ? "mdi-unfold-less-horizontal" : "mdi-unfold-more-horizontal"}}
                         </v-icon>
                     </v-btn>
+                    <v-btn icon small @click="clickStructureshowLoudness(structure)" :color="structure.showLoudness ? 'white' : 'dimgrey'">
+                        <v-icon>mdi-equalizer</v-icon>
+                    </v-btn>
                     <p>{{structure.name}} </p>
                 </v-row>
     
@@ -16,16 +19,23 @@
                     <rect class="structureBackground" x="0" y="0" :width="width" :height="heightOfStructure(structure)" @click="clickBackground($event, structure)"  @mouseover="unhover()" @mouseout="unhover()" fill="#1a1a1a">
                     </rect>
                     <g v-for="(section, index) in structure.data" :key="index">
-                        <rect class="section" stroke="black" stroke-width=".5" rx="5" 
+                        <rect v-if="!structure.showLoudness" class="section" stroke="black" stroke-width=".5" rx="5" 
                         @mouseover="hoverSection($event, section, structure)"
                          @mouseout="unhoverSection(section)" 
                          @click="clickSection($event, section)" 
                          :x="section.start*scale" 
-                         :y="structure.verticalPosition ? sectionVerticalPosition(section) : structure.seperateByGroup ? section.groupID*blockHeight: 0" 
+                         :y="sectionVerticalPosition(structure, section)" 
                          :width="(section.end-section.start)*scale" 
                          :height="blockHeight"  
                          :fill="sectionColor(section)">
-                        </rect>                        
+                        </rect>      
+                        <path v-if="structure.showLoudness" class="shapedSection"
+                        :d="generatePointsForShapedSection(structure, section)"
+                        @mouseover="hoverSection($event, section, structure)"
+                         @mouseout="unhoverSection(section)" 
+                         @click="clickSection($event, section)"   
+                         :fill="sectionColor(section)">
+                        </path>                        
                     </g>
                 </svg>
             </div>
@@ -57,7 +67,7 @@ export default {
             tooltipTimeout: null,
             toolTipText: "",
             tooltipTime: 200,
-            verticalPositionScale: 3,
+            verticalPositionScale: 4.5,
         };
     },
     computed: {
@@ -72,6 +82,9 @@ export default {
         },
         scale(){
             return this.width / this.track.getAnalysisDuration()
+        },
+        averageLoudness(){
+            return this.track && this.track.features.sampled.smoothedAvgLoudness;
         }
     },
     watch: {
@@ -101,12 +114,18 @@ export default {
                 return vis.categoryColorWithOpacity(section.groupID,Math.sqrt(section.confidence !== undefined ? section.confidence : 1));
             }
         },
-        sectionVerticalPosition(section){
-            if(section.colorAngle !== undefined){
-                return section.colorAngle*this.blockHeight*this.verticalPositionScale;
+        sectionVerticalPosition(structure, section){
+            if(structure.verticalPosition){
+                if(section.colorAngle !== undefined){
+                    return section.colorAngle*this.blockHeight*this.verticalPositionScale;
+                }else{
+                    return section.groupID*this.blockHeight;
+                }  
+            }else if(structure.seperateByGroup){
+                return section.groupID*this.blockHeight
             }else{
-                return section.groupID*this.blockHeight;
-            }  
+                return 0;
+            }
         },
         sectionBorderColor(section){
             return vis.categoryColorWithOpacity(section.groupID,Math.max(0,Math.sqrt(section.confidence !== undefined ? section.confidence : 1)-0.5));
@@ -158,6 +177,80 @@ export default {
             }else{
                 structure.verticalPosition = !structure.verticalPosition;
             } 
+        },
+        clickStructureshowLoudness(structure){
+            if(structure.showLoudness === undefined){
+                // To make object reactive
+                Vue.set(structure, 'showLoudness', true)
+            }else{
+                structure.showLoudness = !structure.showLoudness;
+            } 
+        },
+        generatePointsForShapedSection(structure, section){
+
+            const x=Math.round(section.start*this.scale);
+            const y=this.sectionVerticalPosition(structure, section);
+            const width=Math.round((section.end-section.start)*this.scale);
+            const halfHeight=this.blockHeight/2
+            const yMid = y+halfHeight;
+            const heightFactor = 1/this.track.features.maxLoudness;
+
+            const startInSamples = Math.floor(section.start / this.track.features.sampleDuration);
+            const endInSamples = Math.floor(section.end / this.track.features.sampleDuration);
+            const durationInSamples = endInSamples - startInSamples;
+            
+            const sampleSkip = 5;
+            let rx = 1; // in pixels
+            if(width < rx*2+sampleSkip){
+                rx = Math.max(0,Math.floor((width-sampleSkip)/2));
+            }
+            const sampleAmount = this.track.features.sampleAmount;
+            const endOffsetInSamples = Math.round(rx/this.width*sampleAmount); // scale with sampleamount
+            const endOffsetAbsolute = rx;
+
+
+           
+            const startYHalfNeg = Math.round(yMid-.8*this.averageLoudness[endOffsetInSamples]*halfHeight*heightFactor);
+            const startYPNeg = Math.round(yMid-this.averageLoudness[endOffsetInSamples]*halfHeight*heightFactor);
+            let points = `M ${x} ${Math.round(yMid)} L ${x} ${startYHalfNeg} Q ${x} ${startYPNeg}`;
+
+            for(let i = startInSamples; i < endInSamples; i++){
+                if(i===startInSamples+endOffsetInSamples ){
+                    const pointX = Math.round(x+( (i-startInSamples)/durationInSamples)*width);
+                    const pointY = Math.round(yMid-this.averageLoudness[i]*halfHeight*heightFactor);
+                    points = points.concat(", ",pointX, " ",pointY);
+                }else if(i===endInSamples-1-endOffsetInSamples){
+                    const pointX = Math.round(x+( (i-startInSamples)/durationInSamples)*width);
+                    const pointY = Math.round(yMid-this.averageLoudness[i]*halfHeight*heightFactor);
+                    points = points.concat(" L ",pointX, " ",pointY);
+                    points = points.concat(" Q ",Math.round(x+width-1), " ",pointY, ",", Math.round(x+width-1), " ", yMid);
+                }else if(i > startInSamples+endOffsetInSamples && i < endInSamples-1-endOffsetInSamples && i%sampleSkip===0){
+                    const pointX = Math.round(x+( (i-startInSamples)/durationInSamples)*width);
+                    const pointY = Math.round(yMid-this.averageLoudness[i]*halfHeight*heightFactor);
+                    points = points.concat(" L ",pointX, " ",pointY);
+                }
+            }
+            for(let i = endInSamples-1; i >= startInSamples; i--){
+                if(i===endInSamples-1-endOffsetInSamples){
+                    const pointX = Math.round(x+( (i-startInSamples)/durationInSamples)*width);
+                    const pointY = Math.round(yMid+this.averageLoudness[i]*halfHeight*heightFactor);
+                    points = points.concat(" Q ", Math.round(x+width-1), " ", pointY, ",", pointX, " ",pointY);
+                }else if(i===startInSamples+endOffsetInSamples){
+                    const pointX = Math.round(x+( (i-startInSamples)/durationInSamples)*width);
+                    const pointY = Math.round(yMid+this.averageLoudness[i]*halfHeight*heightFactor);
+                    points = points.concat(" L ",pointX, " ",pointY);
+                }else if(i > startInSamples+endOffsetInSamples && i < endInSamples-1-endOffsetInSamples &&i%sampleSkip===0){
+                    const pointX = Math.round(x+( (i-startInSamples)/durationInSamples)*width);
+                    const pointY = Math.round(yMid+this.averageLoudness[i]*halfHeight*heightFactor);
+                    points = points.concat(" L ",pointX, " ",pointY);
+                }
+            }
+            
+            const startYHalfPos = Math.round(yMid+.8*this.averageLoudness[endOffsetInSamples]*halfHeight*heightFactor);
+            const startYPos = Math.round(yMid+this.averageLoudness[endOffsetInSamples]*halfHeight*heightFactor);
+            points = points.concat(` Q ${x} ${startYPos}, ${x} ${startYHalfPos} Z`)
+            //log.debug(points)
+            return points;
         }
     },
 };
@@ -179,6 +272,15 @@ export default {
 	pointer-events: all;
     transition: fill 0.3s, y 0.4s;
 
+}
+.shapedSection{
+	pointer-events: all;
+    transition: 0.3s;
+    stroke-linejoin: round;
+}
+.shapedSection:hover{
+    fill: white!important;
+    cursor:pointer;
 }
 .section:hover{
     fill: white!important;

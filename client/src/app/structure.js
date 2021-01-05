@@ -482,8 +482,12 @@ export function groupSimilarSegments(segments, pathSSM, maxDistance = 0.80){
 }
 
 export function MDSColorSegments(segments, pathSSM) {
-    const coloredSegments = [];
     const distanceMatrix = pathExtraction.getDistanceMatrix(segments, pathSSM);
+    return MDSColorGivenDistanceMatrix(segments, distanceMatrix)
+}
+
+export function MDSColorGivenDistanceMatrix(segments, distanceMatrix){
+    const coloredSegments = [];
     const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
     segments.forEach((segment, index) => {
         const [angle, radius] = mds.getAngleAndRadius(MdsCoordinates[index]);
@@ -611,8 +615,6 @@ export function clone(object) {
 
 
 export function MDSColorTimbreSegmentsWithSSM(blurredTimbreSSM, segments){
-    const coloredSegments = [];
-
     const amount = segments.length;
     const distanceMatrix = new HalfMatrix({ size: amount, numberType: HalfMatrix.NumberType.FLOAT32 });
 
@@ -628,16 +630,7 @@ export function MDSColorTimbreSegmentsWithSSM(blurredTimbreSSM, segments){
         return similarity.cosine(segmentVectors[x], segmentVectors[y]);
     });
 
-    const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
-    segments.forEach((segment, index) => {
-        const [angle, radius] = mds.getAngleAndRadius(MdsCoordinates[index]);
-        const newSegment = JSON.parse(JSON.stringify(segment));
-        newSegment.colorAngle = angle;
-        newSegment.colorRadius = radius;
-        coloredSegments.push(newSegment);
-    })
-
-    return coloredSegments;
+    return MDSColorGivenDistanceMatrix(segments, distanceMatrix);
 }
 
 export function MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sampleDuration){

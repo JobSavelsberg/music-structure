@@ -25,6 +25,7 @@ export async function startSSM(
     trackId,
     pitchFeatures,
     timbreFeatures,
+    avgLoudness,
     sampleDuration,
     segmentStartDuration,
     beatsStartDuration,
@@ -51,6 +52,7 @@ export async function startSSM(
         ssm.postMessage({
             pitchFeatures,
             timbreFeatures,
+            avgLoudness,
             sampleDuration,
             sampleAmount,
             segmentStartDuration,
