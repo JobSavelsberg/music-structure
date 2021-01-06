@@ -117,7 +117,7 @@ addEventListener("message", (event) => {
     structures.push({ name: "Fine segments", data: fineSegments })
     */
 
-    const duration = 4; // samples
+    const duration = 3; // samples
     const sampledSegments = structure.createFixedDurationStructureSegments(data.sampleAmount, data.sampleDuration, duration)
     //structures.push({ name: "Sampled segments", data: sampledSegments })
 
@@ -182,30 +182,46 @@ addEventListener("message", (event) => {
     structures.push({ name: "Fine Segment MDS colored", data: fineSegmentColored})
     visualizePathExtraction(strictPathMatrix, 352, 388, matrixes)
     */
-    const blurredTimbre = filter.gaussianBlur2DOptimized(ssmTimbre, 8);
+
+   const blurredTimbreSmall = filter.gaussianBlur2DOptimized(ssmTimbre, 2);
+   matrixes.push({
+       name: "BlurTimbre Small",
+       buffer: blurredTimbreSmall.getBuffer(),
+   });
+
+    const blurredTimbreLarge = filter.gaussianBlur2DOptimized(ssmTimbre, 8);
     matrixes.push({
-        name: "BlurTimbre",
-        buffer: blurredTimbre.getBuffer(),
+        name: "BlurTimbre Large",
+        buffer: blurredTimbreLarge.getBuffer(),
     });
     //const timbreNovelty = noveltyDetection.detect(blurredTimbre, 10);
     /*graphs.push({
         name: "Timbre Novelty",
         buffer: timbreNovelty.buffer,
     });*/
-    const timbreNoveltyColumn = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbre);
-    graphs.push({ name: "Timbre Column Novelty", buffer: timbreNoveltyColumn.buffer });
-
-    
-    const smoothTimbreNoveltyColumn = filter.gaussianBlur1D(timbreNoveltyColumn, 3);
-    graphs.push({ name: "Timbre Column Novelty Smooth", buffer: smoothTimbreNoveltyColumn.buffer });
-    const timbreSegments = structure.createSegmentsFromNovelty(smoothTimbreNoveltyColumn, data.sampleDuration, 0.2);
-    const coloredTimbreSegmentsSSM = structure.MDSColorTimbreSegmentsWithSSM(blurredTimbre, timbreSegments);
-    structures.push({ name: "Timbre segments SSM", data: coloredTimbreSegmentsSSM, verticalPosition: true})
-    const coloredTimbreSegments = structure.MDSColorTimbreSegmentsWithFeatures(data.timbreFeatures, timbreSegments, data.sampleDuration);
-    structures.push({ name: "Timbre segments Features", data: coloredTimbreSegments})
-    //visualizeKernel(data, matrixes);
 
 
+    const timbreNoveltyColumnSmall = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbreSmall);
+    graphs.push({ name: "Timbre Column Novelty Small", buffer: timbreNoveltyColumnSmall.buffer });
+    const smoothTimbreNoveltyColumnSmall = filter.gaussianBlur1D(timbreNoveltyColumnSmall, 3);
+    graphs.push({ name: "Timbre Column Novelty Smooth Small", buffer: smoothTimbreNoveltyColumnSmall.buffer });
+
+    const timbreNoveltyColumnLarge = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbreLarge);
+    graphs.push({ name: "Timbre Column Novelty Large", buffer: timbreNoveltyColumnLarge.buffer });
+    const smoothTimbreNoveltyColumnLarge = filter.gaussianBlur1D(timbreNoveltyColumnLarge, 3);
+    graphs.push({ name: "Timbre Column Novelty Smooth Large", buffer: smoothTimbreNoveltyColumnLarge.buffer });
+
+
+
+    const processedTimbreSegmentsSampled = structure.processTimbreSegments(data.timbreFeatures, sampledSegments, data.sampleDuration);
+    structures.push({ name: "Timbre Sampled", data: processedTimbreSegmentsSampled, verticalPosition: true})
+
+    const timbreSegmentsSmall = structure.createSegmentsFromNovelty(smoothTimbreNoveltyColumnSmall, data.sampleDuration, 0.2);
+    const processedTimbreSegmentsSmall = structure.processTimbreSegments(data.timbreFeatures, timbreSegmentsSmall, data.sampleDuration);
+    structures.push({ name: "Timbre Small", data: processedTimbreSegmentsSmall, verticalPosition: true})
+    const timbreSegmentsLarge = structure.createSegmentsFromNovelty(smoothTimbreNoveltyColumnLarge, data.sampleDuration, 0.2);
+    const processedTimbreSegmentsLarge = structure.processTimbreSegments(data.timbreFeatures, timbreSegmentsLarge, data.sampleDuration);
+    structures.push({ name: "Timbre Large", data: processedTimbreSegmentsLarge, verticalPosition: true})
 
     message.matrixes = matrixes;
     message.graphs = graphs;

@@ -3,6 +3,8 @@ import * as log from "../dev/log";
 import * as pathExtraction from "./pathExtraction";
 import * as similarity from "./similarity";
 import * as mds from "./mds";
+import * as clustering from "./clustering";
+
 import Matrix from "./dataStructures/Matrix";
 import HalfMatrix from "./dataStructures/HalfMatrix";
 import assert from "assert"
@@ -489,11 +491,14 @@ export function MDSColorSegments(segments, pathSSM) {
 export function MDSColorGivenDistanceMatrix(segments, distanceMatrix){
     const coloredSegments = [];
     const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
+    const MdsFeature = mds.getMDSFeatureWithGradientDescent(distanceMatrix);
+
     segments.forEach((segment, index) => {
         const [angle, radius] = mds.getAngleAndRadius(MdsCoordinates[index]);
         const newSegment = JSON.parse(JSON.stringify(segment));
         newSegment.colorAngle = angle;
         newSegment.colorRadius = radius;
+        newSegment.mdsFeature = MdsFeature[index];
         coloredSegments.push(newSegment);
     })
 
@@ -502,19 +507,14 @@ export function MDSColorGivenDistanceMatrix(segments, distanceMatrix){
         return a.colorAngle > b.colorAngle ? 1 : b.colorAngle > a.colorAngle ? -1 : 0;
     })
 
-    coloredSegments.forEach(segment => {
-        log.debug("A ",segment.colorAngle)
-    })
 
     let largestGap =  1-coloredSegments[coloredSegments.length-1].colorAngle + coloredSegments[0].colorAngle;
     let largestGapAngle = coloredSegments[0].colorAngle;
-    log.debug("gap", largestGap, largestGapAngle)
     for(let i = 1; i < coloredSegments.length; i++){
         const gap = coloredSegments[i].colorAngle - coloredSegments[i-1].colorAngle;
         if(gap > largestGap){
             largestGap = gap;
             largestGapAngle = coloredSegments[i].colorAngle;
-            log.debug("gap", largestGap, largestGapAngle)
         }
     }
 
@@ -522,9 +522,6 @@ export function MDSColorGivenDistanceMatrix(segments, distanceMatrix){
         segment.colorAngle = (1+(segment.colorAngle-largestGapAngle))%1;
     })
 
-    coloredSegments.forEach(segment => {
-        log.debug("B ",segment.colorAngle)
-    })
 
     return coloredSegments;
 }
@@ -663,8 +660,6 @@ export function MDSColorTimbreSegmentsWithSSM(blurredTimbreSSM, segments){
 }
 
 export function MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sampleDuration){
-    const coloredSegments = [];
-
     const amount = segments.length;
     const distanceMatrix = new HalfMatrix({ size: amount, numberType: HalfMatrix.NumberType.FLOAT32 });
 
@@ -691,4 +686,44 @@ export function MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sam
     });    
         
     return MDSColorGivenDistanceMatrix(segments, distanceMatrix)
+}
+
+export function clusterTimbreSegmentsWithFeatures(timbreFeatures, segments, sampleDuration){
+    const coloredSegments = [];
+
+    const segmentVectors = [];
+    segments.forEach(segment => {
+        const vector = new Float32Array(12).fill(0);
+
+        const startSample = Math.floor(segment.start / sampleDuration);
+        const endSample = Math.floor(segment.end / sampleDuration);
+        const sampleAmount = endSample- startSample;
+        for(let i = startSample; i < endSample; i++){
+            for(let f = 0; f < 12; f++){
+                vector[f] += timbreFeatures[i][f];
+            }
+        }
+        for(let f = 0; f < 12; f++){
+            vector[f] /=  sampleAmount;
+        }
+        segmentVectors.push(vector);
+    })
+    log.debug("Start clustering")
+    const clusteringResult = clustering.kMeansSearch(segmentVectors, 1, 10, 100);
+    log.debug("Done clustering")
+
+    segments.forEach((segment, index) => {
+        const cluster = clusteringResult.idxs[index];
+        const newSegment = JSON.parse(JSON.stringify(segment));
+        newSegment.groupID = cluster;
+        newSegment.confidence = 1;
+        coloredSegments.push(newSegment);
+    })
+
+    return coloredSegments;
+}
+export function processTimbreSegments(timbreFeatures, segments, sampleDuration){
+    const mdsColoredSegments = MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sampleDuration);
+    const clusteredSegments = clusterTimbreSegmentsWithFeatures(timbreFeatures, mdsColoredSegments, sampleDuration);
+    return clusteredSegments;
 }

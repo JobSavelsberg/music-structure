@@ -12,6 +12,24 @@
                         <v-icon>mdi-equalizer</v-icon>
                     </v-btn>
                     <p>{{structure.name}} </p>
+                    <v-spacer></v-spacer>
+                    <div style="width: 6em">
+                        <v-btn small icon @click="clickStructureChangeVertical(structure)">
+                            <v-icon dark>mdi-format-line-spacing</v-icon>
+                        </v-btn>
+                        <span style="color: grey">
+                            {{structure.vertLayout || layouts[0]}}
+                        </span>
+                    </div>
+                    <div style="width: 6em">
+                        <v-btn small icon @click="clickStructureChangeColor(structure)">
+                            <v-icon dark>mdi-palette</v-icon>
+                        </v-btn>
+                        <span style="color: grey">
+                            {{structure.colorLayout || layouts[0]}}
+                        </span>
+                    </div>
+                    <div style="width: 2.5em"></div>
                 </v-row>
     
                 <Seeker class="seeker" :ref="'seeker'+structure.name" :width="width" :height="heightOfStructure(structure)" />
@@ -27,14 +45,14 @@
                          :y="sectionVerticalPosition(structure, section)" 
                          :width="(section.end-section.start)*scale" 
                          :height="blockHeight"  
-                         :fill="sectionColor(section)">
+                         :fill="sectionColor(structure, section)">
                         </rect>      
                         <path v-if="structure.showLoudness" class="shapedSection"
                         :d="generatePointsForShapedSection(structure, section)"
                         @mouseover="hoverSection($event, section, structure)"
                          @mouseout="unhoverSection(section)" 
                          @click="clickSection($event, section)"   
-                         :fill="sectionColor(section)">
+                         :fill="sectionColor(structure, section)">
                         </path>                        
                     </g>
                 </svg>
@@ -68,6 +86,7 @@ export default {
             toolTipText: "",
             tooltipTime: 200,
             verticalPositionScale: 4.5,
+            layouts: ["circular", "linear", "cluster"]
         };
     },
     computed: {
@@ -107,20 +126,21 @@ export default {
         heightOfStructure(structure){
             return (structure.verticalPosition ? this.verticalPositionScale+1 : structure.seperateByGroup ? this.getAmountOfUniqueLabels(structure) : 1)*this.blockHeight;
         },
-        sectionColor(section){
-            if(section.colorAngle !== undefined){
-                return vis.sinebowColorNormalizedRadius(section.colorAngle,section.colorRadius);
-            }else{
-                return vis.categoryColorWithOpacity(section.groupID,Math.sqrt(section.confidence !== undefined ? section.confidence : 1));
+        sectionColor(structure, section){
+            switch(structure.colorLayout){
+                case "cluster": return vis.categoryColorWithOpacity(section.groupID,Math.sqrt(section.confidence !== undefined ? section.confidence : 1));
+                case "linear": return vis.zeroOneColorWarm(section.mdsFeature)
+                default: case "circular": return vis.sinebowColorNormalizedRadius(section.colorAngle,section.colorRadius)
             }
+             
         },
         sectionVerticalPosition(structure, section){
             if(structure.verticalPosition){
-                if(section.colorAngle !== undefined){
-                    return section.colorAngle*this.blockHeight*this.verticalPositionScale;
-                }else{
-                    return section.groupID*this.blockHeight;
-                }  
+                switch(structure.vertLayout){
+                    case "cluster": return section.groupID*this.blockHeight;
+                    case "linear": return section.mdsFeature*this.blockHeight*this.verticalPositionScale; 
+                    default: case "circular": return section.colorAngle*this.blockHeight*this.verticalPositionScale;
+                }
             }else if(structure.seperateByGroup){
                 return section.groupID*this.blockHeight
             }else{
@@ -138,6 +158,7 @@ export default {
                 [${parseFloat(section.start).toFixed(2)}, ${parseFloat(section.end).toFixed(2)}] <br /> 
                 Duration: ${parseFloat(section.end-section.start).toFixed(2)} <br /> 
                 ColorAngle: ${parseFloat(section.colorAngle).toFixed(2)} <br />
+                MDSFeature: ${parseFloat(section.mdsFeature).toFixed(2)} <br />
                 NormScore: ${parseFloat(section.normalizedScore).toFixed(2)} <br /> 
                 NormCoverage: ${parseFloat(section.normalizedCoverage).toFixed(2)} <br /> 
                 Fitness: ${parseFloat(section.fitness).toFixed(2)}
@@ -185,6 +206,24 @@ export default {
                 Vue.set(structure, 'showLoudness', true)
             }else{
                 structure.showLoudness = !structure.showLoudness;
+            } 
+        },
+        clickStructureChangeColor(structure){
+            if(structure.colorLayout === undefined){
+                Vue.set(structure, 'colorLayout', this.layouts[1])
+            }else{
+                const currentIndex =this.layouts.indexOf(structure.colorLayout);
+                const nextIndex = (currentIndex+1)%this.layouts.length;
+                structure.colorLayout = this.layouts[nextIndex]
+            } 
+        },
+        clickStructureChangeVertical(structure){
+            if(structure.vertLayout === undefined){
+                Vue.set(structure, 'vertLayout', this.layouts[1])
+            }else{
+                const currentIndex = this.layouts.indexOf(structure.vertLayout);
+                const nextIndex = (currentIndex+1)%this.layouts.length;
+                structure.vertLayout = this.layouts[nextIndex]
             } 
         },
         generatePointsForShapedSection(structure, section){

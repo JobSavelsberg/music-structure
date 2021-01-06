@@ -8,6 +8,19 @@ export const zeroOneColor = d3
     .scaleSequential()
     .domain([0, 1])
     .interpolator(d3.interpolateViridis);
+
+export const zeroOneColorWarm = d3
+.scaleSequential()
+.domain([0, 1])
+.interpolator(d3.interpolateWarm);
+export const zeroOneColorCool = d3
+.scaleSequential()
+.domain([0, 1])
+.interpolator(d3.interpolateCool);
+export const zeroOneColorTurbo = d3
+.scaleSequential()
+.domain([0, 1])
+.interpolator(d3.interpolateTurbo);
 export const pitchColor = zeroOneColor;
 export const greyScaleColor = d3
     .scaleSequential()

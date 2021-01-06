@@ -3,6 +3,24 @@ import HalfMatrix from "./dataStructures/Matrix";
 import * as log from "../dev/log";
 import seedrandom from "seedrandom";
 import numeric from "numeric";
+import { features } from "process";
+
+export function getMDSFeatureWithGradientDescent(
+    distanceMatrix,
+    { lr = 40, maxSteps = 20, minLossDifference = 1e-6, momentum = 0, logEvery = 5 } = {}
+){
+    let feature = classicalMDS(distanceMatrix.getNestedArray(), 1);
+    feature = feature.map(val => val[0])
+
+    //normalize to [0, 1]
+
+    let max = Math.max(...feature);
+    let min = Math.min(...feature);
+
+    feature = feature.map(val => (val-min) / (max - min))
+
+    return feature;
+}
 
 export function getMdsCoordinatesWithGradientDescent(
     distanceMatrix,
@@ -26,6 +44,8 @@ export function getMdsCoordinatesWithGradientDescent(
     });*/
 
     const coords = classicalMDS(distanceMatrix.getNestedArray(), 2);
+
+
     //const coords = mlCoordinates.coordinates.data;
     let centerX = 0;
     let centerY = 0;
