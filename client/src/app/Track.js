@@ -25,6 +25,8 @@ export const SPminSize = 2; // Minimal size of segment in scape plot
 export const SPstepSize = 2; // Size of the step between segment start and size in scape plot
 export const createScapePlot = false;
 
+export const averageLoudnessBlur = 3;
+
 const useSampled = true;
 const allPitches = false;
 export default class Track {

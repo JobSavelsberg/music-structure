@@ -17,8 +17,8 @@ addEventListener("message", (event) => {
     const structures = [];
 
     const averageLoudness = new Float32Array(data.avgLoudness);
-    const smoothedAverageLoudness = filter.gaussianBlur1D(averageLoudness, 5);
-    graphs.push({ name: "Average Loudness", buffer: smoothedAverageLoudness.buffer });
+    const smoothedAverageLoudness = filter.gaussianBlur1D(averageLoudness,3);
+    graphs.push({ name: "Average Loudness " + 3, buffer: smoothedAverageLoudness.buffer });
 
     //createBeatGraph(data, graphs);
 
@@ -108,21 +108,22 @@ addEventListener("message", (event) => {
     });*/
 
 
-    const courseStructureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs, 8, [10,2]);
+    /*const courseStructureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs, 8, [10,2]);
     let courseSegments = structure.createSegmentsFromNovelty(courseStructureFeature, data.sampleDuration, 0.25);
     structures.push({ name: "Course segments", data: courseSegments })
 
     const fineStructureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs, 4, [6,2]);
     let fineSegments = structure.createSegmentsFromNovelty(fineStructureFeature, data.sampleDuration, 0.05);
     structures.push({ name: "Fine segments", data: fineSegments })
+    */
 
     const duration = 4; // samples
     const sampledSegments = structure.createFixedDurationStructureSegments(data.sampleAmount, data.sampleDuration, duration)
-    structures.push({ name: "Sampled segments", data: sampledSegments })
+    //structures.push({ name: "Sampled segments", data: sampledSegments })
 
     //const structureCandidates = structure.computeStructureCandidates(strictPathMatrix, structureSections)
 
-    const courseSegmentLabeled = structure.groupSimilarSegments(courseSegments, strictPathMatrix);
+    /*const courseSegmentLabeled = structure.groupSimilarSegments(courseSegments, strictPathMatrix);
     structures.push({ name: "Course Segment groups", data: courseSegmentLabeled})
 
     const fineSegmentLabeled = structure.groupSimilarSegments(fineSegments, strictPathMatrix);
@@ -180,7 +181,7 @@ addEventListener("message", (event) => {
     const fineSegmentColored = structure.MDSColorSegments(fineSegments, strictPathMatrix);
     structures.push({ name: "Fine Segment MDS colored", data: fineSegmentColored})
     visualizePathExtraction(strictPathMatrix, 352, 388, matrixes)
-
+    */
     const blurredTimbre = filter.gaussianBlur2DOptimized(ssmTimbre, 8);
     matrixes.push({
         name: "BlurTimbre",
@@ -199,9 +200,9 @@ addEventListener("message", (event) => {
     graphs.push({ name: "Timbre Column Novelty Smooth", buffer: smoothTimbreNoveltyColumn.buffer });
     const timbreSegments = structure.createSegmentsFromNovelty(smoothTimbreNoveltyColumn, data.sampleDuration, 0.2);
     const coloredTimbreSegmentsSSM = structure.MDSColorTimbreSegmentsWithSSM(blurredTimbre, timbreSegments);
-    structures.push({ name: "Timbre segments SSM", data: coloredTimbreSegmentsSSM})
+    structures.push({ name: "Timbre segments SSM", data: coloredTimbreSegmentsSSM, verticalPosition: true})
     const coloredTimbreSegments = structure.MDSColorTimbreSegmentsWithFeatures(data.timbreFeatures, timbreSegments, data.sampleDuration);
-    structures.push({ name: "Timbre segments Features", data: coloredTimbreSegments, verticalPosition: true})
+    structures.push({ name: "Timbre segments Features", data: coloredTimbreSegments})
     //visualizeKernel(data, matrixes);
 
 

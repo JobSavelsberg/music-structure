@@ -497,6 +497,35 @@ export function MDSColorGivenDistanceMatrix(segments, distanceMatrix){
         coloredSegments.push(newSegment);
     })
 
+    // sort from small to high
+    coloredSegments.sort((a, b) => {
+        return a.colorAngle > b.colorAngle ? 1 : b.colorAngle > a.colorAngle ? -1 : 0;
+    })
+
+    coloredSegments.forEach(segment => {
+        log.debug("A ",segment.colorAngle)
+    })
+
+    let largestGap =  1-coloredSegments[coloredSegments.length-1].colorAngle + coloredSegments[0].colorAngle;
+    let largestGapAngle = coloredSegments[0].colorAngle;
+    log.debug("gap", largestGap, largestGapAngle)
+    for(let i = 1; i < coloredSegments.length; i++){
+        const gap = coloredSegments[i].colorAngle - coloredSegments[i-1].colorAngle;
+        if(gap > largestGap){
+            largestGap = gap;
+            largestGapAngle = coloredSegments[i].colorAngle;
+            log.debug("gap", largestGap, largestGapAngle)
+        }
+    }
+
+    coloredSegments.forEach(segment => {
+        segment.colorAngle = (1+(segment.colorAngle-largestGapAngle))%1;
+    })
+
+    coloredSegments.forEach(segment => {
+        log.debug("B ",segment.colorAngle)
+    })
+
     return coloredSegments;
 }
 
@@ -661,14 +690,5 @@ export function MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sam
         return similarity.cosine(segmentVectors[x],segmentVectors[y]);
     });    
         
-    const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
-    segments.forEach((segment, index) => {
-        const [angle, radius] = mds.getAngleAndRadius(MdsCoordinates[index]);
-        const newSegment = JSON.parse(JSON.stringify(segment));
-        newSegment.colorAngle = angle;
-        newSegment.colorRadius = radius;
-        coloredSegments.push(newSegment);
-    })
-
-    return coloredSegments;
+    return MDSColorGivenDistanceMatrix(segments, distanceMatrix)
 }

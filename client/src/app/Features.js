@@ -2,6 +2,7 @@ import * as log from "../dev/log";
 import Segment from "./Segment";
 import * as chordDetection from "./chordDetection";
 import * as filter from "./filter";
+import * as Track from "./Track";
 
 const timbreNormalizationAmount = .2;
 
@@ -134,7 +135,7 @@ export default class Features {
             this.sampled.majorminor[i] = chordDetection.getMajorMinorNess(this.sampled.pitches[i]);
         }
 
-        this.sampled.smoothedAvgLoudness = filter.gaussianBlur1D(this.sampled.avgLoudness, 5);
+        this.sampled.smoothedAvgLoudness = filter.gaussianBlur1D(this.sampled.avgLoudness, 3);
         this.averageLoudness = 0;
         this.maxLoudness = 0;
         this.sampled.smoothedAvgLoudness.forEach(loudness => {

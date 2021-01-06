@@ -137,6 +137,7 @@ export default {
                 Confidence: ${parseFloat(section.confidence).toFixed(2)} <br /> 
                 [${parseFloat(section.start).toFixed(2)}, ${parseFloat(section.end).toFixed(2)}] <br /> 
                 Duration: ${parseFloat(section.end-section.start).toFixed(2)} <br /> 
+                ColorAngle: ${parseFloat(section.colorAngle).toFixed(2)} <br />
                 NormScore: ${parseFloat(section.normalizedScore).toFixed(2)} <br /> 
                 NormCoverage: ${parseFloat(section.normalizedCoverage).toFixed(2)} <br /> 
                 Fitness: ${parseFloat(section.fitness).toFixed(2)}
@@ -199,7 +200,7 @@ export default {
             const endInSamples = Math.floor(section.end / this.track.features.sampleDuration);
             const durationInSamples = endInSamples - startInSamples;
             
-            const sampleSkip = 5;
+            const sampleSkip = 3;
             let rx = 1; // in pixels
             if(width < rx*2+sampleSkip){
                 rx = Math.max(0,Math.floor((width-sampleSkip)/2));
