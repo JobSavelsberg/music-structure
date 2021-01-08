@@ -83,8 +83,8 @@ export default {
             synthesizerString: "",
             volume: 0,
             prevVolume: 0.75,
-            padding: 20 * 4, // vuetify padding only goes per 4 px
             windowWidth: window.innerWidth,
+            windowHeight: window.innerHeight,
             testing: false,
             synthesizing: false,
             selectedTestSet: null,
@@ -112,8 +112,12 @@ export default {
                 "padding-right": `${this.padding}px`,
             };
         },
+        padding(){
+            return Math.round((this.windowWidth - this.mainContentWidth) / 2 / 4)*4
+        },
         mainContentWidth() {
-            return this.windowWidth - this.padding * 2;
+            const size = Math.min(this.windowWidth, this.windowHeight)*0.85;
+            return size;
         },
         allTestSets() {
             return testing.getAllTestSets();

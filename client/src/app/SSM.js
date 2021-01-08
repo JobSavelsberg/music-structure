@@ -37,7 +37,7 @@ export function enhanceSSM(ssm, options, allPitches = false) {
         if (strategy === "onedirmed") enhancementPasses.push(medianSmoothing(onedirectionalSmoothing(ssm, 1, Math.floor(blurLength / 2), tempoRatio), blurLength, tempoRatio));
         if (strategy === "onedirmed") enhancementPasses.push(medianSmoothing(onedirectionalSmoothing(ssm, -1, Math.floor(blurLength / 2), tempoRatio), blurLength, tempoRatio));
         if (strategy === "linmed") enhancementPasses.push(medianSmoothing(linearSmoothing(ssm, blurLength, tempoRatio), blurLength*1.5, tempoRatio));
-
+        if (strategy === "med") enhancementPasses.push(medianSmoothing(ssm, blurLength, tempoRatio));
     }
 
     const enhancedSSM = HalfMatrix.from(ssm);
@@ -112,12 +112,13 @@ function medianSmoothing(ssm, length, tempoRatio, resolution = 128) {
     const smoothedSSM = HalfMatrix.from(ssm);
 
     smoothedSSM.fillFeaturesNormalized((x, y, f) => {
-        let totalValues = 0;
+        let totalValues = l*2+1;
         for (let offset = -l; offset <= l; offset++) {
             if (ssm.hasCell(x + offset, y + tempos[offset + l])) {
                 const value = ssm.getValueNormalized(x + offset, y + tempos[offset + l], f);
                 buckets[Math.floor(value * (resolution - 1))]++;
-                totalValues++;
+            }else{
+                buckets[0]++;
             }
         }
         let middle = totalValues / 2;
@@ -190,12 +191,21 @@ export function makeTranspositionInvariant(ssm) {
 
 export function autoThreshold(ssm, percentage) {
     const typeScale = ssm.numberType.scale;
-    let frequencies = new Uint16Array(typeScale + 1);
+
+    let frequencies = new Uint32Array(typeScale + 1).fill(0);
+    let totalCells = 0;
+    let zeros = 0;
+    let tff = 0;
     ssm.forEach((cell) => {
-        frequencies[cell]++;
+        if(cell === 0) zeros++;
+        if(cell === 255) tff++;
+        frequencies[Math.floor(cell)] = frequencies[Math.floor(cell)]+1;
+        totalCells++;
     });
 
-    let percentagePosition = ssm.length - ssm.length * percentage;
+    log.debug(zeros, tff);
+    log.debug(frequencies)
+    let percentagePosition = totalCells - totalCells * percentage;
     let thresholdValue;
     for (let i = 0; i < typeScale + 1; i++) {
         percentagePosition -= frequencies[i];
@@ -328,4 +338,144 @@ export function binarize(matrix, threshold = 0.5) {
     });
 
     return binaryMatrix;
+}
+
+export function soloOr(ssm, sectionsInSamples){
+    let soloSSM;
+    if (ssm instanceof Matrix) {
+        soloSSM = Matrix.from(ssm);
+    } else {
+        soloSSM = HalfMatrix.from(ssm);
+    }
+
+    soloSSM.fill((x, y) => {
+        if(x===y) return soloSSM.numberType.max;
+        const inSelection = sectionsInSamples.some(section => {
+            return section.start <= x && x < section.end
+            || section.start <= y && y < section.end;
+        })
+        return inSelection ? ssm.getValueMirrored(x, y) : 0;
+    })
+
+    return soloSSM;
+}
+
+export function showInner(ssm, sectionsInSamples){
+    const chosenSectionsSSM = soloAnd(ssm, sectionsInSamples);
+    const allContainedSectionsSSM = soloOr(ssm, sectionsInSamples);
+
+    let otherSectionsSSM;
+    if (allContainedSectionsSSM instanceof Matrix) {
+        otherSectionsSSM = Matrix.from(allContainedSectionsSSM);
+    } else {
+        otherSectionsSSM = HalfMatrix.from(allContainedSectionsSSM);
+    }
+
+    chosenSectionsSSM.forEachCell((x, y, value) => {
+        if(x !== y && value > 0){
+            allContainedSectionsSSM.setValue(x, y, 0)
+        }
+    })
+
+    return allContainedSectionsSSM;
+}
+
+export function soloAnd(ssm, sectionsInSamples, rowcol="rowcol"){
+    log.debug("SOLOAND")
+    let soloSSM;
+    if (ssm instanceof Matrix) {
+        soloSSM = Matrix.from(ssm);
+    } else {
+        soloSSM = HalfMatrix.from(ssm);
+    }
+    log.debug(ssm)
+    log.debug(soloSSM)
+
+    const row = rowcol.includes("row"); 
+    const col = rowcol.includes("col"); 
+
+    soloSSM.fill((x, y) => {
+        if(x===y) return soloSSM.numberType.max;
+        let inSelectionX = sectionsInSamples.some(section => {
+            return section.start <= x && x < section.end
+        })
+        let inSelectionY = sectionsInSamples.some(section => {
+            return section.start <= y && y < section.end;
+        })
+        return (inSelectionX || !col) && (inSelectionY || !row) ? ssm.getValueMirrored(x, y) : 0;
+    })
+
+    return soloSSM;
+}
+
+export function muteAnd(ssm, sectionsInSamples){
+    let soloSSM;
+    if (ssm instanceof Matrix) {
+        soloSSM = Matrix.from(ssm);
+    } else {
+        soloSSM = HalfMatrix.from(ssm);
+    }
+
+    soloSSM.fill((x, y) => {
+        if(x===y) return soloSSM.numberType.max;
+        const inSelectionX = sectionsInSamples.some(section => {
+            return section.start <= x && x < section.end
+        })
+        const inSelectionY = sectionsInSamples.some(section => {
+            return section.start <= y && y < section.end;
+        })
+        return inSelectionX && inSelectionY ? 0 : ssm.getValueMirrored(x, y); 
+    })
+
+    return soloSSM;
+}
+
+export function muteOr(ssm, sectionsInSamples){
+    let soloSSM;
+    if (ssm instanceof Matrix) {
+        soloSSM = Matrix.from(ssm);
+    } else {
+        soloSSM = HalfMatrix.from(ssm);
+    }
+
+    soloSSM.fill((x, y) => {
+        if(x===y) return soloSSM.numberType.max;
+        const inSelection = sectionsInSamples.some(section => {
+            return section.start <= x && x < section.end
+            || section.start <= y && y < section.end;
+        })
+        return inSelection ? 0: ssm.getValueMirrored(x, y);
+    })
+
+    return soloSSM;
+}
+
+export function removeSections(ssm, sectionsInSamples){
+    let newSSM = ssm.clone();
+
+    sectionsInSamples.forEach(sectionA => {
+        sectionsInSamples.forEach(sectionB => {
+            if(sectionA !== sectionB){
+                const startX = sectionA.start;
+                const startY = sectionB.start;
+                const endX = sectionA.end;
+                const endY = sectionB.end;
+                const xDuration = endX - startX;
+                const yDuration = endY - startY;
+    
+                const duratio = (yDuration) / (xDuration);
+                for(let i = 0; i< xDuration; i++){
+                    const x = startX+i;
+                    const y = startY+i*duratio;
+                        newSSM.setValue(x+2, y-2, 0);
+                        newSSM.setValue(x+1, y-1, 0);
+                        newSSM.setValue(x, y, 0);
+                        newSSM.setValue(x-1,y+1, 0);
+                        newSSM.setValue(x-2,y+2, 0);
+                }
+            }
+        })
+    })
+
+    return newSSM;
 }

@@ -4,6 +4,7 @@ import * as pathExtraction from "./pathExtraction";
 import * as similarity from "./similarity";
 import * as mds from "./mds";
 import * as clustering from "./clustering";
+import * as SSM from "./SSM";
 
 import Matrix from "./dataStructures/Matrix";
 import HalfMatrix from "./dataStructures/HalfMatrix";
@@ -42,6 +43,7 @@ export function createSegmentsFromNovelty(novelty, sampleDuration, threshold = 0
             groupID,
         }));
     }
+    log.debug("Sections created")
     return structureSegments;
 }
 
@@ -84,6 +86,7 @@ export function computeStructureCandidates(pathSSM, structureSegments, minDurati
 
 
 export function computeSeparateStructureCandidates(pathSSM, separateSegmentSets, strategy, minDurationSeconds = 1, maxRatio = 0.4) {
+    log.debug("Computing candidates")
     const separateCandidateSets = [];
     separateSegmentSets.forEach(segments => {
         const candidates = computeStructureCandidates(pathSSM, segments, minDurationSeconds, maxRatio, strategy);
@@ -91,6 +94,83 @@ export function computeSeparateStructureCandidates(pathSSM, separateSegmentSets,
     })
 
     return separateCandidateSets;
+}
+
+export function findMuteDecomposition(pathSSM, structureSegments, sampleDuration, strategy = "classic", muteType="or", comparisonProperty = "fitness", minDurationSeconds = 2, minFitness = 0.01){
+    const trackEnd = structureSegments[structureSegments.length - 1].end;
+    let structureSections = [];
+    const segments = []
+    log.debug("Finding greedy Decomposition.   Strategy:", strategy, "ComparisonProperty:", comparisonProperty, "MinDuration", minDurationSeconds);
+    let separateSegmentSets = [structureSegments];
+
+    let ssm = pathSSM;
+
+    let i = 0;
+    const maxRepeats = 14;
+    while (separateSegmentSets.length > 0 && i < maxRepeats) {
+        let separateCandidateSets = computeSeparateStructureCandidates(ssm, separateSegmentSets, strategy, minDurationSeconds)
+        const allCandidates = [].concat.apply([], separateCandidateSets);
+        if (allCandidates.length === 0) {
+            break;
+        }
+        const allCandidatesSorted = allCandidates.sort((a, b) => {
+            if (a[comparisonProperty] < b[comparisonProperty]) {
+                return 1;
+            }
+            if (a[comparisonProperty] > b[comparisonProperty]) {
+                return -1;
+            }
+            return 0;
+        });
+
+
+        let best = allCandidatesSorted.shift();
+        const initialFitness = best.fitness;
+        if (wiggle) {
+            best = findBetterFit(ssm, best, wiggleSize, comparisonProperty, strategy, structureSections, minDurationSeconds);
+        }
+        if (best === null || best[comparisonProperty] <= minFitness || isNaN(best[comparisonProperty])) {
+            log.debug("Terminating search", best)
+            break;
+        }
+        log.debug("BEST", i, best);
+        const groupID = i;
+        best.groupID = groupID;
+
+        const pathFamily = getPathFamily(best, sampleDuration, groupID);
+        const extendedPathFamily = getExtendedPathFamily(best, sampleDuration, groupID, ssm, strategy);
+        const nonOverlappingExtendedPathFamily = addNonOverlapping(pathFamily , extendedPathFamily);
+        const prunedPaths = pruneLowConfidence(nonOverlappingExtendedPathFamily, 0.1);
+        prunedPaths.forEach(path => {
+            path.normalizedScore = best.normalizedScore;
+            path.normalizedCoverage = best.normalizedCoverage;
+            path.fitness = best.fitness;
+            path.initFitness = initialFitness;
+        })
+        structureSections.push(...prunedPaths)
+        const prunedPathsInSamples = prunedPaths.map(section => {
+            const clone = JSON.parse(JSON.stringify(section));
+            clone.start = Math.floor(clone.start/sampleDuration);
+            clone.end = Math.floor(clone.end/sampleDuration);
+            return clone;
+        });
+        if(muteType === "and"){
+            ssm = SSM.muteAnd(ssm, prunedPathsInSamples);
+        }else if(muteType === "remove"){
+            ssm = SSM.removeSections(ssm, prunedPathsInSamples);
+        }else{
+            ssm = SSM.muteOr(ssm, prunedPathsInSamples);
+        }
+
+        structureSections = structureSections.sort((a, b) => a.start > b.start ? 1 : -1);
+
+        separateSegmentSets = subtractStructureFromSegments(JSON.parse(JSON.stringify(separateSegmentSets)), structureSections, trackEnd, minDurationSeconds);
+        const allSegments = [].concat.apply([], separateSegmentSets);
+        allSegments.forEach(segment => segment.groupID = i);
+        segments.push(...allSegments);
+        i++;
+    }
+    return [structureSections, i, segments];
 }
 
 // Structure is not sorted, structuresegments is
@@ -138,7 +218,7 @@ export function findGreedyDecomposition(pathSSM, structureSegments, sampleDurati
         const pathFamily = getPathFamily(best, sampleDuration, groupID);
         const extendedPathFamily = getExtendedPathFamily(best, sampleDuration, groupID, pathSSM, strategy);
         const nonOverlappingExtendedPathFamily = addNonOverlapping(pathFamily , extendedPathFamily);
-        const prunedPaths = pruneLowConfidence(nonOverlappingExtendedPathFamily, 0);
+        const prunedPaths = pruneLowConfidence(nonOverlappingExtendedPathFamily, 0.1);
         prunedPaths.forEach(path => {
             path.normalizedScore = best.normalizedScore;
             path.normalizedCoverage = best.normalizedCoverage;
@@ -484,6 +564,7 @@ export function groupSimilarSegments(segments, pathSSM, maxDistance = 0.80){
 }
 
 export function MDSColorSegments(segments, pathSSM) {
+    if(segments.length === 0) return segments;
     const distanceMatrix = pathExtraction.getDistanceMatrix(segments, pathSSM);
     return MDSColorGivenDistanceMatrix(segments, distanceMatrix)
 }
@@ -546,7 +627,7 @@ export function isSameSectionWithinError(a, b, errorInSamples) {
     return Math.abs(middleB - middleA) < errorInSamples
 }
 
-export function squash(strategy, sections, groupAmount) {
+export function squash(strategy, sections, groupAmount, minSize = 2) {
     const squashed = [];
     const maxGroups = 10;
 
@@ -623,7 +704,7 @@ export function squash(strategy, sections, groupAmount) {
                         thereIsSpace = false;
                     }
                 })
-                if (thereIsSpace) {
+                if (thereIsSpace && newGroupSection.end - newGroupSection.start > minSize ) {
                     squashed.push(newGroupSection)
                 }
             }
@@ -708,9 +789,7 @@ export function clusterTimbreSegmentsWithFeatures(timbreFeatures, segments, samp
         }
         segmentVectors.push(vector);
     })
-    log.debug("Start clustering")
-    const clusteringResult = clustering.kMeansSearch(segmentVectors, 1, 10, 100);
-    log.debug("Done clustering")
+    const clusteringResult = clustering.kMeansSearch(segmentVectors, 1, 10, 5);
 
     segments.forEach((segment, index) => {
         const cluster = clusteringResult.idxs[index];
@@ -723,7 +802,10 @@ export function clusterTimbreSegmentsWithFeatures(timbreFeatures, segments, samp
     return coloredSegments;
 }
 export function processTimbreSegments(timbreFeatures, segments, sampleDuration){
+    log.debug("MDS Coloring timbre segments")
     const mdsColoredSegments = MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sampleDuration);
+    log.debug("Clustering timbre segments")
     const clusteredSegments = clusterTimbreSegmentsWithFeatures(timbreFeatures, mdsColoredSegments, sampleDuration);
+    log.debug("Clustered timbre segments")
     return clusteredSegments;
 }

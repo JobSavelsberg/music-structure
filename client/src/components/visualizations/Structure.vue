@@ -115,18 +115,24 @@ export default {
         getAmountOfUniqueLabels(structure){
             if(structure.groupAmount) return structure.groupAmount;
             const groupIDs = [];
-            log.debug("Getting amount of unique groupIDs", structure)
             structure.data.forEach((section, index) => {
                 if(!groupIDs.includes(section.groupID)){
                     groupIDs.push(section.groupID)
                 }
             });
-            return groupIDs.length;
+            structure.groupAmount = groupIDs.length;
+            return structure.groupAmount;
         },
         heightOfStructure(structure){
+            if(structure.verticalPosition && structure.vertLayout === "cluster"){
+                return this.getAmountOfUniqueLabels(structure)*this.blockHeight;
+            }
             return (structure.verticalPosition ? this.verticalPositionScale+1 : structure.seperateByGroup ? this.getAmountOfUniqueLabels(structure) : 1)*this.blockHeight;
         },
         sectionColor(structure, section){
+            if(section.groupID !== undefined && section.mdsFeature === undefined && section.colorRadius === undefined){
+                structure.colorLayout = "cluster";
+            }
             switch(structure.colorLayout){
                 case "cluster": return vis.categoryColorWithOpacity(section.groupID,Math.sqrt(section.confidence !== undefined ? section.confidence : 1));
                 case "linear": return vis.zeroOneColorWarm(section.mdsFeature)
@@ -135,6 +141,9 @@ export default {
              
         },
         sectionVerticalPosition(structure, section){
+            if(section.groupID !== undefined && section.mdsFeature === undefined && section.colorRadius === undefined){
+                structure.vertLayout = "cluster";
+            }
             if(structure.verticalPosition){
                 switch(structure.vertLayout){
                     case "cluster": return section.groupID*this.blockHeight;
@@ -213,7 +222,10 @@ export default {
                 Vue.set(structure, 'colorLayout', this.layouts[1])
             }else{
                 const currentIndex =this.layouts.indexOf(structure.colorLayout);
-                const nextIndex = (currentIndex+1)%this.layouts.length;
+                let nextIndex = (currentIndex+1)%this.layouts.length;
+                if(this.layouts[nextIndex] === "cluster" && this.getAmountOfUniqueLabels(structure) === structure.data.length){
+                    nextIndex = (nextIndex+1)%this.layouts.length;
+                }
                 structure.colorLayout = this.layouts[nextIndex]
             } 
         },
@@ -222,7 +234,10 @@ export default {
                 Vue.set(structure, 'vertLayout', this.layouts[1])
             }else{
                 const currentIndex = this.layouts.indexOf(structure.vertLayout);
-                const nextIndex = (currentIndex+1)%this.layouts.length;
+                let nextIndex = (currentIndex+1)%this.layouts.length;
+                if(this.layouts[nextIndex] === "cluster" && this.getAmountOfUniqueLabels(structure) === structure.data.length){
+                    nextIndex = (nextIndex+1)%this.layouts.length;
+                }
                 structure.vertLayout = this.layouts[nextIndex]
             } 
         },

@@ -8,7 +8,6 @@ import * as pathExtraction from "../pathExtraction";
 
 import Matrix from "../dataStructures/Matrix";
 import HalfMatrix from "../dataStructures/HalfMatrix";
-
 addEventListener("message", (event) => {
     const data = event.data;
     const message = {};
@@ -43,7 +42,7 @@ addEventListener("message", (event) => {
         { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: 'linmed' },
         data.allPitches
     );
-    matrixes.push({ name: "Enhanced", buffer: enhancedSSM.getBuffer() });
+    //matrixes.push({ name: "Enhanced", buffer: enhancedSSM.getBuffer() });
     log.debug("Enhance Time", performance.now() - startTime);
 
 
@@ -54,10 +53,7 @@ addEventListener("message", (event) => {
 
     // Threshold the ssm to only show important paths
     const transpositionInvariant = SSM.rowColumnAutoThreshold(transpositionInvariantPre, data.thresholdPercentage);
-    matrixes.push({
-        name: "Transinv",
-        buffer: transpositionInvariant.getBuffer(),
-    });
+    matrixes.push({ name: "Transinv",   buffer: transpositionInvariant.getBuffer(), });
 
     const fullTranspositionInvariant = Matrix.fromHalfMatrix(transpositionInvariant);
 
@@ -71,7 +67,7 @@ addEventListener("message", (event) => {
 
 
     let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.15);
-    //let strictPathMatrixHalf = SSM.threshold(transpositionInvariantPre, 0.6);
+    strictPathMatrixHalf = SSM.threshold(strictPathMatrixHalf, 0.15);
 
     const strictPathMatrix = Matrix.fromHalfMatrix(strictPathMatrixHalf);
 
@@ -108,80 +104,118 @@ addEventListener("message", (event) => {
     });*/
 
 
-    /*const courseStructureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs, 8, [10,2]);
+    const courseStructureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs, 8, [10,2]);
     let courseSegments = structure.createSegmentsFromNovelty(courseStructureFeature, data.sampleDuration, 0.25);
-    structures.push({ name: "Course segments", data: courseSegments })
+    //structures.push({ name: "Course segments", data: courseSegments })
 
     const fineStructureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs, 4, [6,2]);
     let fineSegments = structure.createSegmentsFromNovelty(fineStructureFeature, data.sampleDuration, 0.05);
-    structures.push({ name: "Fine segments", data: fineSegments })
-    */
+    //structures.push({ name: "Fine segments", data: fineSegments })
+
+    if(!data.synthesized){
+        const courseSegmentColored = structure.MDSColorSegments(courseSegments, strictPathMatrix);
+        structures.push({ name: "Course Segment MDS colored", data: courseSegmentColored})
+    
+        const fineSegmentColored = structure.MDSColorSegments(fineSegments, strictPathMatrix);
+        structures.push({ name: "Fine Segment MDS colored", data: fineSegmentColored})
+    }
 
     const duration = 3; // samples
     const sampledSegments = structure.createFixedDurationStructureSegments(data.sampleAmount, data.sampleDuration, duration)
     //structures.push({ name: "Sampled segments", data: sampledSegments })
 
-    //const structureCandidates = structure.computeStructureCandidates(strictPathMatrix, structureSections)
-
-    /*const courseSegmentLabeled = structure.groupSimilarSegments(courseSegments, strictPathMatrix);
-    structures.push({ name: "Course Segment groups", data: courseSegmentLabeled})
-
-    const fineSegmentLabeled = structure.groupSimilarSegments(fineSegments, strictPathMatrix);
-    structures.push({ name: "Fine Segment groups", data: fineSegmentLabeled})
 
 
-    const [greedyStructure, groupAmount, segments] = structure.findGreedyDecomposition(strictPathMatrix, fineSegments, data.sampleDuration, "classic");
-    structures.push({ name: "Greedy sections classic", data: greedyStructure, seperateByGroup: true, groupAmount: groupAmount })
+    //const [greedyStructure, groupAmount, segments] = structure.findGreedyDecomposition(strictPathMatrix, fineSegments, data.sampleDuration, "classic");
+    //structures.push({ name: "Greedy sections classic", data: greedyStructure, seperateByGroup: true, groupAmount: groupAmount })
 
-    const [greedyStructureSampled, groupAmountSampled, segmentsSampled] = structure.findGreedyDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "classic");
-    structures.push({ name: "Greedy sections classic sampled", data: greedyStructureSampled, seperateByGroup: true, groupAmount: groupAmountSampled })
+    //const [greedyStructureSampled, groupAmountSampled, segmentsSampled] = structure.findGreedyDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "classic");
+    //structures.push({ name: "Greedy sections classic sampled", data: greedyStructureSampled, seperateByGroup: true, groupAmount: groupAmountSampled })
 
+    const [mutorStructure, mutorGroupAmount, segmentsMutor] = structure.findMuteDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "custom", "or");
+    structures.push({ name: "Mute OR Sampled", data: mutorStructure, seperateByGroup: true, groupAmount: mutorGroupAmount })
+
+
+    const group0 = mutorStructure.filter(section => section.groupID === 0);
+    const group0InSamples = group0.map(section => {
+        const clone = JSON.parse(JSON.stringify(section));
+        clone.start = Math.floor(clone.start/data.sampleDuration);
+        clone.end = Math.floor(clone.end/data.sampleDuration);
+        return clone;
+    });
+    log.debug(group0InSamples)
+    const solo0and = SSM.soloAnd(strictPathMatrix, group0InSamples);
+    matrixes.push({ name: "S0&",  buffer: solo0and.getBuffer()})
+    const solo0or = SSM.soloOr(strictPathMatrix, group0InSamples);
+    matrixes.push({ name: "S0||",  buffer: solo0or.getBuffer()})
+    const inner0 = SSM.showInner(strictPathMatrix, group0InSamples);
+    matrixes.push({ name: "Inner0",  buffer: inner0.getBuffer()})
+    const inner0Half = HalfMatrix.fromMatrix(inner0);
+    log.debug(inner0Half)
+    const enhancedInner = SSM.enhanceSSM(
+        inner0Half,
+        { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: 'med'}
+    );
+    log.debug(enhancedInner)
+    const inner0FullEnhanced= Matrix.fromHalfMatrix(enhancedInner)
+    matrixes.push({ name: "Inner0^",  buffer: inner0FullEnhanced.getBuffer()})
+    const mute0and = SSM.muteAnd(strictPathMatrix, group0InSamples);
+    matrixes.push({ name: "M0&",  buffer: mute0and.getBuffer()})
+    const mute0or = SSM.muteOr(strictPathMatrix, group0InSamples);
+    matrixes.push({ name: "M0||",  buffer: mute0or.getBuffer()})
     //log.debug(greedyStructure)
 
     //const [greedyStructure1, groupAmount1, segments1] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "pruned");
     //structures.push({ name: "Greedy sections pruned", data: greedyStructure1, seperateByGroup: true, groupAmount: groupAmount1 })
 
-    const [greedyStructureCustom, groupAmountCustom, segmentsCustom] = structure.findGreedyDecomposition(strictPathMatrix, fineSegments, data.sampleDuration, "custom");
-    structures.push({ name: "Greedy sections custom", data: greedyStructureCustom, seperateByGroup: true, groupAmount: groupAmountCustom })
+    //const [greedyStructureCustom, groupAmountCustom, segmentsCustom] = structure.findGreedyDecomposition(strictPathMatrix, fineSegments, data.sampleDuration, "custom");
+    //structures.push({ name: "Greedy sections custom", data: greedyStructureCustom, seperateByGroup: true, groupAmount: groupAmountCustom })
 
-    const [greedyStructureCustomSampled, groupAmountCustomSampled, segmentsCustomSampled] = structure.findGreedyDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "custom");
-    structures.push({ name: "Greedy sections custom sampled", data: greedyStructureCustomSampled, seperateByGroup: true, groupAmount: groupAmountCustomSampled })
-    
-    
+    //const [greedyStructureCustomSampled, groupAmountCustomSampled, segmentsCustomSampled] = structure.findGreedyDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "custom");
+    //structures.push({ name: "Greedy sections custom sampled", data: greedyStructureCustomSampled, seperateByGroup: true, groupAmount: groupAmountCustomSampled })
+
+    //const = structure.find(strictPathMatrix, fineSegments, data.sampleDuration, "custom");
+    //structures.push({ name: "Best Structure Segment sections", data: greedyStructureCustom, seperateByGroup: true, groupAmount: groupAmountCustom })
+
+
+    //const [mutandStructure, mutandGroupAmount, segmentsMutand] = structure.findMuteDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "custom", "and");
+    //structures.push({ name: "Mute AND Sampled", data: mutandStructure, seperateByGroup: true, groupAmount: mutandGroupAmount })
+
+    /*
     const [greedyStructureCustom2Sampled, groupAmountCustom2Sampled, segmentsCustom2Sampled] = structure.findGreedyDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "customPruned");
     structures.push({ name: "Greedy sections custom 2 sampled", data: greedyStructureCustom2Sampled, seperateByGroup: true, groupAmount: groupAmountCustom2Sampled })
 
         
     const [greedyStructureCustom2, groupAmountCustom2, segmentsCustom2] = structure.findGreedyDecomposition(strictPathMatrix, fineSegments, data.sampleDuration, "customPruned");
-    structures.push({ name: "Greedy sections custom 2 ", data: greedyStructureCustom2, seperateByGroup: true, groupAmount: groupAmountCustom2 })
+    structures.push({ name: "Greedy sections custom 2 ", data: greedyStructureCustom2, seperateByGroup: true, groupAmount: groupAmountCustom2 })*/
     //const sampleStart = Math.floor(greedyStructure[0].start/data.sampleDuration);
     //const sampleEnd = Math.floor(greedyStructure[0].end/data.sampleDuration);
 
     //const [allFit, groupAmount4] = structure.findAllFitSections(strictPathMatrix, structureSegments, data.sampleDuration, "classic");
     //structures.push({ name: "All fit sections", data: allFit, seperateByGroup: true, groupAmount: groupAmount4 })
 
-    const classicSquashedStructureNoOverlap = structure.squash('no-overlap',greedyStructureSampled, groupAmountCustom2Sampled);
-    structures.push({ name: "Classic Squashed structure no-overlap", data: classicSquashedStructureNoOverlap})
+    //const classicSquashedStructureNoOverlap = structure.squash('no-overlap',greedyStructureSampled, groupAmountCustom2Sampled);
+    //structures.push({ name: "Classic Squashed structure no-overlap", data: classicSquashedStructureNoOverlap})
+    const squashedStructureFillGap = structure.squash('fill-gap',mutorStructure, mutorGroupAmount);
+    structures.push({ name: "Squashed structure", data: squashedStructureFillGap})
+  
+    if(!data.synthesized){
+        const squashedStructureFillGapMDS = structure.MDSColorSegments(mutorStructure, strictPathMatrix);
+        structures.push({ name: "Squashed structure MDS color", data: squashedStructureFillGapMDS, verticalPosition: true})
+    }
 
-    const squashedStructureFillGap = structure.squash('fill-gap',greedyStructureCustomSampled, groupAmountCustomSampled);
-    structures.push({ name: "Custom Squashed structure fill-gap", data: squashedStructureFillGap})
-    const squashedStructureFillGapMDS = structure.MDSColorSegments(squashedStructureFillGap, strictPathMatrix);
-    structures.push({ name: "Custom Squashed structure fill-gap MDS color", data: squashedStructureFillGapMDS})
 
     //const squashedStructureNoOverlap = structure.squash('no-overlap',greedyStructureCustom2Sampled, groupAmountCustom2Sampled);
     //structures.push({ name: "Custom2 Squashed structure no-overlap", data: squashedStructureNoOverlap})
-    const squashedStructureFillGap2 = structure.squash('fill-gap',greedyStructureCustom2Sampled, groupAmountCustom2Sampled);
+    /*const squashedStructureFillGap2 = structure.squash('fill-gap',greedyStructureCustomSampled, groupAmountCustomSampled);
     structures.push({ name: "Custom2 Squashed structure fill-gap", data: squashedStructureFillGap2})
     const squashedStructureFillGap2MDS = structure.MDSColorSegments(squashedStructureFillGap2, strictPathMatrix);
-    structures.push({ name: "Custom2 Squashed structure fill-gap MDS color", data: squashedStructureFillGap2MDS})
+    structures.push({ name: "Custom2 Squashed structure fill-gap MDS color", data: squashedStructureFillGap2MDS})*/
     
-    const courseSegmentColored = structure.MDSColorSegments(courseSegments, strictPathMatrix);
-    structures.push({ name: "Course Segment MDS colored", data: courseSegmentColored})
 
-    const fineSegmentColored = structure.MDSColorSegments(fineSegments, strictPathMatrix);
-    structures.push({ name: "Fine Segment MDS colored", data: fineSegmentColored})
+   
     visualizePathExtraction(strictPathMatrix, 352, 388, matrixes)
-    */
+    
 
    const blurredTimbreSmall = filter.gaussianBlur2DOptimized(ssmTimbre, 2);
    matrixes.push({
@@ -200,28 +234,31 @@ addEventListener("message", (event) => {
         buffer: timbreNovelty.buffer,
     });*/
 
+    const timbreNoveltyColumnLarge = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbreLarge);
+    graphs.push({ name: "Timbre Column Novelty Large", buffer: timbreNoveltyColumnLarge.buffer });
+    const smoothTimbreNoveltyColumnLarge = filter.gaussianBlur1D(timbreNoveltyColumnLarge, 3);
+    graphs.push({ name: "Timbre Column Novelty Smooth Large", buffer: smoothTimbreNoveltyColumnLarge.buffer });
 
     const timbreNoveltyColumnSmall = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbreSmall);
     graphs.push({ name: "Timbre Column Novelty Small", buffer: timbreNoveltyColumnSmall.buffer });
     const smoothTimbreNoveltyColumnSmall = filter.gaussianBlur1D(timbreNoveltyColumnSmall, 3);
     graphs.push({ name: "Timbre Column Novelty Smooth Small", buffer: smoothTimbreNoveltyColumnSmall.buffer });
 
-    const timbreNoveltyColumnLarge = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbreLarge);
-    graphs.push({ name: "Timbre Column Novelty Large", buffer: timbreNoveltyColumnLarge.buffer });
-    const smoothTimbreNoveltyColumnLarge = filter.gaussianBlur1D(timbreNoveltyColumnLarge, 3);
-    graphs.push({ name: "Timbre Column Novelty Smooth Large", buffer: smoothTimbreNoveltyColumnLarge.buffer });
 
 
+    if(!data.synthesized){
+        const timbreSegmentsLarge = structure.createSegmentsFromNovelty(smoothTimbreNoveltyColumnLarge, data.sampleDuration, 0.2);
+        const processedTimbreSegmentsLarge = structure.processTimbreSegments(data.timbreFeatures, timbreSegmentsLarge, data.sampleDuration);
+        structures.push({ name: "Timbre Large", data: processedTimbreSegmentsLarge, verticalPosition: true})
+        const timbreSegmentsSmall = structure.createSegmentsFromNovelty(smoothTimbreNoveltyColumnSmall, data.sampleDuration, 0.2);
+        const processedTimbreSegmentsSmall = structure.processTimbreSegments(data.timbreFeatures, timbreSegmentsSmall, data.sampleDuration);
+        structures.push({ name: "Timbre Small", data: processedTimbreSegmentsSmall, verticalPosition: true})
+        const processedTimbreSegmentsSampled = structure.processTimbreSegments(data.timbreFeatures, sampledSegments, data.sampleDuration);
+        structures.push({ name: "Timbre Sampled", data: processedTimbreSegmentsSampled, verticalPosition: true})
 
-    const processedTimbreSegmentsSampled = structure.processTimbreSegments(data.timbreFeatures, sampledSegments, data.sampleDuration);
-    structures.push({ name: "Timbre Sampled", data: processedTimbreSegmentsSampled, verticalPosition: true})
+    }
 
-    const timbreSegmentsSmall = structure.createSegmentsFromNovelty(smoothTimbreNoveltyColumnSmall, data.sampleDuration, 0.2);
-    const processedTimbreSegmentsSmall = structure.processTimbreSegments(data.timbreFeatures, timbreSegmentsSmall, data.sampleDuration);
-    structures.push({ name: "Timbre Small", data: processedTimbreSegmentsSmall, verticalPosition: true})
-    const timbreSegmentsLarge = structure.createSegmentsFromNovelty(smoothTimbreNoveltyColumnLarge, data.sampleDuration, 0.2);
-    const processedTimbreSegmentsLarge = structure.processTimbreSegments(data.timbreFeatures, timbreSegmentsLarge, data.sampleDuration);
-    structures.push({ name: "Timbre Large", data: processedTimbreSegmentsLarge, verticalPosition: true})
+    
 
     message.matrixes = matrixes;
     message.graphs = graphs;

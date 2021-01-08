@@ -48,7 +48,7 @@ export default class Features {
             this.segmentStartDuration.push([segment.start, segment.duration]);
         });
         this.length = this.segments.length;
-        this.sampleAmount = options.samples || Math.ceil(this.duration / options.sampleDuration) || 200;
+        this.sampleAmount = Math.min(options.samples || Math.ceil(this.duration / options.sampleDuration),500);
         this.sampleDuration = analysisData.track.duration / this.sampleAmount;
         this.sampleBlur = options.sampleBlur || 1;
         log.info("Reducing segments, sample amount:", this.sampleAmount);
@@ -90,20 +90,27 @@ export default class Features {
             s.processPitch();
             this.processed.pitches.push(s.pitches);
 
+
+            this.processed.loudness.push(s.getLoudnessFeatures());
+            const nextSegmentStartLoudness =  i+1 < this.segments.length ? this.segments[i+1].getLoudnessFeatures()[0] : 0;
+            this.processed.avgLoudness.push(s.getAverageLoudness(nextSegmentStartLoudness))
             s.processTimbre(this.timbreMin, this.timbreMax, this.timbreBiggest, this.timbreTotalBiggest);
             const timbres = []
             for(let t = 0; t < 12; t++){
-                const timbre = (1-timbreNormalizationAmount)*s.timbres[t] + timbreNormalizationAmount*s.timbresScaled[t];
-                timbres.push(timbre)
+                if(t === 0){ // replace by loudnes
+                    const timbre = this.processed.avgLoudness[this.processed.avgLoudness.length-1]-0.5;
+                    timbres.push(timbre)
+                }else{
+                    const timbre = (1-timbreNormalizationAmount)*s.timbres[t] + timbreNormalizationAmount*s.timbresScaled[t];
+                    timbres.push(timbre)
+                }
             }
             this.processed.timbres.push(timbres)
 
             this.processed.tonalEnergy.push(s.tonalityEnergy);
             this.processed.tonalRadius.push(s.tonalityRadius);
             this.processed.tonalAngle.push(s.tonalityAngle);
-            this.processed.loudness.push(s.getLoudnessFeatures());
-            const nextSegmentStartLoudness =  i+1 < this.segments.length ? this.segments[i+1].getLoudnessFeatures()[0] : 0;
-            this.processed.avgLoudness.push(s.getAverageLoudness(nextSegmentStartLoudness))
+
         });
         for (let i = 0; i < this.segments.length; i++) {
             // Try to remove percussion from pitch features

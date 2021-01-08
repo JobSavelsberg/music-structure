@@ -1,7 +1,7 @@
 import assert from "assert";
 import { NumberType, getNumberTypeByName } from "./NumberType";
 import * as log from "../../dev/log";
-
+import * as HalfMatrix from "./HalfMatrix"
 export default class Matrix {
     static get NumberType() {
         return NumberType;
@@ -32,6 +32,7 @@ export default class Matrix {
     }
 
     static from(matrix, options) {
+        if(typeof matrix === HalfMatrix) return this.fromHalfMatrix(matrix);
         if (!options) options = {};
         const featureAmount = options.featureAmount || matrix.featureAmount;
         const numberType = options.numberType || matrix.numberType;
@@ -82,6 +83,17 @@ export default class Matrix {
                 return halfMatrixLeft.getValue(x, y);
             }
         });
+        return matrix;
+    }
+
+    clone(){
+        const matrix = new Matrix({
+            height: this.height,
+            width: this.width,
+            numberType: this.numberType,
+            sampleDuration: this.sampleDuration,
+        });
+        matrix.fillByIndex(i => this.data[i]);
         return matrix;
     }
 
@@ -173,6 +185,14 @@ export default class Matrix {
         }
     }
 
+
+    forEachCell(callback) {
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                callback(x, y, this.data[(y * this.width + x) * this.featureAmount ] );
+            }
+        }
+    }
     /**
      * Expect normalized number [0,1] and stores this as number of specified type, with 1 being scaled to the number's max
      * @param {*} callback function that returns number in range 0,1
@@ -256,5 +276,9 @@ export default class Matrix {
         while (i--) {
             this.data[i] = (this.data[i] - min) / (max - min);
         }
+    }
+
+    subtract(matrix){
+
     }
 }

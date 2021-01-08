@@ -58,7 +58,7 @@ export default class SynthesizedTrack extends Track {
         const timbreSSM = synthesizeSSMTimbre(sampleAmount, this.synthesizerString);
 
         workers
-            .startSSM(this.getID(), null, null, sampleDuration, null, this.features.beatsStartDuration, {
+            .startSSM(this.getID(), null, null, new Float32Array(sampleAmount).fill(1), sampleDuration, null, this.features.beatsStartDuration, {
                 sampleAmount: sampleAmount,
                 blurTime: Track.blurTime,
                 enhanceBlurLength: Track.enhanceBlurLength,
@@ -74,6 +74,7 @@ export default class SynthesizedTrack extends Track {
                 synthesizedSSMTimbre: timbreSSM.getBuffer(),
             })
             .then((result) => {
+                log.debug("Done processing")
                 this.matrixes = result.matrixes;
                 this.graphFeatures = result.graphs;
                 this.scapePlot = result.scapePlot;

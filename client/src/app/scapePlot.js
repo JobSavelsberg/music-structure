@@ -6,6 +6,7 @@ import HalfMatrix from "./dataStructures/HalfMatrix";
 import Matrix from "./dataStructures/Matrix";
 import * as pathExtraction from "./pathExtraction";
 import * as mds from "./mds";
+import * as familyFitness from "./familyFitness";
 
 export function create(fullSSM, sampleAmount, minSize, step) {
     log.debug("calculating scape plot");
@@ -37,7 +38,7 @@ export function create(fullSSM, sampleAmount, minSize, step) {
             coverage,
             normalizedCoverage,
             pathFamilyLength,
-        } = pathExtraction.computeCustomPrunedFitness(pathFamily, null, score, sampleAmount, width);
+        } = familyFitness.computeCustomPrunedFitness(pathFamily, null, score, sampleAmount, width);
         const val = fitness;
         if (val > maxVal) {
             maxVal = val;

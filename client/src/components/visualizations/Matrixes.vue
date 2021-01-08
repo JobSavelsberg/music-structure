@@ -1,10 +1,10 @@
 <template>
     <div>
-        <div class="d-flex">
-            <v-tabs v-if="trackVisready" v-model="selectedTab" dark>
+        <v-card :width="width">
+            <v-tabs v-if="trackVisready" v-model="selectedTab" dark center-active show-arrows>
                 <v-tab v-for="matrix in this.track.matrixes" :key="matrix.name">{{ matrix.name }}</v-tab>
             </v-tabs>
-        </div>
+        </v-card>
         <Seeker :width="width" :height="width" />
         <Seeker :width="width" :height="width" :vertical="true" />
         <svg v-if="hasStructures" class="annotations" :height="width" :width="width">

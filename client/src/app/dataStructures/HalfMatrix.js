@@ -1,7 +1,7 @@
 import assert from "assert";
 import { NumberType, getNumberTypeByName } from "./NumberType";
 import * as log from "../../dev/log";
-
+import * as Matrix from "./Matrix";
 export default class HalfMatrix {
     static get NumberType() {
         return NumberType;
@@ -35,11 +35,36 @@ export default class HalfMatrix {
     }
 
     static from(matrix, options) {
+        if(typeof matrix === Matrix){
+            return this.fromMatrix(matrix);
+        }
         if (!options) options = {};
         const featureAmount = options.featureAmount || matrix.featureAmount;
         const numberType = options.numberType || matrix.numberType;
         const sampleDuration = options.sampleDuration || matrix.sampleDuration;
         return new HalfMatrix({ size: matrix.size, featureAmount, numberType, sampleDuration });
+    }
+
+    static fromMatrix(matrix) {
+        const halfMatrix = new HalfMatrix({
+            size: matrix.width,
+            numberType: matrix.numberType,
+            sampleDuration: matrix.sampleDuration,
+        });
+        halfMatrix.fill((x, y) => {
+            return matrix.getValue(x, y)
+        });
+        return halfMatrix;
+    }
+
+    clone(){
+        const halfMatrix = new HalfMatrix({
+            size: this.size,
+            numberType: this.numberType,
+            sampleDuration: this.sampleDuration,
+        });
+        halfMatrix.fillByIndex(i => this.data[i]);
+        return halfMatrix;
     }
 
     getCellFromIndex(index) {}
