@@ -4,7 +4,7 @@ import * as chordDetection from "./chordDetection";
 import * as filter from "./filter";
 import * as Track from "./Track";
 
-const timbreNormalizationAmount = .2;
+const timbreNormalizationAmount = 0.2;
 
 export default class Features {
     timbreMax = new Array(12).fill(0);
@@ -48,7 +48,7 @@ export default class Features {
             this.segmentStartDuration.push([segment.start, segment.duration]);
         });
         this.length = this.segments.length;
-        this.sampleAmount = Math.min(options.samples || Math.ceil(this.duration / options.sampleDuration),500);
+        this.sampleAmount = Math.min(options.samples || Math.ceil(this.duration / options.sampleDuration), 500);
         this.sampleDuration = analysisData.track.duration / this.sampleAmount;
         this.sampleBlur = options.sampleBlur || 1;
         log.info("Reducing segments, sample amount:", this.sampleAmount);
@@ -90,27 +90,28 @@ export default class Features {
             s.processPitch();
             this.processed.pitches.push(s.pitches);
 
-
             this.processed.loudness.push(s.getLoudnessFeatures());
-            const nextSegmentStartLoudness =  i+1 < this.segments.length ? this.segments[i+1].getLoudnessFeatures()[0] : 0;
-            this.processed.avgLoudness.push(s.getAverageLoudness(nextSegmentStartLoudness))
+            const nextSegmentStartLoudness =
+                i + 1 < this.segments.length ? this.segments[i + 1].getLoudnessFeatures()[0] : 0;
+            this.processed.avgLoudness.push(s.getAverageLoudness(nextSegmentStartLoudness));
             s.processTimbre(this.timbreMin, this.timbreMax, this.timbreBiggest, this.timbreTotalBiggest);
-            const timbres = []
-            for(let t = 0; t < 12; t++){
-                if(t === 0){ // replace by loudnes
-                    const timbre = this.processed.avgLoudness[this.processed.avgLoudness.length-1]-0.5;
-                    timbres.push(timbre)
-                }else{
-                    const timbre = (1-timbreNormalizationAmount)*s.timbres[t] + timbreNormalizationAmount*s.timbresScaled[t];
-                    timbres.push(timbre)
+            const timbres = [];
+            for (let t = 0; t < 12; t++) {
+                if (t === 0) {
+                    // replace by loudnes
+                    const timbre = this.processed.avgLoudness[this.processed.avgLoudness.length - 1] - 0.5;
+                    timbres.push(timbre);
+                } else {
+                    const timbre =
+                        (1 - timbreNormalizationAmount) * s.timbres[t] + timbreNormalizationAmount * s.timbresScaled[t];
+                    timbres.push(timbre);
                 }
             }
-            this.processed.timbres.push(timbres)
+            this.processed.timbres.push(timbres);
 
             this.processed.tonalEnergy.push(s.tonalityEnergy);
             this.processed.tonalRadius.push(s.tonalityRadius);
             this.processed.tonalAngle.push(s.tonalityAngle);
-
         });
         for (let i = 0; i < this.segments.length; i++) {
             // Try to remove percussion from pitch features
@@ -134,25 +135,27 @@ export default class Features {
         }
     }
 
-    processSamples(){
+    processSamples() {
+        this.sampled.pitches;
+        this.sampled.timbres;
+
         this.sampled.chords = [];
         this.sampled.majorminor = [];
-        for(let i = 0; i < this.sampleAmount; i++){
+        for (let i = 0; i < this.sampleAmount; i++) {
             this.sampled.chords[i] = chordDetection.getPopChord(this.sampled.pitches[i]);
             this.sampled.majorminor[i] = chordDetection.getMajorMinorNess(this.sampled.pitches[i]);
         }
 
-        this.sampled.smoothedAvgLoudness = filter.gaussianBlur1D(this.sampled.avgLoudness, 3);
+        this.sampled.smoothedAvgLoudness = filter.gaussianBlur1D(this.sampled.avgLoudness, 1);
         this.averageLoudness = 0;
         this.maxLoudness = 0;
-        this.sampled.smoothedAvgLoudness.forEach(loudness => {
+        this.sampled.smoothedAvgLoudness.forEach((loudness) => {
             this.averageLoudness += loudness;
-            if(loudness > this.maxLoudness){
+            if (loudness > this.maxLoudness) {
                 this.maxLoudness = loudness;
             }
-        })
+        });
         this.averageLoudness /= this.sampled.smoothedAvgLoudness.length;
-
     }
 
     /**

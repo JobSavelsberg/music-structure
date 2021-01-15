@@ -1,7 +1,7 @@
 import assert from "assert";
 import { NumberType, getNumberTypeByName } from "./NumberType";
 import * as log from "../../dev/log";
-import * as HalfMatrix from "./HalfMatrix"
+import * as HalfMatrix from "./HalfMatrix";
 export default class Matrix {
     static get NumberType() {
         return NumberType;
@@ -32,7 +32,7 @@ export default class Matrix {
     }
 
     static from(matrix, options) {
-        if(typeof matrix === HalfMatrix) return this.fromHalfMatrix(matrix);
+        if (typeof matrix === HalfMatrix) return this.fromHalfMatrix(matrix);
         if (!options) options = {};
         const featureAmount = options.featureAmount || matrix.featureAmount;
         const numberType = options.numberType || matrix.numberType;
@@ -86,14 +86,14 @@ export default class Matrix {
         return matrix;
     }
 
-    clone(){
+    clone() {
         const matrix = new Matrix({
             height: this.height,
             width: this.width,
             numberType: this.numberType,
             sampleDuration: this.sampleDuration,
         });
-        matrix.fillByIndex(i => this.data[i]);
+        matrix.fillByIndex((i) => this.data[i]);
         return matrix;
     }
 
@@ -127,14 +127,14 @@ export default class Matrix {
     getValueNormalizedMirrored(x, y) {
         return this.getValueNormalized(x, y);
     }
-    getValueNormalized(x, y, f=0) {
+    getValueNormalized(x, y, f = 0) {
         return this.data[(y * this.width + x) * this.featureAmount + f] / this.numberType.scale;
     }
 
-    getColumnNormalized(x){
+    getColumnNormalized(x) {
         const values = new Float32Array(this.height);
         for (let y = 0; y < this.height; y++) {
-            values[y] = this.data[(y * this.width + x) * this.featureAmount ] / this.numberType.scale;
+            values[y] = this.data[(y * this.width + x) * this.featureAmount] / this.numberType.scale;
         }
         return values;
     }
@@ -172,7 +172,8 @@ export default class Matrix {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 for (let f = 0; f < this.featureAmount; f++) {
-                    this.data[(y * this.width + x) * this.featureAmount + f] = callback(x, y, f)*this.numberType.scale;
+                    this.data[(y * this.width + x) * this.featureAmount + f] =
+                        callback(x, y, f) * this.numberType.scale;
                 }
             }
         }
@@ -185,11 +186,10 @@ export default class Matrix {
         }
     }
 
-
     forEachCell(callback) {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                callback(x, y, this.data[(y * this.width + x) * this.featureAmount ] );
+                callback(x, y, this.data[(y * this.width + x) * this.featureAmount]);
             }
         }
     }
@@ -252,11 +252,11 @@ export default class Matrix {
         return this.width;
     }
 
-    getSampleAmount(){
+    getSampleAmount() {
         return this.height;
     }
 
-    getSampleDuration(){
+    getSampleDuration() {
         return this.sampleDuration;
     }
 
@@ -278,7 +278,5 @@ export default class Matrix {
         }
     }
 
-    subtract(matrix){
-
-    }
+    subtract(matrix) {}
 }

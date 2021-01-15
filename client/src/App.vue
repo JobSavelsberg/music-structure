@@ -33,6 +33,12 @@ html {
     position: relative;
     overflow: hidden;
 }
+body {
+    overflow: hidden;
+}
+::-webkit-scrollbar {
+    display: none;
+}
 :not(input):not(textarea),
 :not(input):not(textarea)::after,
 :not(input):not(textarea)::before {

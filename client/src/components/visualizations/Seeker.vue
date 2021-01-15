@@ -8,11 +8,12 @@
         @click="clickedSVG"
     >
         <rect
+            class="seekerRect"
             :x="!isVertical * ((useZoom && isZoomed ? 0.5 : seekerNormalized) * width - 1.25)"
             :y="isVertical * ((useZoom && isZoomed ? 0.5 : seekerNormalized) * height - 1.25)"
             :width="isVertical ? width * 2 : 2.5"
             :height="isVertical ? 2.5 : height * 2"
-            :fill="isVertical ? '#1D4924' : '#1DB954'"
+            :fill="seekerColor"
         ></rect>
     </svg>
 </template>
@@ -23,7 +24,7 @@ import * as log from "../../dev/log";
 import * as player from "../../app/player";
 
 export default {
-    props: ["width", "height", "useZoom", "vertical"],
+    props: ["width", "height", "useZoom", "vertical", "color"],
     data() {
         return {};
     },
@@ -50,6 +51,10 @@ export default {
                 return 0;
             }
         },
+        seekerColor() {
+            if (this.color) return this.color;
+            return this.isVertical ? "#1D4924" : "#1DB954";
+        },
     },
     mounted() {},
     methods: {
@@ -64,14 +69,6 @@ export default {
                 yNormalized = event.layerY / this.height;
             }
 
-            /* Code for scapeplot
-            if (yNormalized > 1) {
-                const size = Math.floor(Math.min(Math.max(0, 2 - yNormalized), 1) * this.track.features.sampleAmount);
-                const start = Math.round(xNormalized * this.track.features.sampleAmount - size / 2);
-
-                this.track.updateScoreMatrix(size, start);
-            }*/
-            //log.debug(xNormalized, yNormalized);
             if (this.useZoom && this.isZoomed) {
                 const xFromMiddle = xNormalized * 2 - 1;
                 const seekerPos = Math.min(1, Math.max(0, this.seekerNormalized + xFromMiddle / (2 * this.zoomScale)));

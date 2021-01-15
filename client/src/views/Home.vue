@@ -112,11 +112,11 @@ export default {
                 "padding-right": `${this.padding}px`,
             };
         },
-        padding(){
-            return Math.round((this.windowWidth - this.mainContentWidth) / 2 / 4)*4
+        padding() {
+            return Math.round((this.windowWidth - this.mainContentWidth) / 2 / 4) * 4;
         },
         mainContentWidth() {
-            const size = Math.min(this.windowWidth, this.windowHeight)*0.85;
+            const size = Math.min(this.windowWidth, this.windowHeight) * 0.85;
             return size;
         },
         allTestSets() {
@@ -134,7 +134,7 @@ export default {
             this.loadTestSet(newTestSet);
         },
         volume(newVol, oldVol) {
-            if(!player.autoConnect){
+            if (!player.autoConnect) {
                 player.transferPlayback();
                 player.autoConnect = true;
             }
@@ -183,8 +183,12 @@ export default {
 </script>
 
 <style>
+.home {
+    overflow: hidden; /* Hide scrollbars */
+}
 .mainContent {
     display: inline-block;
+    overflow: hidden;
 }
 .volumeSlider {
     height: 100%;

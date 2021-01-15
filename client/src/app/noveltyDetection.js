@@ -1,6 +1,3 @@
-import * as log from "../dev/log";
-import asciichart from "asciichart";
-import { maxeqS } from "numeric";
 import * as filter from "./filter";
 import Matrix from "./dataStructures/Matrix";
 import assert from "assert";
@@ -126,7 +123,7 @@ export function findLocalMaxima(novelty, threshold = 0) {
     for (let i = 1; i < novelty.length - 1; i++) {
         const val = novelty[i];
         // prefers first index if maxima spans multiple samples
-        if (novelty[i - 1] < val && val >= novelty[i + 1] && val > threshold*max) {
+        if (novelty[i - 1] < val && val >= novelty[i + 1] && val > threshold * max) {
             maximaIndexes.push(i);
         }
     }
@@ -134,10 +131,10 @@ export function findLocalMaxima(novelty, threshold = 0) {
 }
 
 export function findPeaks(novelty) {
-    const peaks = []
-    peaks.push({sample: 0, height: 0, confidence: 1})
+    const peaks = [];
+    peaks.push({ sample: 0, height: 0, confidence: 1 });
     const max = Math.max.apply(Math, novelty);
-    
+
     const maxima = [];
     const minima = [];
 
@@ -145,38 +142,37 @@ export function findPeaks(novelty) {
         const val = novelty[i];
         // prefers first index if maxima spans multiple samples
         if (novelty[i - 1] < val && val >= novelty[i + 1]) {
-            maxima.push({sample: i, height: val});
+            maxima.push({ sample: i, height: val });
         }
         if (novelty[i - 1] > val && val <= novelty[i + 1]) {
-            minima.push({sample: i, height: val});
+            minima.push({ sample: i, height: val });
         }
     }
 
-    for(let i = 0; i < maxima.length; i++){
+    for (let i = 0; i < maxima.length; i++) {
         const maxi = maxima[i];
-        const leftMinima = i === 0 ? {sample: 0, height: 0} : minima[i-1];
-        const rightMinima = i >= minima.length ? {sample: novelty.length-1, height: 0} : minima[i];
+        const leftMinima = i === 0 ? { sample: 0, height: 0 } : minima[i - 1];
+        const rightMinima = i >= minima.length ? { sample: novelty.length - 1, height: 0 } : minima[i];
         let smallestMinima;
-        if(leftMinima.height < rightMinima.height){
+        if (leftMinima.height < rightMinima.height) {
             smallestMinima = leftMinima;
-        }else{
+        } else {
             smallestMinima = rightMinima;
-        } 
+        }
         assert(smallestMinima, "No minima assigned as smallest");
         const maxPeakHeightDiff = maxi.height - smallestMinima.height;
-        const confidence = maxPeakHeightDiff / max; 
-        peaks.push({sample: maxi.sample, height: maxi.height, confidence});
+        const confidence = maxPeakHeightDiff / max;
+        peaks.push({ sample: maxi.sample, height: maxi.height, confidence });
     }
     return peaks;
 }
 
-
-export function columnDensity(matrix){
+export function columnDensity(matrix) {
     const ssmSize = matrix.size || matrix.width;
     const novelty = new Float32Array(ssmSize);
-    for(let i = 0; i <ssmSize; i++){
+    for (let i = 0; i < ssmSize; i++) {
         novelty[i] = 0;
-        for(let j = 0; j < ssmSize; j++){
+        for (let j = 0; j < ssmSize; j++) {
             novelty[i] += matrix.getValueNormalizedMirrored(i, j);
         }
         novelty[i] /= ssmSize;
@@ -184,20 +180,20 @@ export function columnDensity(matrix){
     return novelty;
 }
 
-export function normalizeByColumnDensity(matrix){
+export function normalizeByColumnDensity(matrix) {
     const ssmSize = matrix.size || matrix.width;
     const density = columnDensity(matrix);
-    const normalizedMatrix = Matrix.from(matrix, {numberType: Matrix.NumberType.FLOAT32});
+    const normalizedMatrix = Matrix.from(matrix, { numberType: Matrix.NumberType.FLOAT32 });
     let max = 0;
-    normalizedMatrix.fill((x,y) => {
+    normalizedMatrix.fill((x, y) => {
         let colDensity = density[x];
-        if(colDensity === 0){
-            colDensity = 1/ssmSize;
+        if (colDensity === 0) {
+            colDensity = 1 / ssmSize;
         }
-        const val = matrix.getValueNormalizedMirrored(x, y) / (ssmSize*colDensity);
-        if(val > max) max = val;
+        const val = matrix.getValueNormalizedMirrored(x, y) / (ssmSize * colDensity);
+        if (val > max) max = val;
         return val;
-    })
+    });
     normalizedMatrix.divide(max);
 
     return normalizedMatrix;

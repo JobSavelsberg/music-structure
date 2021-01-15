@@ -19,12 +19,12 @@ export function generate1DgaussianKernel(size, sigma = size / 2) {
     return kernel;
 }
 
-export function generate1DlinearKernel(size){
+export function generate1DlinearKernel(size) {
     const kernel = new Float32Array(size);
     const meanIndex = (size - 1) / 2;
     let sum = 0; // For accumulating the kernel values
     for (let x = 0; x < size; x++) {
-        kernel[x] = 1-Math.abs((x-meanIndex)/(size/2));
+        kernel[x] = 1 - Math.abs((x - meanIndex) / (size / 2));
         // Accumulate the kernel values
         sum += kernel[x];
     }
@@ -36,7 +36,7 @@ export function generate1DlinearKernel(size){
     return kernel;
 }
 
-export function linearBlur2DOptimized(matrix, size){
+export function linearBlur2DOptimized(matrix, size) {
     log.debug("Performing 2D linear", size);
     const matrixSize = matrix.getSize();
     const fullKernelSize = size * 2 + 1;
@@ -93,9 +93,8 @@ export function gaussianBlur2DOptimized(matrix, size) {
             } else if (x + kx >= matrixSize) {
                 sum += matrix.getValueMirrored(matrixSize - 1, y) * kernel1D[kx + size];
             }
-            
         }
-        
+
         return sum;
     });
     const blurredMatrixSecondPass = Matrix.from(matrix);

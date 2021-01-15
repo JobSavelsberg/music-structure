@@ -74,29 +74,34 @@ export async function startSSM(
         isCalculating = true;
 
         ssm.onmessage = (event) => {
-            isCalculating = false;
-            const result = event.data;
-            if (result.id === trackId) {
-                if (createScapePlot) {
-                    result.scapePlot = new HalfMatrix(result.scapePlot);
-                    result.scapePlotAnchorColor = new Float32Array(result.scapePlotAnchorColor);
-                }
-
-                result.matrixes.forEach((matrix) => {
-                    if (matrix.buffer.type === "Matrix") {
-                        matrix.matrix = new Matrix(matrix.buffer);
-                    } else if (matrix.buffer.type === "HalfMatrix") {
-                        matrix.matrix = new HalfMatrix(matrix.buffer);
+            if (event.data.messageType === "update") {
+                window.eventBus.$emit("update", event.data.message);
+            }
+            if (event.data.messageType === "final") {
+                isCalculating = false;
+                const result = event.data.message;
+                if (result.id === trackId) {
+                    if (createScapePlot) {
+                        result.scapePlot = new HalfMatrix(result.scapePlot);
+                        result.scapePlotAnchorColor = new Float32Array(result.scapePlotAnchorColor);
                     }
-                    delete matrix.buffer;
-                });
 
-                result.graphs.forEach((graph) => {
-                    graph.data = new Float32Array(graph.buffer);
-                    delete graph.buffer;
-                });
+                    result.matrixes.forEach((matrix) => {
+                        if (matrix.buffer.type === "Matrix") {
+                            matrix.matrix = new Matrix(matrix.buffer);
+                        } else if (matrix.buffer.type === "HalfMatrix") {
+                            matrix.matrix = new HalfMatrix(matrix.buffer);
+                        }
+                        delete matrix.buffer;
+                    });
 
-                resolve(result);
+                    result.graphs.forEach((graph) => {
+                        graph.data = new Float32Array(graph.buffer);
+                        delete graph.buffer;
+                    });
+
+                    resolve(result);
+                }
             }
         };
     });

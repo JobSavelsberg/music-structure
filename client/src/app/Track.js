@@ -16,7 +16,7 @@ export const samples = 500;
 export const sampleDuration = 0.5;
 export const sampleBlur = 1; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
 
-export const enhanceBlurLength = 8;
+export const enhanceBlurLength = 6;
 export const threshold = 0.65;
 export const thresholdPercentage = 0.5;
 export const tempoRatios = [0.66, 0.81, 1, 1.22, 1.5];
@@ -30,6 +30,8 @@ export const averageLoudnessBlur = 3;
 const useSampled = true;
 const allPitches = false;
 export default class Track {
+    eventListenerSet = false;
+
     trackData = null;
     analysisData = null;
     groundTruth = null;
@@ -39,8 +41,10 @@ export default class Track {
     scapePlotAnchorColor = null;
     graphFeatures = []; // {name, data};
     structures = []; // {name, data: [{start, duration, label}]}
-    structureSections = [];
-    optimalStructure = [];
+
+    separators = [];
+    courseStructure = [];
+    fineStructure = [];
 
     features;
 
@@ -109,21 +113,32 @@ export default class Track {
                 this.scapePlotAnchorColor = result.scapePlotAnchorColor;
                 this.structureSections = result.structureSections;
                 this.optimalStructure = result.optimalStructure;
+                this.separators = result.separators;
+                this.courseStructure = result.courseStructure;
+                this.fineStructure = result.fineStructure;
                 window.eventBus.$emit("readyForVis");
             });
+        log.debug("Setting listerner for", this.getName());
+        window.eventBus.$on("update", this.testListener);
+        this.eventListenerSet = true;
+    }
 
-        /*const nonworkerTime = performance.now();
-        SSM.calculatePitchTimbre(this.features.processed.pitches, this.features.processed.timbres).then(() => {
-            const diff = performance.now() - nonworkerTime;
-            log.debug("Local SSM", diff);
-        });*/
+    testListener = (result) => {
+        log.info(this.getName(), "HEY", result);
+    };
+
+    deselect() {
+        if (this.eventListenerSet) {
+            log.debug("Turning off listener for", this.getName());
+            window.eventBus.$off("update", this.testListener);
+        }
     }
 
     getMatrixByName(name) {
         for (const matrix of this.matrixes) {
             if (matrix.name === name) return matrix;
         }
-        log.error("Could not find matrix with name", name)
+        log.error("Could not find matrix with name", name);
     }
 
     updateDTW(start, end) {
@@ -140,18 +155,12 @@ export default class Track {
 
         log.debug(strictpath);
 
-        const scoreMatrix = pathExtraction.visualizationMatrix(
-            strictpath,
-            strictpath.getSampleAmount(),
-            start,
-            end
-        );
-
+        const scoreMatrix = pathExtraction.visualizationMatrix(strictpath, strictpath.getSampleAmount(), start, end);
 
         if (index < 0) {
             this.matrixes.push({ name: "DTW", matrix: scoreMatrix });
         } else {
-            this.matrixes[index] = { name: "DTW", matrix: scoreMatrix }
+            this.matrixes[index] = { name: "DTW", matrix: scoreMatrix };
         }
         window.eventBus.$emit("readyForVis");
     }

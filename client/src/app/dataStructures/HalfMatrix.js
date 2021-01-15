@@ -35,7 +35,7 @@ export default class HalfMatrix {
     }
 
     static from(matrix, options) {
-        if(typeof matrix === Matrix){
+        if (typeof matrix === Matrix) {
             return this.fromMatrix(matrix);
         }
         if (!options) options = {};
@@ -52,18 +52,18 @@ export default class HalfMatrix {
             sampleDuration: matrix.sampleDuration,
         });
         halfMatrix.fill((x, y) => {
-            return matrix.getValue(x, y)
+            return matrix.getValue(x, y);
         });
         return halfMatrix;
     }
 
-    clone(){
+    clone() {
         const halfMatrix = new HalfMatrix({
             size: this.size,
             numberType: this.numberType,
             sampleDuration: this.sampleDuration,
         });
-        halfMatrix.fillByIndex(i => this.data[i]);
+        halfMatrix.fillByIndex((i) => this.data[i]);
         return halfMatrix;
     }
 
@@ -117,14 +117,14 @@ export default class HalfMatrix {
             return this.data[((y * y + y) / 2) * this.featureAmount + x * this.featureAmount] / this.numberType.scale;
         }
     }
-    getValueNormalized(x, y, f=0) {
+    getValueNormalized(x, y, f = 0) {
         return this.data[((y * y + y) / 2) * this.featureAmount + x * this.featureAmount + f] / this.numberType.scale;
     }
 
-    getColumnNormalized(x){
+    getColumnNormalized(x) {
         const values = new Float32Array(this.size);
         for (let y = 0; y < this.size; y++) {
-            values[y] = this.getValueNormalizedMirrored(x,y);
+            values[y] = this.getValueNormalizedMirrored(x, y);
         }
         return values;
     }
@@ -164,7 +164,7 @@ export default class HalfMatrix {
             const cellsBefore = ((y * y + y) / 2) * this.featureAmount;
             for (let x = 0; x < y + 1; x++) {
                 for (let f = 0; f < this.featureAmount; f++) {
-                    this.data[cellsBefore + x * this.featureAmount + f] = callback(x, y, f)*this.numberType.scale;
+                    this.data[cellsBefore + x * this.featureAmount + f] = callback(x, y, f) * this.numberType.scale;
                 }
             }
         }
@@ -187,7 +187,7 @@ export default class HalfMatrix {
     }
 
     /**
-     * Expect normalized number [0,1] and stores this as number of specified type, with 1 being scaled to the number's max
+     * Expect normalized number [0,1] and stfores this as number of specified type, with 1 being scaled to the number's max
      * @param {*} callback function that returns number in range 0,1
      */
     fillNormalized(callback) {
@@ -198,7 +198,6 @@ export default class HalfMatrix {
             }
         }
     }
-
 
     map(callback) {
         let i = this.length;
@@ -253,11 +252,11 @@ export default class HalfMatrix {
         };
     }
 
-    getSampleAmount(){
+    getSampleAmount() {
         return this.size;
     }
 
-    getSampleDuration(){
+    getSampleDuration() {
         return this.sampleDuration;
     }
 

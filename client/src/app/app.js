@@ -41,8 +41,12 @@ export async function initialize() {
 
 export async function selectTrackAtIndex(index) {
     store.commit("loadingTrack", true);
-    return getAnalysis(store.getters.trackList[index]).then(() => {
+    const selectedTrack = store.getters.selectedTrack;
+    const newTrack = store.getters.trackList[index];
+    if (selectedTrack && selectedTrack !== newTrack) selectedTrack.deselect();
+    return getAnalysis(newTrack).then(() => {
         store.commit("setSelectedIndex", index);
+
         store.commit("loadingTrack", false);
     });
 }

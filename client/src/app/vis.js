@@ -10,17 +10,17 @@ export const zeroOneColor = d3
     .interpolator(d3.interpolateViridis);
 
 export const zeroOneColorWarm = d3
-.scaleSequential()
-.domain([0, 1])
-.interpolator(d3.interpolateWarm);
+    .scaleSequential()
+    .domain([0, 1])
+    .interpolator(d3.interpolateWarm);
 export const zeroOneColorCool = d3
-.scaleSequential()
-.domain([0, 1])
-.interpolator(d3.interpolateCool);
+    .scaleSequential()
+    .domain([0, 1])
+    .interpolator(d3.interpolateCool);
 export const zeroOneColorTurbo = d3
-.scaleSequential()
-.domain([0, 1])
-.interpolator(d3.interpolateTurbo);
+    .scaleSequential()
+    .domain([0, 1])
+    .interpolator(d3.interpolateTurbo);
 export const pitchColor = zeroOneColor;
 export const greyScaleColor = d3
     .scaleSequential()
@@ -43,7 +43,7 @@ export const divergingColor = d3
     .domain([-1, 0, 1])
     .interpolator(d3.interpolateRdBu);
 export const categoryColor = d3.scaleOrdinal().range(d3.schemeCategory10);
-export function categoryColorWithOpacity(color, opacity){
+export function categoryColorWithOpacity(color, opacity) {
     const c = d3.rgb(categoryColor(color));
     return `rgba(${c.r},${c.g},${c.b},${opacity})`;
 }
@@ -53,11 +53,12 @@ export function lightness(color, lightness) {
     return hslColor.hex();
 }
 
-export function sinebowColorNormalizedRadius(angle, radius){
+export function sinebowColorNormalizedRadius(angle, radius, confidence = 1) {
     const color = sinebowColorNormalized(angle);
     const colorHSL = d3.hsl(color);
-    colorHSL.s = Math.pow(radius,0.2);
-    return colorHSL.formatHex();
+    colorHSL.s = Math.pow(radius, 0.2);
+    const c = d3.rgb(colorHSL);
+    return `rgba(${c.r},${c.g},${c.b},${confidence})`;
 }
 
 export function renderRawPitch(track, left, width, yOffset, height, ctx) {
@@ -243,7 +244,7 @@ export function drawAnchorPoints(track, ctx, canvasWidth) {
     }
 }
 
-export function drawScapePlot(track, ctx, canvasWidth, color=true) {
+export function drawScapePlot(track, ctx, canvasWidth, color = true) {
     ctx.clearRect(0, 0, canvasWidth, canvasWidth);
     // eslint-disable-next-line no-unreachable
     const scapePlot = track.scapePlot;
@@ -258,13 +259,13 @@ export function drawScapePlot(track, ctx, canvasWidth, color=true) {
 
     scapePlot.forEachCell((x, y, value) => {
         //ctx.fillStyle = greyScaleColor(value);
-        if(color){
+        if (color) {
             ctx.fillStyle = anchorColorLerp(x, y, scapePlotAnchorColor, value);
-        }else{
-            ctx.fillStyle = zeroOneColor(value)
+        } else {
+            ctx.fillStyle = zeroOneColor(value);
 
-            if(value > 0.95){
-                ctx.fillStyle = 'red';
+            if (value > 0.95) {
+                ctx.fillStyle = "red";
             }
         }
 
