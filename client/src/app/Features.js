@@ -2,7 +2,6 @@ import * as log from "../dev/log";
 import Segment from "./Segment";
 import * as chordDetection from "./chordDetection";
 import * as filter from "./filter";
-import * as Track from "./Track";
 
 const timbreNormalizationAmount = 0.2;
 
@@ -37,6 +36,8 @@ export default class Features {
     sampleStartDuration = [];
     sampleBlur = 0; // in proportion to duration (<1 is no blur, 2 is blur of twice duration)
 
+    downSampledTimbre = [];
+
     maxLoudness;
     averageLoudness;
 
@@ -58,6 +59,7 @@ export default class Features {
         this.processSegments();
         this.sampleFeatures();
         this.processSamples();
+        this.downSampledTimbre = this.downSampleTimbre(options.downsampleAmount);
     }
 
     /**
@@ -231,6 +233,42 @@ export default class Features {
             //this.samples[i] /= blurDuration
             this.divideFeatures(i, blurDuration);
         }
+    }
+
+    downSampleTimbre(amount) {
+        const downSampleAmount = amount;
+        const downSampleRatio = this.sampleAmount / (downSampleAmount + 1);
+        const downSampledTimbre = [];
+        for (let i = 0; i < downSampleAmount; i++) {
+            const startIndex = i * downSampleRatio;
+            const endIndex = (i + 1) * downSampleRatio;
+
+            const startSample = Math.floor(startIndex);
+            const startSampleWeight = 1 - (startIndex - startSample);
+            const endSample = Math.floor(endIndex);
+            const endSampleWeight = endIndex - endSample;
+
+            let summedTimbre = new Float32Array(12).fill(0);
+
+            for (let f = 0; f < 12; f++) {
+                summedTimbre[f] += this.sampled.timbres[startSample][f] * startSampleWeight;
+                summedTimbre[f] += this.sampled.timbres[endSample][f] * endSampleWeight;
+            }
+
+            for (let s = startSample + 1; s < endSample; s++) {
+                for (let f = 0; f < 12; f++) {
+                    summedTimbre[f] += this.sampled.timbres[s][f];
+                }
+            }
+
+            for (let f = 0; f < 12; f++) {
+                summedTimbre[f] /= downSampleRatio;
+            }
+
+            downSampledTimbre.push(summedTimbre);
+        }
+        log.debug(downSampledTimbre);
+        return downSampledTimbre;
     }
 
     initSampleFeatures() {

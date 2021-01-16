@@ -1114,6 +1114,24 @@ export function MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sam
     return MDSColorGivenDistanceMatrix(segments, distanceMatrix);
 }
 
+export function MDSColorTimbreSamples(timbreFeatures) {
+    const amount = timbreFeatures.length;
+    const distanceMatrix = new HalfMatrix({ size: amount, numberType: HalfMatrix.NumberType.FLOAT32 });
+    distanceMatrix.fill((x, y) => {
+        return similarity.cosine(timbreFeatures[x], timbreFeatures[y]);
+    });
+    //const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
+    const MdsFeature = mds.getMDSFeatureWithGradientDescent(distanceMatrix);
+
+    const coloredSamples = [];
+
+    for (let i = 0; i < amount; i++) {
+        coloredSamples.push(MdsFeature[i]);
+    }
+
+    return coloredSamples;
+}
+
 export function clusterTimbreSegmentsWithFeatures(timbreFeatures, segments, sampleDuration) {
     const coloredSegments = [];
 

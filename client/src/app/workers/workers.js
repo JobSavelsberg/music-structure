@@ -1,18 +1,46 @@
 import Matrix from "../dataStructures/Matrix";
 import HalfMatrix from "../dataStructures/HalfMatrix";
+import * as log from "../../dev/log";
 
 let ssm;
 let cluster;
 let tsne;
 
+let timbreWorker;
+let timbreWorkerBusy = false;
+
 export async function init() {
     ssm = new Worker("./ssmWorker.js", { type: "module" });
+    timbreWorker = new Worker("./timbreWorker.js", { type: "module" });
+
     //tsne = new Worker("./tsneWorker.js", { type: "module" });
     //cluster = new Worker("./clusterWorker.js", { type: "module" });
 }
 
 let isCalculating = false;
 
+export async function updateTimbreVis(timbreFeatures, timbreSliders, sampleDuration) {
+    return new Promise((resolve) => {
+        if (timbreWorkerBusy) {
+            timbreWorker.terminate();
+            timbreWorker = new Worker("./timbreWorker.js", { type: "module" });
+        }
+        timbreWorker.postMessage({
+            timbreFeatures,
+            timbreSliders,
+            sampleDuration,
+            timestamp: new Date(),
+        });
+        timbreWorkerBusy = true;
+
+        timbreWorker.onmessage = (event) => {
+            timbreWorkerBusy = false;
+            const sendBackTime = new Date() - event.data.timestamp;
+            log.debug("Got back from timbreworker", sendBackTime);
+            resolve(event.data.result);
+        };
+    });
+}
 /**
  *
  * @param {*} trackId

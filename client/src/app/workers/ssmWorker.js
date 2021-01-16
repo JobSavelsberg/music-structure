@@ -360,6 +360,21 @@ addEventListener("message", (event) => {
             data.sampleDuration
         );
         structures.push({ name: "Timbre Sampled", data: processedTimbreSegmentsSampled, verticalPosition: true });
+
+        const startTime = performance.now();
+        const duration2 = 2; // samples
+        const sampledSegments2 = structure.createFixedDurationStructureSegments(
+            data.sampleAmount,
+            data.sampleDuration,
+            duration2
+        );
+        const processedTimbreSegmentsSampled2 = structure.processTimbreSegments(
+            data.timbreFeatures,
+            sampledSegments2,
+            data.sampleDuration
+        );
+        structures.push({ name: "Timbre Sample Level", data: processedTimbreSegmentsSampled2, verticalPosition: true });
+        log.debug("Took", performance.now() - startTime);
     }
 
     message.courseStructure = structure.MDSColorSegments(mutorStructure, strictPathMatrix);

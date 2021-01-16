@@ -10,7 +10,7 @@ export default new Vuex.Store({
         browser: "",
         user: Object,
         trackList: [],
-        selectedIndex: -1,
+        selectedIndex: 0,
         loadingTrack: true,
         // Player global variables
         playerReady: false,

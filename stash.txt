@@ -1,0 +1,320 @@
+diff --git a/client/src/app/Features.js b/client/src/app/Features.js
+index c8912e2..b8a2206 100644
+--- a/client/src/app/Features.js
++++ b/client/src/app/Features.js
+@@ -37,6 +37,8 @@ export default class Features {
+     sampleStartDuration = [];
+     sampleBlur = 0; // in proportion to duration (<1 is no blur, 2 is blur of twice duration)
+ 
++    downSampledTimbre = [];
++
+     maxLoudness;
+     averageLoudness;
+ 
+@@ -58,6 +60,7 @@ export default class Features {
+         this.processSegments();
+         this.sampleFeatures();
+         this.processSamples();
++        //this.downSampledTimbre = this.downSampleTimbre();
+     }
+ 
+     /**
+@@ -233,6 +236,41 @@ export default class Features {
+         }
+     }
+ 
++    /*downSampleTimbre() {
++        const downSampleAmount = Track.maxTimbreDownSamples;
++        const downSampleRatio = this.sampleAmount / downSampleAmount;
++        const downSampledTimbre = [];
++        for (let i = 0; i < downSampleAmount; i++) {
++            const startIndex = i * downSampleRatio;
++            const endIndex = (i + 1) * downSampleRatio;
++
++            const startSample = Math.floor(startIndex);
++            const startSampleWeight = 1 - (startIndex - startSample);
++            const endSample = Math.floor(endIndex);
++            const endSampleWeight = endIndex - endSample;
++
++            let summedTimbre = new Float32Array(12).fill(0);
++
++            for (let f = 0; f < 12; f++) {
++                summedTimbre[f] += this.sampled.timbres[startSample][f] * startSampleWeight;
++                summedTimbre[f] += this.sampled.timbres[endSample][f] * endSampleWeight;
++            }
++
++            for (let s = startSample + 1; s < endSample; s++) {
++                for (let f = 0; f < 12; f++) {
++                    summedTimbre[f] += this.sampled.timbres[s][f];
++                }
++            }
++
++            for (let f = 0; f < 12; f++) {
++                summedTimbre[f] /= downSampleRatio;
++            }
++
++            downSampledTimbre[i] = summedTimbre;
++        }
++        return downSampledTimbre;
++    }*/
++
+     initSampleFeatures() {
+         for (const featureName in this.processed) {
+             this.sampled[featureName] = new Array(this.sampleAmount).fill(0);
+diff --git a/client/src/app/Track.js b/client/src/app/Track.js
+index 102fd09..102d79b 100644
+--- a/client/src/app/Track.js
++++ b/client/src/app/Track.js
+@@ -27,6 +27,8 @@ export const createScapePlot = false;
+ 
+ export const averageLoudnessBlur = 3;
+ 
++export const maxTimbreDownSamples = 250;
++
+ const useSampled = true;
+ const allPitches = false;
+ export default class Track {
+@@ -46,6 +48,9 @@ export default class Track {
+     courseStructure = [];
+     fineStructure = [];
+ 
++    //timbreStructure = [];
++    //timbreFeatureGraph = [];
++
+     features;
+ 
+     processed = false;
+@@ -71,6 +76,14 @@ export default class Track {
+         this.processed = true;
+     }
+ 
++    updateTimbreVis(timbreSliders) {
++        /*workers
++            .updateTimbreVis(this.features.downSampledTimbre, timbreSliders, this.features.sampleDuration)
++            .then((result) => {
++                this.timbreFeatureGraph = result;
++            });*/
++    }
++
+     /**
+      * Self similarity matrix, takes a few seconds so async is needed
+      */
+@@ -116,6 +129,7 @@ export default class Track {
+                 this.separators = result.separators;
+                 this.courseStructure = result.courseStructure;
+                 this.fineStructure = result.fineStructure;
++                //this.timbreStructure = result.timbreStructure;
+                 window.eventBus.$emit("readyForVis");
+             });
+         log.debug("Setting listerner for", this.getName());
+diff --git a/client/src/app/structure.js b/client/src/app/structure.js
+index f2046a8..0ce2734 100644
+--- a/client/src/app/structure.js
++++ b/client/src/app/structure.js
+@@ -1114,6 +1114,25 @@ export function MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sam
+     return MDSColorGivenDistanceMatrix(segments, distanceMatrix);
+ }
+ 
++/*
++export function MDSColorTimbreSamples(timbreFeatures) {
++    const amount = timbreFeatures.length;
++    const distanceMatrix = new HalfMatrix({ size: amount, numberType: HalfMatrix.NumberType.FLOAT32 });
++    distanceMatrix.fill((x, y) => {
++        return similarity.cosine(timbreFeatures[x], timbreFeatures[y]);
++    });
++    //const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
++    const MdsFeature = mds.getMDSFeatureWithGradientDescent(distanceMatrix);
++
++    const coloredSamples = [];
++
++    for (let i = 0; i < amount; i++) {
++        coloredSamples.push(MdsFeature[i]);
++    }
++
++    return coloredSamples;
++}*/
++
+ export function clusterTimbreSegmentsWithFeatures(timbreFeatures, segments, sampleDuration) {
+     const coloredSegments = [];
+ 
+diff --git a/client/src/app/workers/ssmWorker.js b/client/src/app/workers/ssmWorker.js
+index da11cd1..4fd8ddb 100644
+--- a/client/src/app/workers/ssmWorker.js
++++ b/client/src/app/workers/ssmWorker.js
+@@ -360,6 +360,21 @@ addEventListener("message", (event) => {
+             data.sampleDuration
+         );
+         structures.push({ name: "Timbre Sampled", data: processedTimbreSegmentsSampled, verticalPosition: true });
++
++        const startTime = performance.now();
++        const duration2 = 2; // samples
++        const sampledSegments2 = structure.createFixedDurationStructureSegments(
++            data.sampleAmount,
++            data.sampleDuration,
++            duration2
++        );
++        const processedTimbreSegmentsSampled2 = structure.processTimbreSegments(
++            data.timbreFeatures,
++            sampledSegments2,
++            data.sampleDuration
++        );
++        structures.push({ name: "Timbre Sample Level", data: processedTimbreSegmentsSampled2, verticalPosition: true });
++        log.debug("Took", performance.now() - startTime);
+     }
+ 
+     message.courseStructure = structure.MDSColorSegments(mutorStructure, strictPathMatrix);
+diff --git a/client/src/app/workers/workers.js b/client/src/app/workers/workers.js
+index 34dadef..619e9e0 100644
+--- a/client/src/app/workers/workers.js
++++ b/client/src/app/workers/workers.js
+@@ -1,18 +1,46 @@
+ import Matrix from "../dataStructures/Matrix";
+ import HalfMatrix from "../dataStructures/HalfMatrix";
++import * as log from "../../dev/log";
+ 
+ let ssm;
+ let cluster;
+ let tsne;
+ 
++let timbreWorker;
++let timbreWorkerBusy = false;
++
+ export async function init() {
+     ssm = new Worker("./ssmWorker.js", { type: "module" });
++    timbreWorker = new Worker("./timbreWorker.js", { type: "module" });
++
+     //tsne = new Worker("./tsneWorker.js", { type: "module" });
+     //cluster = new Worker("./clusterWorker.js", { type: "module" });
+ }
+ 
+ let isCalculating = false;
+ 
++export async function updateTimbreVis(timbreFeatures, timbreSliders, sampleDuration) {
++    return new Promise((resolve) => {
++        if (timbreWorkerBusy) {
++            timbreWorker.terminate();
++            timbreWorker = new Worker("./timbreWorker.js", { type: "module" });
++        }
++        timbreWorker.postMessage({
++            timbreFeatures,
++            timbreSliders,
++            sampleDuration,
++            timestamp: new Date(),
++        });
++        timbreWorkerBusy = true;
++
++        timbreWorker.onmessage = (event) => {
++            timbreWorkerBusy = false;
++            const sendBackTime = new Date() - event.data.timestamp;
++            log.debug("Got back from timbreworker", sendBackTime);
++            resolve(event.data.result);
++        };
++    });
++}
+ /**
+  *
+  * @param {*} trackId
+diff --git a/client/src/components/visualizations/HolisticTimbre.vue b/client/src/components/visualizations/HolisticTimbre.vue
+index 462ddc0..35ccfe7 100644
+--- a/client/src/components/visualizations/HolisticTimbre.vue
++++ b/client/src/components/visualizations/HolisticTimbre.vue
+@@ -1,7 +1,32 @@
+ <template>
+     <div class="py-5">
+         <Seeker class="seeker" :ref="'holisticSeeker'" :width="width" :height="height" :color="'white'" />
+-        <svg class="timbreSVG" :width="width" :height="height"></svg>
++        <svg class="timbreSVG" :width="width" :height="height">
++            <path fill="none" stroke="white" stroke-width="2" :d="timbreFeatureGraphPath" class="timbreGraph" />
++        </svg>
++        <v-row>
++            <v-slider
++                dense
++                v-for="(sliderValue, index) in timbreSlider"
++                :key="index"
++                v-model="timbreSlider[index]"
++                vertical
++                thumb-label
++                min="-1"
++                max="1"
++                step="0.05"
++                color="dark"
++                track-color="dark"
++                thumb-color="primary"
++                @click="click($event, index)"
++            ></v-slider>
++            <v-btn icon color="green" @click="resetSliders()">
++                <v-icon>mdi-cached</v-icon>
++            </v-btn>
++            <v-btn icon color="green" @click="setPreset(presets.test)">
++                <v-icon>mdi-eye</v-icon>
++            </v-btn>
++        </v-row>
+     </div>
+ </template>
+ 
+@@ -10,6 +35,7 @@ import * as log from "../../dev/log";
+ import * as vis from "../../app/vis";
+ import Seeker from "./Seeker";
+ import Section from "./Section";
++import * as d3 from "d3";
+ 
+ import * as testing from "../../app/testing";
+ import ZoomCanvas from "../../app/visualization/ZoomCanvas";
+@@ -22,7 +48,15 @@ export default {
+         Seeker,
+     },
+     data() {
+-        return {};
++        return {
++            timbreSlider: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
++            presets: {
++                bass: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
++                test: [0.5, 1, -0.3, 0.4, 0.1, -0.8, 0.7, 0.2, 0.1, -0.1, 0.75, -0.75],
++            },
++            clicks: 0,
++            timer: null,
++        };
+     },
+     computed: {
+         height() {
+@@ -35,9 +69,38 @@ export default {
+             return this.width / this.track.getAnalysisDuration();
+         },
+     },
+-    watch: {},
++    watch: {
++        timbreSlider: {
++            deep: true,
++
++            handler() {
++                this.track.updateTimbreVis(this.timbreSlider);
++            },
++        },
++    },
+     mounted() {},
+-    methods: {},
++    methods: {
++        setPreset(preset) {
++            this.timbreSlider = preset;
++        },
++        resetSliders() {
++            this.timbreSlider = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
++        },
++        click(event, index) {
++            this.clicks++;
++
++            if (this.clicks === 1) {
++                var self = this;
++                this.timer = setTimeout(() => {
++                    self.clicks = 0;
++                }, 300);
++            } else {
++                clearTimeout(this.timer);
++                Vue.set(this.timbreSlider, index, 0);
++                this.clicks = 0;
++            }
++        },
++    },
+ };
+ </script>
+ 

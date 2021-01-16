@@ -1,14 +1,10 @@
-import Segment from "./Segment";
 import * as sim from "./similarity";
 import store from "../store";
 import Features from "./Features";
 import * as workers from "./workers/workers";
 import * as log from "../dev/log";
-import * as SSM from "./SSM";
-import Matrix from "./dataStructures/Matrix";
-import * as pathExtraction from "./pathExtraction";
 
-import * as scapePlot from "./scapePlot";
+import * as pathExtraction from "./pathExtraction";
 
 export const GAMMA = 1.7;
 export const CLUSTERAMOUNT = 10;
@@ -26,6 +22,8 @@ export const SPstepSize = 2; // Size of the step between segment start and size 
 export const createScapePlot = false;
 
 export const averageLoudnessBlur = 3;
+
+export const maxTimbreDownSamples = 200;
 
 const useSampled = true;
 const allPitches = false;
@@ -46,6 +44,9 @@ export default class Track {
     courseStructure = [];
     fineStructure = [];
 
+    timbreStructure = [];
+    timbreFeatureGraph;
+
     features;
 
     processed = false;
@@ -64,11 +65,27 @@ export default class Track {
             //samples: samples,
             sampleDuration: sampleDuration,
             sampleBlur: sampleBlur,
+            downsampleAmount: maxTimbreDownSamples,
         });
+        log.debug("Emit features processed");
+
+        window.eventBus.$emit("featuresProcessed");
+
         //this.tsne();
         //this.cluster();
         this.calculateSSM();
         this.processed = true;
+    }
+
+    updatingTimbreVis = false;
+    updateTimbreVis(timbreSliders) {
+        this.updatingTimbreVis = true;
+        workers
+            .updateTimbreVis(this.features.downSampledTimbre, timbreSliders, this.features.sampleDuration)
+            .then((result) => {
+                this.timbreFeatureGraph = result;
+                this.updatingTimbreVis = false;
+            });
     }
 
     /**
@@ -116,6 +133,7 @@ export default class Track {
                 this.separators = result.separators;
                 this.courseStructure = result.courseStructure;
                 this.fineStructure = result.fineStructure;
+                //this.timbreStructure = result.timbreStructure;
                 window.eventBus.$emit("readyForVis");
             });
         log.debug("Setting listerner for", this.getName());
