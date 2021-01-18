@@ -15,7 +15,16 @@ import * as log from "../../dev/log";
 import * as player from "../../app/player";
 
 export default {
-    props: ["section", "height", "scale", "verticalOffset", "showLoudness", "coloring"],
+    props: [
+        "section",
+        "height",
+        "scale",
+        "verticalOffset",
+        "containerHeight",
+        "showLoudness",
+        "coloring",
+        "positioning",
+    ],
     components: {},
     data() {
         return {};
@@ -25,7 +34,15 @@ export default {
             return this.$store.getters.selectedTrack;
         },
         verticalPosition() {
-            return this.section.groupID * this.height;
+            switch (this.positioning) {
+                default:
+                case "cluster" || "group":
+                    return this.section.groupID * this.height + this.verticalOffset;
+                case "circular":
+                    return this.section.colorAngle * (this.containerHeight - this.height);
+                case "linear":
+                    return this.section.mdsFeature * (this.containerHeight - this.height);
+            }
         },
         color() {
             switch (this.coloring) {

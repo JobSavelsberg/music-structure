@@ -1,29 +1,55 @@
 <template>
     <div class="py-5">
-        <Seeker class="seeker" :ref="'holisticSeeker'" :width="width" :height="height" :color="'white'" />
-        <svg class="timbreSVG" :width="width" :height="height" v-if="timbreFeatureGraph">
+        <Seeker
+            class="seeker"
+            :ref="'holisticSeeker'"
+            :width="width"
+            :height="height"
+            :color="'rgb(255,255,255,0.5)'"
+        />
+        <svg class="timbreGraphSVG" :width="width" :height="height">
+            <defs>
+                <linearGradient id="pathGradient" x1="0" x2="0" y1="0" y2="1">
+                    <stop
+                        v-for="gradientStep in gradientSteps"
+                        :key="gradientStep"
+                        :offset="`${gradientStep}`"
+                        :style="`stop-color:${color(1 - gradientStep)};stop-opacity:1`"
+                    />
+                </linearGradient>
+            </defs>
+            <rect
+                class="timbreGraphBackground"
+                :width="width"
+                :height="height"
+                opacity="0"
+                @click="clickBackground($event)"
+            ></rect>
             <path
+                v-if="timbreFeatureGraph && showPath"
                 fill="none"
-                stroke="white"
-                opacity="0.2"
+                :stroke="showPathGradient ? 'url(#pathGradient)' : 'white'"
+                :opacity="showPathGradient ? '1' : '0.2'"
                 stroke-width="2"
                 stroke-linejoin="round"
                 :d="timbreFeatureGraphPath"
                 class="timbreGraph"
             />
-            <rect
-                v-for="(sample, index) in timbreFeatureGraph"
-                :key="index"
-                class="sample"
-                stroke="black"
-                stroke-width=".5"
-                rx="5"
-                :x="index * sampleWidth - sampleWidth / 2"
-                :y="height - sampleWidth * 2 - sample * (height - sampleWidth * 2)"
-                :width="sampleWidth"
-                :height="sampleWidth * 2"
-                :fill="color(sample)"
-            ></rect>
+            <g v-if="showPoints">
+                <rect
+                    v-for="(sample, index) in timbreFeatureGraph"
+                    :key="index"
+                    class="sample"
+                    stroke="black"
+                    stroke-width=".5"
+                    rx="5"
+                    :x="index * sampleWidth - sampleWidth / 2"
+                    :y="height - sampleWidth * 2 - sample * (height - sampleWidth * 2)"
+                    :width="sampleWidth"
+                    :height="sampleWidth * 2"
+                    :fill="color(sample)"
+                ></rect>
+            </g>
         </svg>
         <v-row>
             <v-col align="center" v-for="(sliderValue, index) in timbreSlider" :key="index">
@@ -56,16 +82,17 @@
                     <v-icon>mdi-volume-off</v-icon>
                 </v-btn>
             </v-col>
-
-            <v-btn icon color="primary" @click="resetSliders()">
-                <v-icon>mdi-cached</v-icon>
-            </v-btn>
-            <v-btn icon color="primary" @click="setPreset(presets.test)">
-                <v-icon>mdi-eye</v-icon>
-            </v-btn>
-            <v-btn icon color="primary" @click="setPreset(presets.all)">
-                <v-icon>mdi-arrow-up-bold</v-icon>
-            </v-btn>
+            <v-col>
+                <v-btn icon color="primary" @click="resetSliders()">
+                    <v-icon>mdi-cached</v-icon>
+                </v-btn>
+                <v-btn icon color="primary" @click="setPreset(presets.test)">
+                    <v-icon>mdi-eye</v-icon>
+                </v-btn>
+                <v-btn icon color="primary" @click="setPreset(presets.all)">
+                    <v-icon>mdi-arrow-up-bold</v-icon>
+                </v-btn>
+            </v-col>
         </v-row>
     </div>
 </template>
@@ -81,6 +108,7 @@ import * as testing from "../../app/testing";
 import ZoomCanvas from "../../app/visualization/ZoomCanvas";
 import * as player from "../../app/player";
 import Vue from "vue";
+import { updateTimbreGraphVis } from "../../app/workers/workers";
 
 export default {
     props: ["width"],
@@ -89,7 +117,7 @@ export default {
     },
     data() {
         return {
-            timbreSlider: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            timbreSlider: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             presets: {
                 all: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                 bass: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -101,6 +129,10 @@ export default {
             clicks: 0,
             timer: null,
             mousedown: false,
+            showPoints: false,
+            gradientStepAmount: 8,
+            showPathGradient: true,
+            showPath: true,
         };
     },
     computed: {
@@ -132,6 +164,13 @@ export default {
 
             return path;
         },
+        gradientSteps() {
+            let steps = [];
+            for (let i = 0; i < this.gradientStepAmount; i++) {
+                steps.push(i / this.gradientStepAmount);
+            }
+            return steps;
+        },
     },
     watch: {
         timbreSlider: {
@@ -142,6 +181,9 @@ export default {
                     this.sendUpdate();
                 }
             },
+        },
+        track() {
+            this.sendUpdate();
         },
     },
     mounted() {
@@ -170,6 +212,9 @@ export default {
                 Vue.set(this.timbreSlider, index, 0);
                 this.clicks = 0;
             }
+        },
+        clickBackground(event) {
+            this.$refs["holisticSeeker"].clickedSVG(event);
         },
         solo(index) {
             Vue.set(this.solod, index, !this.solod[index]);

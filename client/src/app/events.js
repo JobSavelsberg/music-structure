@@ -39,10 +39,8 @@ export function color(events) {
     const MdsFeature = mds.getMDSFeatureWithGradientDescent(distanceMatrix);
     events.forEach((event, index) => {
         const [angle, radius] = mds.getAngleAndRadius(MdsCoordinates[index]);
-        log.debug(angle);
         event.colorAngle = angle;
         event.colorRadius = radius;
         event.mdsFeature = MdsFeature[index];
     });
-    log.debug(events);
 }

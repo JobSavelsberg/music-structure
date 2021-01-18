@@ -1,11 +1,21 @@
 <template>
     <div class="py-5" v-if="hasStructure">
-        <div>
-            <v-btn icon small @click="showLoudness = !showLoudness" :color="showLoudness ? 'white' : 'dimgrey'">
-                <v-icon>mdi-equalizer</v-icon>
-            </v-btn>
-        </div>
-        <Seeker class="seeker" :ref="'holisticSeeker'" :width="width" :height="height" :color="'white'" />
+        <v-row>
+            <v-col>Harmonic Structure</v-col>
+            <v-spacer></v-spacer>
+            <v-col>
+                <v-btn icon small @click="showLoudness = !showLoudness" :color="showLoudness ? 'white' : 'dimgrey'">
+                    <v-icon>mdi-equalizer</v-icon>
+                </v-btn>
+            </v-col>
+        </v-row>
+        <Seeker
+            class="seeker"
+            :ref="'holisticSeeker'"
+            :width="width"
+            :height="height"
+            :color="'rgb(255,255,255,0.5)'"
+        />
         <svg class="structureSVG" :width="width" :height="height">
             <SeparatorBackground :width="width" :height="height" :scale="scale" />
             <rect class="glowRect"></rect>

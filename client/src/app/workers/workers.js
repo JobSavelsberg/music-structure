@@ -2,16 +2,10 @@ import Matrix from "../dataStructures/Matrix";
 import HalfMatrix from "../dataStructures/HalfMatrix";
 import * as log from "../../dev/log";
 
-let ssm;
-let cluster;
-let tsne;
-
-let timbreWorker;
-let timbreWorkerBusy = false;
-
 export async function init() {
     ssm = new Worker("./ssmWorker.js", { type: "module" });
-    timbreWorker = new Worker("./timbreWorker.js", { type: "module" });
+    timbreGraphWorker = new Worker("./timbreGraphWorker.js", { type: "module" });
+    timbreStructureWorker = new Worker("./timbreStructureWorker.js", { type: "module" });
 
     //tsne = new Worker("./tsneWorker.js", { type: "module" });
     //cluster = new Worker("./clusterWorker.js", { type: "module" });
@@ -19,28 +13,54 @@ export async function init() {
 
 let isCalculating = false;
 
-export async function updateTimbreVis(timbreFeatures, timbreSliders, sampleDuration) {
+let timbreGraphWorker;
+let timbreGraphWorkerBusy = false;
+export async function updateTimbreGraphVis(timbreFeatures, timbreSliders, sampleDuration) {
     return new Promise((resolve) => {
-        if (timbreWorkerBusy) {
-            timbreWorker.terminate();
-            timbreWorker = new Worker("./timbreWorker.js", { type: "module" });
+        if (timbreGraphWorkerBusy) {
+            timbreGraphWorker.terminate();
+            timbreGraphWorker = new Worker("./timbreGraphWorker.js", { type: "module" });
         }
-        timbreWorker.postMessage({
+        timbreGraphWorker.postMessage({
             timbreFeatures,
             timbreSliders,
             sampleDuration,
             timestamp: new Date(),
         });
-        timbreWorkerBusy = true;
+        timbreGraphWorkerBusy = true;
 
-        timbreWorker.onmessage = (event) => {
-            timbreWorkerBusy = false;
+        timbreGraphWorker.onmessage = (event) => {
+            timbreGraphWorkerBusy = false;
             const sendBackTime = new Date() - event.data.timestamp;
-            log.debug("Got back from timbreworker", sendBackTime);
+            log.debug("Got back from timbreGraphworker", sendBackTime);
             resolve(event.data.result);
         };
     });
 }
+
+let timbreStructureWorker;
+let timbreStructureWorkerBusy = false;
+export async function computeTimbreStructure(timbreFeatures, sampleDuration) {
+    return new Promise((resolve) => {
+        if (timbreStructureWorkerBusy) {
+            timbreStructureWorker.terminate();
+            timbreStructureWorker = new Worker("./timbreGraphWorker.js", { type: "module" });
+        }
+        timbreStructureWorker.postMessage({
+            timbreFeatures,
+            sampleDuration,
+        });
+        timbreStructureWorkerBusy = true;
+
+        timbreStructureWorker.onmessage = (event) => {
+            timbreStructureWorkerBusy = false;
+            log.debug("Got back from timbreStructureWorker", event.data);
+            resolve(event.data.timbreStructure);
+        };
+    });
+}
+
+let ssm;
 /**
  *
  * @param {*} trackId

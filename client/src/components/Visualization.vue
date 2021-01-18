@@ -21,7 +21,8 @@
             </div>
             <div v-if="!showPrototype">
                 <HolisticStructure :width="width" />
-                <HolisticTimbre :width="width" />
+                <TimbreStructure :width="width" />
+                <TimbreGraph :width="width" />
             </div>
         </div>
         <div class="floatingTime">
@@ -39,7 +40,9 @@ import Beats from "./visualizations/Beats";
 import PitchTimbre from "./visualizations/PitchTimbre";
 import Structure from "./visualizations/Structure";
 import HolisticStructure from "./visualizations/HolisticStructure";
-import HolisticTimbre from "./visualizations/HolisticTimbre";
+import TimbreStructure from "./visualizations/TimbreStructure";
+
+import TimbreGraph from "./visualizations/TimbreGraph";
 
 import * as log from "../dev/log";
 import * as player from "../app/player";
@@ -56,7 +59,8 @@ export default {
         PitchTimbre,
         Structure,
         HolisticStructure,
-        HolisticTimbre,
+        TimbreGraph,
+        TimbreStructure,
     },
     data() {
         return {

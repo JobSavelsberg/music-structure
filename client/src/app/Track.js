@@ -74,17 +74,25 @@ export default class Track {
         //this.tsne();
         //this.cluster();
         this.calculateSSM();
+        this.computeTimbreStructure();
         this.processed = true;
     }
 
-    updatingTimbreVis = false;
+    computeTimbreStructure() {
+        workers.computeTimbreStructure(this.features.sampled.timbres, this.features.sampleDuration).then((result) => {
+            log.debug("TimbreStructure", result);
+            this.timbreStructure = result;
+        });
+    }
+
+    updatingTimbreGraphVis = false;
     updateTimbreVis(timbreSliders) {
-        this.updatingTimbreVis = true;
+        this.updatingTimbreGraphVis = true;
         workers
-            .updateTimbreVis(this.features.downSampledTimbre, timbreSliders, this.features.sampleDuration)
+            .updateTimbreGraphVis(this.features.downSampledTimbre, timbreSliders, this.features.sampleDuration)
             .then((result) => {
                 this.timbreFeatureGraph = result;
-                this.updatingTimbreVis = false;
+                this.updatingTimbreGraphVis = false;
             });
     }
 
@@ -133,7 +141,6 @@ export default class Track {
                 this.separators = result.separators;
                 this.courseStructure = result.courseStructure;
                 this.fineStructure = result.fineStructure;
-                //this.timbreStructure = result.timbreStructure;
                 window.eventBus.$emit("readyForVis");
             });
         log.debug("Setting listerner for", this.getName());

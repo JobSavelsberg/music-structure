@@ -1,30 +1,34 @@
 <template>
     <g>
-        <g v-for="(separator, index) in track.separators" :key="separator.start">
+        <g v-for="(section, index) in structure" :key="section.start">
             <defs>
-                <linearGradient :id="`backgroundGradient${index}`" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" :style="`stop-color:${backgroundColor(separator)};stop-opacity:1`" />
-                    <stop offset="100%" :style="`stop-color:${backgroundColor(separator)};stop-opacity:0`" />
+                <linearGradient :id="`timbreBackgroundGradient${index}`" x1="0" x2="0" y1="0" y2="1">
+                    <stop :offset="`${0}`" :style="`stop-color:${backgroundColor(section)};stop-opacity:0`" />
+                    <stop
+                        :offset="`${section.colorAngle}`"
+                        :style="`stop-color:${backgroundColor(section)};stop-opacity:1`"
+                    />
+                    <stop :offset="`${1}`" :style="`stop-color:${backgroundColor(section)};stop-opacity:0`" />
                 </linearGradient>
             </defs>
             <rect
                 class="background"
-                :key="separator.start + 'bg'"
-                :x="separator.start * scale"
+                :key="section.start + 'bg'"
+                :x="section.start * scale"
                 :y="0"
-                :width="(separator.end - separator.start) * scale"
+                :width="(section.end - section.start) * scale"
                 :height="height"
-                :fill="`url(#backgroundGradient${index})`"
+                :fill="`url(#timbreBackgroundGradient${index})`"
                 @click="click($event)"
             >
             </rect>
             <rect
                 class="separator"
-                :x="separator.start * scale"
+                :x="section.start * scale - 1.5"
                 :y="0"
                 :width="3"
                 :height="height"
-                :fill="separatorColor(separator)"
+                :fill="separatorColor(section)"
             ></rect>
         </g>
     </g>
@@ -35,13 +39,14 @@ import * as vis from "../../app/vis";
 import * as player from "../../app/player";
 
 export default {
-    props: ["width", "height", "scale"],
+    props: ["width", "height", "scale", "structure"],
     components: {},
     data() {
         return {
-            showSeparators: false,
-            showBackground: false,
-            backgroundOpacity: 0.2,
+            showSeparators: true,
+            showBackground: true,
+            backgroundOpacity: 0.07,
+            separtorOpacity: 0.15,
         };
     },
     computed: {
@@ -52,19 +57,15 @@ export default {
     watch: {},
     mounted() {},
     methods: {
-        backgroundColor(separator) {
+        backgroundColor(section) {
             return vis.sinebowColorNormalizedRadius(
-                separator.colorAngle,
+                section.colorAngle,
                 1,
                 this.backgroundOpacity * this.showBackground
             );
         },
-        separatorColor(separator) {
-            return vis.sinebowColorNormalizedRadius(
-                separator.colorAngle,
-                1,
-                (separator.confidence * 0.9 + 0.1) * this.showSeparators
-            );
+        separatorColor(section) {
+            return vis.sinebowColorNormalizedRadius(section.colorAngle, 1, this.separtorOpacity * this.showSeparators);
         },
         click(event) {
             let xNormalized = 0;

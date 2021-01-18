@@ -5,7 +5,8 @@ import Matrix from "./dataStructures/Matrix";
 import HalfMatrix from "./dataStructures/HalfMatrix";
 import { NumberType } from "./dataStructures/NumberType";
 import asciichart from "asciichart";
-export function calculateSSM(features, sampleDuration, allPitches = false, threshold) {
+
+export function calculateSSM(features, sampleDuration, allPitches = false, threshold = 0) {
     const ssm = new HalfMatrix({
         size: features.length,
         numberType: HalfMatrix.NumberType.UINT8,
