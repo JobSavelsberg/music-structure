@@ -28,7 +28,7 @@ export default {
         },
     },
     mounted() {
-        window.eventBus.$on("readyForVis", () => {
+        window.eventBus.$on("readyForPrototypeVis", () => {
             if (this.features.length <= 0) {
                 this.track.graphFeatures.forEach((feature, index) => {
                     this.features.push(feature.name);

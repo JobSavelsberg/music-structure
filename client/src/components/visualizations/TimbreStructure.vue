@@ -1,24 +1,21 @@
 <template>
-    <div class="py-5" v-if="hasStructure">
+    <div class="py-1" v-if="hasStructure">
         <v-row>
             <v-col>Timbre Structure</v-col>
             <v-spacer></v-spacer>
-            <v-col>
-                <v-btn icon small @click="showLoudness = !showLoudness" :color="showLoudness ? 'white' : 'dimgrey'">
-                    <v-icon>mdi-equalizer</v-icon>
-                </v-btn>
-            </v-col>
+            <v-btn icon small @click="showLoudness = !showLoudness" :color="showLoudness ? 'white' : 'dimgrey'">
+                <v-icon>mdi-equalizer</v-icon>
+            </v-btn>
         </v-row>
         <Seeker
             class="seeker"
             :ref="'timbreStructureSeeker'"
             :width="width"
             :height="height"
-            :color="'rgb(255,255,255,0.5)'"
+            :color="'rgb(255,255,255,0.3)'"
         />
         <svg class="timbreStructureSVG" :width="width" :height="height">
             <StructureBackground :width="width" :height="height" :scale="scale" :structure="timbreStructure" />
-            <rect class="glowRect"></rect>
             <Section
                 v-for="(section, index) in timbreStructure"
                 :key="index + 'course'"
@@ -31,6 +28,23 @@
                 :verticalOffset="paddingTop"
                 :containerHeight="height"
             />
+        </svg>
+        <svg
+            :class="`eventSVG`"
+            :style="`margin-left: -${eventSize}`"
+            :width="width + eventSize * 2"
+            :height="eventHeight"
+        >
+            <circle
+                v-for="event in events"
+                :key="event.time"
+                class="event"
+                :cx="eventSize + event.time * scale"
+                :cy="eventSize + event.mdsFeature * (eventHeight - eventSize * 2)"
+                :r="eventSize"
+                :fill="color(event, event.confidence + 0.3)"
+                @click="clickEvent(event)"
+            ></circle>
         </svg>
     </div>
 </template>
@@ -59,12 +73,14 @@ export default {
         return {
             paddingTop: 10,
             sectionHeight: 25,
+            eventSize: 5,
+            eventHeight: 30,
             showLoudness: true,
         };
     },
     computed: {
         height() {
-            return 200;
+            return 150;
         },
         track() {
             return this.$store.getters.selectedTrack;
@@ -78,15 +94,32 @@ export default {
         timbreStructure() {
             return this.track.timbreStructure;
         },
+        events() {
+            return this.track.events;
+        },
     },
     watch: {},
     mounted() {},
-    methods: {},
+    methods: {
+        color(element, confidence = 1) {
+            return vis.sinebowColorNormalizedRadius(element.colorAngle, 1, confidence);
+        },
+        clickEvent(event) {
+            player.seekS(event.time);
+        },
+    },
 };
 </script>
 
 <style scoped>
 .seeker {
     pointer-events: none;
+}
+.event {
+    transition: 0.3s;
+}
+.event:hover {
+    fill: white !important;
+    cursor: pointer;
 }
 </style>

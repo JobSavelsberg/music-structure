@@ -6,6 +6,8 @@ export async function init() {
     ssm = new Worker("./ssmWorker.js", { type: "module" });
     timbreGraphWorker = new Worker("./timbreGraphWorker.js", { type: "module" });
     timbreStructureWorker = new Worker("./timbreStructureWorker.js", { type: "module" });
+    harmonicStructureWorker = new Worker("./harmonicStructureWorker.js", { type: "module" });
+    chordWorker = new Worker("./chordWorker.js", { type: "module" });
 
     //tsne = new Worker("./tsneWorker.js", { type: "module" });
     //cluster = new Worker("./clusterWorker.js", { type: "module" });
@@ -55,7 +57,53 @@ export async function computeTimbreStructure(timbreFeatures, sampleDuration) {
         timbreStructureWorker.onmessage = (event) => {
             timbreStructureWorkerBusy = false;
             log.debug("Got back from timbreStructureWorker", event.data);
-            resolve(event.data.timbreStructure);
+            resolve(event.data);
+        };
+    });
+}
+
+let harmonicStructureWorker;
+let harmonicStructureWorkerBusy = false;
+export async function computeHarmonicStructure(options) {
+    return new Promise((resolve) => {
+        if (harmonicStructureWorkerBusy) {
+            harmonicStructureWorker.terminate();
+            harmonicStructureWorker = new Worker("./harmonicStructureWorker.js", { type: "module" });
+        }
+        harmonicStructureWorker.postMessage(options);
+        harmonicStructureWorkerBusy = true;
+
+        harmonicStructureWorker.onmessage = (event) => {
+            harmonicStructureWorkerBusy = false;
+            if (event.data.state === "done") {
+                resolve(event.data);
+            }
+            if (event.data.state === "processing") {
+                window.eventBus.$emit("harmonicStructure", event.data);
+            }
+            //resolve(event.data);
+        };
+    });
+}
+
+let chordWorker;
+let chordWorkerBusy = false;
+export async function computeChords(pitchFeatures, sampleDuration) {
+    return new Promise((resolve) => {
+        if (chordWorkerBusy) {
+            chordWorker.terminate();
+            chordWorker = new Worker("./chordWorker.js", { type: "module" });
+        }
+        chordWorker.postMessage({
+            pitchFeatures,
+            sampleDuration,
+        });
+        chordWorkerBusy = true;
+
+        chordWorker.onmessage = (event) => {
+            chordWorkerBusy = false;
+            log.debug("Got back from chordWorker", event.data);
+            resolve(event.data);
         };
     });
 }

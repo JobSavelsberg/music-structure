@@ -137,7 +137,7 @@ export default {
     },
     computed: {
         height() {
-            return 150;
+            return 100;
         },
         track() {
             return this.$store.getters.selectedTrack;
@@ -246,12 +246,10 @@ export default {
             this.timbreSlider.forEach((value, index) => {
                 slidersWithDisabled.push(this.disabled[index] ? 0 : value);
             });
-            log.debug(slidersWithDisabled);
             return slidersWithDisabled;
         },
         sendUpdate() {
             if (!this.track.updatingTimbreVis) {
-                log.debug("updating");
                 this.track.updateTimbreVis(this.getSliderValues());
             }
         },

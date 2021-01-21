@@ -8,12 +8,10 @@ addEventListener("message", (event) => {
     const sampleAmount = data.timbreFeatures.length;
     let result = [];
 
-    log.debug(sampleAmount);
     let slidersOn = 0;
     data.timbreSliders.forEach((sliderValue) => {
         if (sliderValue !== 0) slidersOn++;
     });
-    log.debug("SLiders on ", slidersOn);
 
     if (slidersOn === 1) {
         const onSlider = data.timbreSliders.findIndex((slider) => slider !== 0);

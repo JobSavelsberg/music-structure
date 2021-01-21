@@ -8,7 +8,6 @@ import * as SSM from "./SSM";
 import * as _ from "lodash";
 import HalfMatrix from "./dataStructures/HalfMatrix";
 import Section from "./Section";
-import { colored } from "asciichart";
 
 export function createFixedDurationStructureSegments(sampleAmount, sampleDuration, duration) {
     const structureSegments = [];
@@ -44,7 +43,6 @@ export function createSegmentsFromNovelty(novelty, sampleDuration, threshold = 0
             })
         );
     }
-    log.debug("Sections created");
     return structureSegments;
 }
 
@@ -85,9 +83,8 @@ export function computeSeparateStructureCandidates(
     separateSegmentSets,
     strategy,
     minDurationSeconds = 1,
-    maxRatio = 0.4
+    maxRatio = 0.25
 ) {
-    log.debug("Computing candidates");
     const separateCandidateSets = [];
     separateSegmentSets.forEach((segments) => {
         const candidates = computeStructureCandidates(pathSSM, segments, minDurationSeconds, maxRatio, strategy);
@@ -148,21 +145,16 @@ export function findMuteDecomposition(
     sampleDuration,
     strategy = "classic",
     muteType = "or",
+    updateCallback,
     comparisonProperty = "fitness",
     minDurationSeconds = 2,
-    minFitness = 0.01
+    minFitness = 0.02
 ) {
     const trackEnd = structureSegments[structureSegments.length - 1].end;
     let structureSections = [];
+    let sortedStructureSections = [];
     const segments = [];
-    log.debug(
-        "Finding greedy Decomposition.   Strategy:",
-        strategy,
-        "ComparisonProperty:",
-        comparisonProperty,
-        "MinDuration",
-        minDurationSeconds
-    );
+
     let separateSegmentSets = [structureSegments];
 
     let ssm = pathSSM;
@@ -199,16 +191,14 @@ export function findMuteDecomposition(
                 wiggleSize,
                 comparisonProperty,
                 strategy,
-                structureSections,
+                sortedStructureSections,
                 minDurationSeconds,
                 allowOverlap
             );
         }
         if (best === null || best[comparisonProperty] <= minFitness || isNaN(best[comparisonProperty])) {
-            log.debug("Terminating search", best);
             break;
         }
-        log.debug("BEST", i, best);
         const groupID = i;
         best.groupID = groupID;
 
@@ -222,6 +212,7 @@ export function findMuteDecomposition(
             path.fitness = best.fitness;
             path.initFitness = initialFitness;
         });
+        sortedStructureSections.push(...prunedPaths);
         structureSections.push(...prunedPaths);
         const prunedPathsInSamples = prunedPaths.map((section) => {
             const clone = section.clone();
@@ -237,11 +228,14 @@ export function findMuteDecomposition(
             ssm = SSM.muteOr(ssm, prunedPathsInSamples);
         }
 
-        structureSections = structureSections.sort((a, b) => (a.start > b.start ? 1 : -1));
+        sortedStructureSections = sortedStructureSections.sort((a, b) => (a.start > b.start ? 1 : -1));
+        if (updateCallback) {
+            updateCallback(structureSections);
+        }
 
         separateSegmentSets = subtractStructureFromSegments(
             _.cloneDeep(separateSegmentSets),
-            structureSections,
+            sortedStructureSections,
             trackEnd,
             minDurationSeconds
         );
@@ -250,7 +244,7 @@ export function findMuteDecomposition(
         segments.push(...allSegments);
         i++;
     }
-    return [structureSections, i, segments];
+    return [sortedStructureSections, i, segments];
 }
 
 export function findSubDecomposition(
@@ -280,7 +274,6 @@ export function findSubDecomposition(
         let subStructureSection;
         let j = 0;
         do {
-            log.debug("looking in groupSegments", groupSections);
             subStructureSection = findSubstructure(
                 pathSSM,
                 groupSections,
@@ -289,7 +282,6 @@ export function findSubDecomposition(
                 minFitness,
                 strategy
             );
-            log.debug(i, subStructureSection);
             if (subStructureSection) {
                 const subPathFamily = getPathFamily(subStructureSection, sampleDuration, ID);
                 const extendedSubPathFamily = getExtendedPathFamily(
@@ -312,7 +304,6 @@ export function findSubDecomposition(
                 let remainingSections = groupSections.filter(
                     (section) => section.end - section.start >= minDurationSeconds
                 );
-                log.debug("remaining sections", remainingSections);
                 if (remainingSections.length > 0) {
                     remainingSections = remainingSections.map((s) => {
                         const newSection = s.clone();
@@ -361,7 +352,6 @@ export function findSubDecomposition(
 
                     ID++;
                 }
-                log.debug("Breaking", i);
                 break;
             }
         } while (subStructureSection && j < 10);
@@ -431,14 +421,6 @@ export function findGreedyDecomposition(
     const trackEnd = structureSegments[structureSegments.length - 1].end;
     let structureSections = [];
     const segments = [];
-    log.debug(
-        "Finding greedy Decomposition.   Strategy:",
-        strategy,
-        "ComparisonProperty:",
-        comparisonProperty,
-        "MinDuration",
-        minDurationSeconds
-    );
     let separateSegmentSets = [structureSegments];
 
     let i = 0;
@@ -470,10 +452,8 @@ export function findGreedyDecomposition(
             );
         }
         if (best === null || best[comparisonProperty] <= minFitness || isNaN(best[comparisonProperty])) {
-            log.debug("Terminating search", best);
             break;
         }
-        log.debug("BEST", i, best);
         const groupID = i;
         best.groupID = groupID;
 
@@ -1165,7 +1145,6 @@ export function clusterTimbreSegmentsWithFeatures(timbreFeatures, segments, samp
     return coloredSegments;
 }
 export function processTimbreSegments(timbreFeatures, segments, sampleDuration) {
-    log.debug("MDS Coloring timbre segments");
     const mdsColoredSegments = MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sampleDuration);
     //log.debug("Clustering timbre segments")
     //const clusteredSegments = clusterTimbreSegmentsWithFeatures(timbreFeatures, mdsColoredSegments, sampleDuration);

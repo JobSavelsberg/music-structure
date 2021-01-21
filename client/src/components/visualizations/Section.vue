@@ -1,18 +1,38 @@
 <template>
-    <path
-        class="shapedSection"
-        :d="shapedSectionPath"
-        :fill="color"
-        @mouseover="hover($event)"
-        @mouseout="unhover()"
-        @click="click($event)"
-    ></path>
+    <g>
+        <defs>
+            <linearGradient :id="`glowRectGradient${section.start}${section.end}`" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" :style="`stop-color:${color};stop-opacity:0`" />
+                <stop offset="0.5" :style="`stop-color:${color};stop-opacity:${glowOpacity}`" />
+                <stop offset="1" :style="`stop-color:${color};stop-opacity:0`" />
+            </linearGradient>
+        </defs>
+        <rect
+            class="glowRect"
+            :fill="`url(#glowRectGradient${section.start}${section.end})`"
+            :x="x"
+            :y="y + height / 2 - (seekerIsInSection ? glowRectSize() / 2 : 0)"
+            :width="width"
+            :height="seekerIsInSection ? glowRectSize() : 0"
+            :opacity="seekerIsInSection ? '1' : '0'"
+        >
+        </rect>
+        <path
+            class="shapedSection"
+            :d="shapedSectionPath"
+            :fill="color"
+            @mouseover="hover($event)"
+            @mouseout="unhover()"
+            @click="click($event)"
+        ></path>
+    </g>
 </template>
 
 <script>
 import * as vis from "../../app/vis";
 import * as log from "../../dev/log";
 import * as player from "../../app/player";
+import { sampleDuration } from "../../app/Track";
 
 export default {
     props: [
@@ -27,12 +47,16 @@ export default {
     ],
     components: {},
     data() {
-        return {};
+        return {
+            glowOpacity: 0.4,
+            glowSize: 6,
+        };
     },
     computed: {
         track() {
             return this.$store.getters.selectedTrack;
         },
+
         verticalPosition() {
             switch (this.positioning) {
                 default:
@@ -55,6 +79,13 @@ export default {
                     return vis.zeroOneColorWarm(this.section.mdsFeature);
             }
         },
+        seekerIsInSection() {
+            return (
+                this.$store.getters.seeker / 1000 >= this.section.start &&
+                this.$store.getters.seeker / 1000 < this.section.end
+            );
+        },
+
         x() {
             return this.section.start * this.scale;
         },
@@ -62,15 +93,19 @@ export default {
             return this.verticalOffset + this.verticalPosition;
         },
         width() {
-            return (this.section.end - this.section.start) * this.scale - 2;
+            return Math.max(1, (this.section.end - this.section.start) * this.scale - 2);
         },
-        averageLoudness() {
+        smoothedAvgLoudness() {
             return this.track && this.track.features.sampled.smoothedAvgLoudness;
+        },
+        directLoudness() {
+            return this.track && this.track.features.directLoudness;
         },
         shapedSectionPath() {
             const halfHeight = this.height / 2;
             let roundoff = 4;
-            const step = 4 / this.width;
+            let step = 4 / this.width;
+            step = Math.max(0.001, step);
             const yMid = this.y + halfHeight;
 
             const tooSmall = this.width <= roundoff * 2;
@@ -135,7 +170,15 @@ export default {
     mounted() {},
     methods: {
         loudness(sample) {
-            return this.averageLoudness[sample] / this.track.features.maxLoudness;
+            return this.smoothedAvgLoudness[sample] / this.track.features.maxLoudness || 0;
+        },
+        loudnessTime(time) {
+            const sample = Math.floor(time / this.track.features.sampleDuration);
+            return this.smoothedAvgLoudness[sample] / this.track.features.maxLoudness || 0;
+        },
+        directLoudnessTime(time) {
+            const sample = Math.floor(time / this.track.features.directLoudnessSampleDuration);
+            return this.directLoudness[sample] / this.track.features.maxLoudness || 0;
         },
         hover(event) {},
         unhover() {},
@@ -148,15 +191,31 @@ export default {
                 player.seekS(this.section.start);
             }
         },
+        glowRectSize() {
+            return (
+                this.glowSize *
+                this.height *
+                (0.15 +
+                    this.directLoudnessTime(this.$store.getters.seeker / 1000) / 4 +
+                    Math.pow(this.loudnessTime(this.$store.getters.seeker / 1000), 1.5))
+            );
+        },
     },
 };
 </script>
 
 <style scoped>
 .shapedSection {
+    z-index: 10;
     pointer-events: all;
     transition: 0.25s;
     stroke-linejoin: round;
+}
+.glowRect {
+    z-index: -1;
+    pointer-events: none;
+    transition-timing-function: linear;
+    transition: 0.5s;
 }
 .shapedSection:hover {
     fill: white !important;

@@ -20,7 +20,7 @@ export function create(fullSSM, sampleAmount, minSize, step) {
     let maxVal = 0;
     log.debug("SPCreate, sampleAmount", sampleAmount, "size", plotSize, "minSize", minSize, "step", step);
     fitnessScapePlot.fill((x, y) => {
-        if (y < plotSize *0.4) {
+        if (y < plotSize * 0.4) {
             return 0;
         }
         const segmentSize = (plotSize - y) * step + minSize;
@@ -50,12 +50,10 @@ export function create(fullSSM, sampleAmount, minSize, step) {
     return fitnessScapePlot;
 }
 
-export function findLocalMaxima(scapePlot, maxAmount, minValue){
-
-}
+export function findLocalMaxima(scapePlot, maxAmount, minValue) {}
 
 /**
-* @param {*} scapePlot
+ * @param {*} scapePlot
  */
 export function sampleAnchorPointsMax(scapePlot, maxAmount, minSpacing, minSize, minValue) {
     const maxY = scapePlot.size;
@@ -127,7 +125,6 @@ export function sampleAnchorPoints(scapePlot, amount, minValue, minSize) {
             if (step % stepSize === 0) {
                 anchorPoints[i * 2] = x;
                 anchorPoints[i * 2 + 1] = y;
-                //log.debug(x, y);
                 i++;
                 scapePlot.setValue(x, y, 0);
             }
@@ -163,7 +160,7 @@ export function mapColors(fullSSM, sampleAmount, minSize, step, anchorPoints, an
 
         const startInSeconds = segmentStart * fullSSM.getSampleDuration();
         const endInSeconds = segmentEnd * fullSSM.getSampleDuration();
-        segments.push({start: startInSeconds, end: endInSeconds});
+        segments.push({ start: startInSeconds, end: endInSeconds });
     }
 
     const distanceMatrix = pathExtraction.getDistanceMatrix(segments, fullSSM);

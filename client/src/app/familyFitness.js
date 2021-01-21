@@ -89,9 +89,7 @@ export function computeCustomPrunedFitness(pathFamily, pathScores, score, sample
         pathFamilyLength += pathFamily[p].length / 2; // /2 because we store x and y flat
     }
     const normalizedScore = Math.max(0, (score - width) / (pathFamilyLength + error));
-    if (normalizedScore <= 0) {
-        //log.debug(score, width, pathAmount, pathFamilyLength)
-    }
+
     // normalized coverage
     const coverage = computeInducedCoverage(pathFamily);
     let normalizedCoverage = (coverage - width) / (sampleAmount + error);
@@ -117,7 +115,6 @@ export function computePrunedFitness(pathFamily, pathScores, score, sampleAmount
 
     // normalized score
     // we subtract the given self similarity path, and divide by total length of all paths (+ error to prevent divide by 0)
-    //log.debug(pathFamily);
     let pathFamilyLength = width * pathAmount;
     const normalizedScore = Math.max(0, (score - width) / (pathFamilyLength + error));
 

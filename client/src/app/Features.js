@@ -38,12 +38,15 @@ export default class Features {
 
     downSampledTimbre = [];
 
+    directLoudnessSampleDuration = 0.25;
+    directLoudnessAmount;
+    directLoudness;
+
     maxLoudness;
     averageLoudness;
 
     constructor(analysisData, options = {}) {
         this.duration = analysisData.track.duration;
-        log.debug("Segment Amount: ", analysisData.segments.length);
         analysisData.segments.forEach((segment) => {
             this.segments.push(new Segment(segment));
             this.segmentStartDuration.push([segment.start, segment.duration]);
@@ -52,11 +55,10 @@ export default class Features {
         this.sampleAmount = Math.min(options.samples || Math.ceil(this.duration / options.sampleDuration), 500);
         this.sampleDuration = analysisData.track.duration / this.sampleAmount;
         this.sampleBlur = options.sampleBlur || 1;
-        log.info("Reducing segments, sample amount:", this.sampleAmount);
-        log.info("Amount of beats:", analysisData.beats.length);
         this.fillBeatsStartDuration(analysisData.beats);
         this.calculateMaxMin();
         this.processSegments();
+        if (this.segments.length) this.processDirectLoudness();
         this.sampleFeatures();
         this.processSamples();
         this.downSampledTimbre = this.downSampleTimbre(options.downsampleAmount);
@@ -115,6 +117,7 @@ export default class Features {
             this.processed.tonalRadius.push(s.tonalityRadius);
             this.processed.tonalAngle.push(s.tonalityAngle);
         });
+
         for (let i = 0; i < this.segments.length; i++) {
             // Try to remove percussion from pitch features
             if (i > 0 && i < this.segments.length - 1) {
@@ -137,9 +140,50 @@ export default class Features {
         }
     }
 
+    processDirectLoudness() {
+        this.directLoudnessAmount = Math.floor(this.duration / this.directLoudnessSampleDuration);
+        this.directLoudness = new Float32Array(this.directLoudnessAmount);
+
+        log.info(
+            "Process direct loudness",
+            "duration",
+            this.duration,
+            "segmentAmount",
+            this.segmentStartDuration.length,
+            "amount",
+            this.directLoudnessAmount
+        );
+
+        let segmentIndex = 0;
+        for (let i = 0; i < this.directLoudnessAmount; i++) {
+            const time = this.directLoudnessSampleDuration * i;
+            while (!this.isTimeInSegment(segmentIndex, time)) {
+                segmentIndex++;
+            }
+            this.directLoudness[i] = this.getExactLoudness(segmentIndex, time);
+        }
+    }
+
+    isTimeInSegment(index, time) {
+        const start = this.segmentStartDuration[index][0];
+        const end = start + this.segmentStartDuration[index][1];
+        return time >= start && time < end;
+    }
+
+    getExactLoudness(index, time) {
+        const startLoudness = this.raw.loudness[index][0];
+        const endLoudness = index + 1 < this.segmentStartDuration.length ? this.raw.loudness[index + 1][0] : 0;
+        const startTime = this.segmentStartDuration[index][0];
+        const fraction = (time - startTime) / this.segmentStartDuration[index][1];
+        //return fraction * endLoudness + (1 - fraction) * startLoudness;
+        return this.raw.loudness[index][1];
+    }
+
     processSamples() {
         this.sampled.pitches;
         this.sampled.timbres;
+
+        //this.sampled.pitches = filter.gaussianBlurFeatures(this.sampled.pitches, 4);
 
         this.sampled.chords = [];
         this.sampled.majorminor = [];
@@ -267,7 +311,6 @@ export default class Features {
 
             downSampledTimbre.push(summedTimbre);
         }
-        log.debug(downSampledTimbre);
         return downSampledTimbre;
     }
 

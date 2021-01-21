@@ -1,22 +1,21 @@
 <template>
-    <div class="py-5" v-if="hasStructure">
+    <div class="pt-5">
         <v-row>
             <v-col>Harmonic Structure</v-col>
             <v-spacer></v-spacer>
-            <v-col>
-                <v-btn icon small @click="showLoudness = !showLoudness" :color="showLoudness ? 'white' : 'dimgrey'">
-                    <v-icon>mdi-equalizer</v-icon>
-                </v-btn>
-            </v-col>
+            <v-btn icon small @click="showLoudness = !showLoudness" :color="showLoudness ? 'white' : 'dimgrey'">
+                <v-icon>mdi-equalizer</v-icon>
+            </v-btn>
         </v-row>
         <Seeker
+            v-if="hasStructure"
             class="seeker"
             :ref="'holisticSeeker'"
             :width="width"
             :height="height"
-            :color="'rgb(255,255,255,0.5)'"
+            :color="'rgb(255,255,255,0.3)'"
         />
-        <svg class="structureSVG" :width="width" :height="height">
+        <svg v-if="hasStructure" class="structureSVG" :width="width" :height="height">
             <SeparatorBackground :width="width" :height="height" :scale="scale" />
             <rect class="glowRect"></rect>
             <Section
@@ -42,6 +41,12 @@
                 />
             </g>
         </svg>
+        <v-skeleton-loader
+            v-if="!hasStructure"
+            :width="width"
+            :height="sectionHeight * 3"
+            type="image"
+        ></v-skeleton-loader>
     </div>
 </template>
 
@@ -92,17 +97,21 @@ export default {
             return this.width / this.track.getAnalysisDuration();
         },
         hasStructure() {
-            return this.track && this.track.structures.length > 0;
+            return this.track && this.track.harmonicStructureCourse && this.track.harmonicStructureCourse.length > 0;
         },
         courseStructure() {
-            return this.track.courseStructure;
+            return this.track.harmonicStructureCourse;
         },
         fineStructure() {
-            return this.track.fineStructure;
+            return this.track.harmonicStructureFine;
         },
     },
     watch: {},
-    mounted() {},
+    mounted() {
+        window.eventBus.$on("harmonicStructure", () => {
+            log.debug("Updated harmonic structure");
+        });
+    },
     methods: {
         groupAmount(structure) {
             let maxGroupID = 0;

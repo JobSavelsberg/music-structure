@@ -2,27 +2,24 @@ import * as log from "../../dev/log";
 import * as structure from "../structure";
 import * as SSM from "../SSM";
 import * as filter from "../filter";
+import * as events from "../events";
 import * as noveltyDetection from "../noveltyDetection";
 
 addEventListener("message", (event) => {
     const data = event.data;
-    log.debug(data.timbreFeatures);
     const ssmTimbre = SSM.calculateSSM(data.timbreFeatures, data.sampleDuration);
-    log.debug(ssmTimbre);
-    const blurredTimbreLarge = filter.gaussianBlur2DOptimized(ssmTimbre, 8);
-    const timbreNoveltyColumnLarge = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbreLarge);
-    const smoothTimbreNoveltyColumnLarge = filter.gaussianBlur1D(timbreNoveltyColumnLarge, 3);
-    const timbreSegmentsLarge = structure.createSegmentsFromNovelty(
-        smoothTimbreNoveltyColumnLarge,
-        data.sampleDuration,
-        0.2
-    );
-    const processedTimbreSegmentsLarge = structure.processTimbreSegments(
+    const blurredTimbreLarge = filter.gaussianBlur2DOptimized(ssmTimbre, 3);
+    const timbreNoveltyColumn = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbreLarge);
+    const smoothTimbreNoveltyColumn = filter.gaussianBlur1D(timbreNoveltyColumn, 3);
+    const timbreSegments = structure.createSegmentsFromNovelty(smoothTimbreNoveltyColumn, data.sampleDuration, 0.2);
+    const processedTimbreSegments = structure.processTimbreSegments(
         data.timbreFeatures,
-        timbreSegmentsLarge,
+        timbreSegments,
         data.sampleDuration
     );
 
-    log.debug("Processed timbre segments large", processedTimbreSegmentsLarge);
-    postMessage({ timbreStructure: processedTimbreSegmentsLarge });
+    const smoothedTimbreFeatures = filter.gaussianBlurFeatures(data.timbreFeatures, 2);
+    const eventArray = events.detectAverageWindow(smoothedTimbreFeatures, data.sampleDuration, 20, 0.2);
+
+    postMessage({ timbreStructure: processedTimbreSegments, events: eventArray });
 });

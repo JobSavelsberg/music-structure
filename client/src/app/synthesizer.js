@@ -48,6 +48,7 @@ export default class SynthesizedTrack extends Track {
         this.features = new Features(this.analysisData, {
             samples: sampleAmount,
             sampleBlur: Track.sampleBlur,
+            downsampleAmount: Track.maxTimbreDownSamples,
         });
         this.process();
     }
@@ -58,23 +59,32 @@ export default class SynthesizedTrack extends Track {
         const timbreSSM = synthesizeSSMTimbre(sampleAmount, this.synthesizerString);
 
         workers
-            .startSSM(this.getID(), null, null, new Float32Array(sampleAmount).fill(1), sampleDuration, null, this.features.beatsStartDuration, {
-                sampleAmount: sampleAmount,
-                blurTime: Track.blurTime,
-                enhanceBlurLength: Track.enhanceBlurLength,
-                threshold: Track.threshold,
-                thresholdPercentage: Track.thresholdPercentage,
-                tempoRatios: Track.tempoRatios,
-                allPitches: false,
-                SPminSize: Track.SPminSize,
-                SPstepSize: Track.SPstepSize,
-                createScapePlot: Track.createScapePlot,
-                synthesized: true,
-                synthesizedSSMPitch: pitchSSM.getBuffer(),
-                synthesizedSSMTimbre: timbreSSM.getBuffer(),
-            })
+            .startSSM(
+                this.getID(),
+                null,
+                null,
+                new Float32Array(sampleAmount).fill(1),
+                sampleDuration,
+                null,
+                this.features.beatsStartDuration,
+                {
+                    sampleAmount: sampleAmount,
+                    blurTime: Track.blurTime,
+                    enhanceBlurLength: Track.enhanceBlurLength,
+                    threshold: Track.threshold,
+                    thresholdPercentage: Track.thresholdPercentage,
+                    tempoRatios: Track.tempoRatios,
+                    allPitches: false,
+                    SPminSize: Track.SPminSize,
+                    SPstepSize: Track.SPstepSize,
+                    createScapePlot: Track.createScapePlot,
+                    synthesized: true,
+                    synthesizedSSMPitch: pitchSSM.getBuffer(),
+                    synthesizedSSMTimbre: timbreSSM.getBuffer(),
+                }
+            )
             .then((result) => {
-                log.debug("Done processing")
+                log.debug("Done processing");
                 this.matrixes = result.matrixes;
                 this.graphFeatures = result.graphs;
                 this.scapePlot = result.scapePlot;
@@ -82,7 +92,7 @@ export default class SynthesizedTrack extends Track {
                 this.structureSections = result.structureSections;
                 this.optimalStructure = result.optimalStructure;
                 this.structures = result.structures;
-                window.eventBus.$emit("readyForVis");
+                window.eventBus.$emit("readyForPrototypeVis");
             });
     }
     hasAnalysis() {

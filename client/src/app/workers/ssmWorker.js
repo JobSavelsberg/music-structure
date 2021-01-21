@@ -144,7 +144,6 @@ addEventListener("message", (event) => {
         structures.push({ name: "Fine Segment MDS colored", data: fineSegmentColored });
 
         message.separators = structure.createSeparators(courseSegmentColored, strictPathMatrix);
-        log.debug("Separators", message.separators);
     }
 
     const duration = 3; // samples
@@ -223,7 +222,6 @@ addEventListener("message", (event) => {
         clone.end = Math.floor(clone.end / data.sampleDuration);
         return clone;
     });
-    log.debug(group0InSamples);
     const solo0and = SSM.soloAnd(strictPathMatrix, group0InSamples);
     matrixes.push({ name: "S0&", buffer: solo0and.getBuffer() });
     const solo0or = SSM.soloOr(strictPathMatrix, group0InSamples);
@@ -231,13 +229,11 @@ addEventListener("message", (event) => {
     const inner0 = SSM.showInner(strictPathMatrix, group0InSamples);
     matrixes.push({ name: "Inner0", buffer: inner0.getBuffer() });
     const inner0Half = HalfMatrix.fromMatrix(inner0);
-    log.debug(inner0Half);
     const enhancedInner = SSM.enhanceSSM(inner0Half, {
         blurLength: data.enhanceBlurLength,
         tempoRatios: data.tempoRatios,
         strategy: "med",
     });
-    log.debug(enhancedInner);
     const inner0FullEnhanced = Matrix.fromHalfMatrix(enhancedInner);
     matrixes.push({ name: "Inner0^", buffer: inner0FullEnhanced.getBuffer() });
     const mute0and = SSM.muteAnd(strictPathMatrix, group0InSamples);

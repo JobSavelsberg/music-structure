@@ -44,23 +44,35 @@ export default class Track {
     courseStructure = [];
     fineStructure = [];
 
+    harmonicStructureCourse = [];
+    harmonicStructureFine = [];
+
+    chordsVector = [];
+    chords = [];
+
+    events = [];
     timbreStructure = [];
     timbreFeatureGraph;
 
     features;
 
     processed = false;
+    processing = false;
 
     clusters = new Array(CLUSTERAMOUNT).fill([]);
 
     constructor(trackData) {
         this.trackData = trackData;
+
         if (trackData.groundTruth) {
             this.groundTruth = trackData.groundTruth;
         }
     }
 
     process() {
+        this.processing = true;
+        log.info("Processing Track", this.getName());
+
         this.features = new Features(this.analysisData, {
             //samples: samples,
             sampleDuration: sampleDuration,
@@ -74,19 +86,62 @@ export default class Track {
         //this.tsne();
         //this.cluster();
         this.calculateSSM();
+        this.computeChords();
+        this.computeHarmonicStructure();
         this.computeTimbreStructure();
+
         this.processed = true;
+        this.processing = false;
+    }
+
+    computeChords() {
+        workers.computeChords(this.features.sampled.pitches, this.features.sampleDuration).then((result) => {
+            log.debug("Chords", result);
+            this.chordsVector = result.chordsVector;
+            this.chords = result.chords;
+        });
+    }
+
+    computeHarmonicStructure() {
+        workers
+            .computeHarmonicStructure({
+                pitchFeatures: this.features.sampled.pitches,
+                sampleDuration: this.features.sampleDuration,
+                allPitches,
+                enhanceBlurLength,
+                tempoRatios,
+            })
+            .then((result) => {
+                log.debug("Harmonic Structure Final Result", result);
+                this.harmonicStructureCourse = result.harmonicStructure;
+            });
+        window.eventBus.$on("harmonicStructure", this.harmonicStructureListener);
+        this.eventListenerSet = true;
+    }
+
+    harmonicStructureListener = (result) => {
+        log.debug("Harmonic Structure Listener", result);
+        this.harmonicStructureCourse = result.harmonicStructure;
+    };
+
+    deselect() {
+        if (this.eventListenerSet) {
+            window.eventBus.$off("harmonicStructure", this.harmonicStructureListener);
+            this.eventListenerSet = false;
+        }
     }
 
     computeTimbreStructure() {
         workers.computeTimbreStructure(this.features.sampled.timbres, this.features.sampleDuration).then((result) => {
             log.debug("TimbreStructure", result);
-            this.timbreStructure = result;
+            this.timbreStructure = result.timbreStructure;
+            this.events = result.events;
         });
     }
 
     updatingTimbreGraphVis = false;
     updateTimbreVis(timbreSliders) {
+        if (!this.processed) return;
         this.updatingTimbreGraphVis = true;
         workers
             .updateTimbreGraphVis(this.features.downSampledTimbre, timbreSliders, this.features.sampleDuration)
@@ -141,22 +196,8 @@ export default class Track {
                 this.separators = result.separators;
                 this.courseStructure = result.courseStructure;
                 this.fineStructure = result.fineStructure;
-                window.eventBus.$emit("readyForVis");
+                window.eventBus.$emit("readyForPrototypeVis");
             });
-        log.debug("Setting listerner for", this.getName());
-        window.eventBus.$on("update", this.testListener);
-        this.eventListenerSet = true;
-    }
-
-    testListener = (result) => {
-        log.info(this.getName(), "HEY", result);
-    };
-
-    deselect() {
-        if (this.eventListenerSet) {
-            log.debug("Turning off listener for", this.getName());
-            window.eventBus.$off("update", this.testListener);
-        }
     }
 
     getMatrixByName(name) {
@@ -167,18 +208,14 @@ export default class Track {
     }
 
     updateDTW(start, end) {
-        log.debug("start", start, "end", end);
         let index = -1;
         for (var i = this.matrixes.length - 1; i >= 0; --i) {
             if (this.matrixes[i].name == "DTW") {
                 index = i;
             }
         }
-        log.debug(this.matrixes);
 
         const strictpath = this.getMatrixByName("StrictPath").matrix;
-
-        log.debug(strictpath);
 
         const scoreMatrix = pathExtraction.visualizationMatrix(strictpath, strictpath.getSampleAmount(), start, end);
 
@@ -187,7 +224,7 @@ export default class Track {
         } else {
             this.matrixes[index] = { name: "DTW", matrix: scoreMatrix };
         }
-        window.eventBus.$emit("readyForVis");
+        window.eventBus.$emit("readyForPrototypeVis");
     }
 
     cluster() {
@@ -269,11 +306,11 @@ export default class Track {
     reload() {
         log.debug("Reloading track");
         if (this.hasVisualization()) {
-            window.setTimeout(() => window.eventBus.$emit("readyForVis"), 0);
+            window.setTimeout(() => window.eventBus.$emit("readyForPrototypeVis"), 0);
         }
     }
     setAnalysis(analysis) {
-        if (!this.processed) {
+        if (!this.processed && !this.processing) {
             this.analysisData = analysis;
             this.process();
         }

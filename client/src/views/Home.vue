@@ -2,7 +2,6 @@
     <div class="home">
         <v-app-bar dark>
             <v-toolbar-title>Music Structure Visualizer</v-toolbar-title>
-
             <v-spacer></v-spacer>
 
             <form v-if="!testing && !synthesizing" v-on:submit.prevent="search">
@@ -32,10 +31,18 @@
                 <v-text-field v-model="synthesizerString" hide-details single-line rounded dense filled></v-text-field>
             </form>
             <v-btn v-if="!synthesizing" icon @click="testing = !testing">
-                <v-icon>mdi-test-tube</v-icon>
+                <v-icon>mdi-ab-testing</v-icon>
             </v-btn>
             <v-btn icon @click="synthesizing = !synthesizing">
                 <v-icon>mdi-pencil</v-icon>
+            </v-btn>
+            <v-spacer></v-spacer>
+
+            <v-btn icon @click="$store.commit('toggleZoomed')">
+                <v-icon>mdi-magnify-plus-outline</v-icon>
+            </v-btn>
+            <v-btn icon @click="showPrototype = !showPrototype">
+                <v-icon>{{ showPrototype ? "mdi-monitor-eye" : "mdi-test-tube" }}</v-icon>
             </v-btn>
             <div class="volumeSlider">
                 <v-container>
@@ -60,7 +67,7 @@
         <TrackSelector v-if="!synthesizing" :tracks="trackList" :album-size="120" />
         <div ref="mainContent" class="mainContent" :style="mainContentStyle">
             <Player v-if="!synthesizing" :width="mainContentWidth" />
-            <Visualization :width="mainContentWidth" />
+            <Visualization :width="mainContentWidth" :showPrototype="showPrototype" />
         </div>
     </div>
 </template>
@@ -88,6 +95,7 @@ export default {
             testing: false,
             synthesizing: false,
             selectedTestSet: null,
+            showPrototype: false,
         };
     },
     computed: {

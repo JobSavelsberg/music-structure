@@ -75,8 +75,6 @@ export function enhanceSSM(ssm, options, allPitches = false) {
 }
 
 export function onedirectionalSmoothing(ssm, direction, length, tempoRatio) {
-    log.debug("One Directional Smoothing: length", length, "tempoRatio", tempoRatio);
-
     const smoothedSSM = HalfMatrix.from(ssm);
 
     const tempos = new Int8Array(length);
@@ -97,8 +95,6 @@ export function onedirectionalSmoothing(ssm, direction, length, tempoRatio) {
 }
 
 function linearSmoothing(ssm, length, tempoRatio) {
-    log.debug("Linear Smoothing: length", length, "tempoRatio", tempoRatio);
-
     const smoothedSSM = HalfMatrix.from(ssm);
 
     const blur = Math.round(length / 2); //Math.floor(length / 2);
@@ -121,7 +117,6 @@ function linearSmoothing(ssm, length, tempoRatio) {
 }
 
 function medianSmoothing(ssm, length, tempoRatio, resolution = 128) {
-    log.debug("Median Smoothing: length", length, "tempoRatio", tempoRatio);
     const buckets = new Float32Array(resolution);
 
     const l = Math.floor((length - 1) / 2);
@@ -160,8 +155,6 @@ function medianSmoothing(ssm, length, tempoRatio, resolution = 128) {
 }
 
 function gaussianSmoothing(ssm, length, tempoRatio) {
-    log.debug("Gaussian Smoothing: length", length, "tempoRatio", tempoRatio);
-
     const smoothedSSM = HalfMatrix.from(ssm);
 
     const blur = Math.round(length / 2); //Math.floor(length / 2);
@@ -236,7 +229,6 @@ export function autoThreshold(ssm, percentage) {
             break;
         }
     }
-    log.debug("Finding threshold with percentage", percentage, "got threshold: ", thresholdValue);
     let thresholdSSM;
     if (ssm instanceof Matrix) {
         thresholdSSM = Matrix.from(ssm);
@@ -271,7 +263,6 @@ export function threshold(ssm, threshold) {
 }
 
 export function rowColumnAutoThreshold(ssm, percentageRow, percentageCol = percentageRow) {
-    log.debug("rowColumnAutoThreshold: row %:", percentageRow, "col %:", percentageCol);
     const typeScale = ssm.numberType.scale;
 
     const rowBinaryMatrix = new HalfMatrix({ size: ssm.size, numberType: NumberType.UINT8 });
@@ -500,8 +491,6 @@ export function removeSections(ssm, sectionsInSamples) {
 // subtract b from a
 export function subtract(a, b) {
     const newSSM = Matrix.from(a);
-
-    log.debug("SUBTRACT", newSSM);
 
     newSSM.fillByIndex((i) => {
         const value = a.data[i] - b.data[i];

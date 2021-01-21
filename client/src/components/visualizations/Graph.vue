@@ -77,7 +77,7 @@ export default {
     },
     mounted() {
         this.generateLine();
-        window.eventBus.$on("readyForVis", () => {
+        window.eventBus.$on("readyForPrototypeVis", () => {
             this.generateLine();
         });
     },

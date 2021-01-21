@@ -1,14 +1,7 @@
 <template>
     <div class="visualization">
         <div>
-            <v-row class="d-flex justify-center py-2">
-                <v-btn color="primary" fab dark small class="mr-2" @click="$store.commit('toggleZoomed')">
-                    <v-icon>mdi-magnify-plus-outline</v-icon>
-                </v-btn>
-                <v-btn color="primary" fab dark small class="mr-2" @click="showPrototype = !showPrototype">
-                    <v-icon>{{ showPrototype ? "mdi-monitor-eye" : "mdi-flask" }}</v-icon>
-                </v-btn>
-            </v-row>
+            <v-row class="d-flex justify-center py-2"> </v-row>
             <div v-if="showPrototype">
                 <Matrixes :width="width" />
                 <Structure :width="width" />
@@ -21,6 +14,7 @@
             </div>
             <div v-if="!showPrototype">
                 <HolisticStructure :width="width" />
+                <Chords :width="width" />
                 <TimbreStructure :width="width" />
                 <TimbreGraph :width="width" />
             </div>
@@ -41,6 +35,7 @@ import PitchTimbre from "./visualizations/PitchTimbre";
 import Structure from "./visualizations/Structure";
 import HolisticStructure from "./visualizations/HolisticStructure";
 import TimbreStructure from "./visualizations/TimbreStructure";
+import Chords from "./visualizations/Chords";
 
 import TimbreGraph from "./visualizations/TimbreGraph";
 
@@ -49,7 +44,7 @@ import * as player from "../app/player";
 import * as vis from "../app/vis";
 
 export default {
-    props: ["width"],
+    props: ["width", "showPrototype"],
     components: {
         Matrixes,
         GroundTruth,
@@ -61,21 +56,21 @@ export default {
         HolisticStructure,
         TimbreGraph,
         TimbreStructure,
+        Chords,
     },
     data() {
         return {
-            readyForVis: false,
-            showPrototype: false,
+            readyForPrototypeVis: false,
         };
     },
     watch: {
         showPrototype() {
-            if (this.showPrototype && this.readyForVis) {
-                setTimeout(() => window.eventBus.$emit("readyForVis"), 0);
+            if (this.showPrototype && this.readyForPrototypeVis) {
+                setTimeout(() => window.eventBus.$emit("readyForPrototypeVis"), 0);
             }
         },
         track() {
-            this.readyForVis = false;
+            this.readyForPrototypeVis = false;
         },
     },
     computed: {
@@ -107,8 +102,8 @@ export default {
             }
         };
         document.addEventListener("keydown", this._keyListener.bind(this));
-        window.eventBus.$on("readyForVis", () => {
-            this.readyForVis = true;
+        window.eventBus.$on("readyForPrototypeVis", () => {
+            this.readyForPrototypeVis = true;
         });
     },
     beforeDestroy() {

@@ -49,7 +49,7 @@ export default {
     },
     mounted() {
         this.zoomCanvas = new ZoomCanvas(document.getElementById("Beatcanvas"));
-        window.eventBus.$on("readyForVis", () => {
+        window.eventBus.$on("readyForPrototypeVis", () => {
             this.zoomCanvas.setTrackDuration(this.track);
             this.zoomCanvas.setDrawFunction(this.draw);
         });

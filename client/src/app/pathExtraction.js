@@ -13,9 +13,6 @@ export function extractPathFamily(ssm, start, end) {
     //const pathScores = getScoresForPathFamily(D, width, pathFamily);
     const pathScores = getBrightnessForPathFamily(ssm, pathFamily, start);
 
-    if (start > 345 && end < 350) {
-        //log.debug(pathFamily, pathScores, score)
-    }
     return [pathFamily, pathScores, score, width];
 }
 
@@ -213,12 +210,10 @@ export function getInducedSegments(pathFamily) {
 }
 
 export function visualizationMatrix(ssm, sampleAmount, start, end) {
-    log.debug("start", start, "end", end, "sampleAmount: ", sampleAmount);
     const scoreMatrixBuffer = createScoreMatrixBuffer(sampleAmount);
     const { D, width, height, score } = computeAccumulatedScoreMatrix(ssm, start, end, scoreMatrixBuffer);
     const P = computeOptimalPathFamily(D, width, height);
     const PScores = getScoresForPathFamily(D, width, P);
-    log.debug("Path family scores:", PScores);
     const { fitness, normalizedScore, coverage, normalizedCoverage, pathFamilyLength } = familyFitness.computeFitness(
         P,
         PScores,
@@ -226,12 +221,6 @@ export function visualizationMatrix(ssm, sampleAmount, start, end) {
         sampleAmount,
         width
     );
-    log.debug("normalizedScore: ", normalizedScore);
-    log.debug("coverage: ", coverage);
-    log.debug("normalizedCoverage: ", normalizedCoverage);
-    log.debug("pathFamilyLength: ", pathFamilyLength);
-
-    log.debug("FITNESS: ", fitness);
 
     let maxVal = Number.NEGATIVE_INFINITY;
     let minVal = Number.POSITIVE_INFINITY;
@@ -246,7 +235,6 @@ export function visualizationMatrix(ssm, sampleAmount, start, end) {
         }
     }
     minVal = 0;
-    log.debug(minVal, maxVal);
 
     const length = end - start + 1;
     const visualizationMatrix = new Matrix({

@@ -8,27 +8,43 @@
         <Seeker :width="width" :height="width" />
         <Seeker :width="width" :height="width" :vertical="true" />
         <svg v-if="hasStructures" class="annotations" :height="width" :width="width">
-            <g v-for="(section,index) in selectedStructure.data" :key="index" >
-                <rect 
-                v-if="showPathStart"
-                :x="section.start*secondsToXPosition -1"
-                :y="0"
-                :width="2"
-                :height="width"
-                :fill="getCategoryColor(section.label)"
-                :opacity=" 0.8"></rect>
-                <rect 
-                v-if="fillSections"
-                :x="section.start*secondsToXPosition"
-                :y="0"
-                :width=" section.duration*secondsToXPosition"
-                :height="width"
-                :fill="getCategoryColor(section.label)"
-                :opacity="0.3"></rect>
+            <g v-for="(section, index) in selectedStructure.data" :key="index">
+                <rect
+                    v-if="showPathStart"
+                    :x="section.start * secondsToXPosition - 1"
+                    :y="0"
+                    :width="2"
+                    :height="width"
+                    :fill="getCategoryColor(section.label)"
+                    :opacity="0.8"
+                ></rect>
+                <rect
+                    v-if="fillSections"
+                    :x="section.start * secondsToXPosition"
+                    :y="0"
+                    :width="section.duration * secondsToXPosition"
+                    :height="width"
+                    :fill="getCategoryColor(section.label)"
+                    :opacity="0.3"
+                ></rect>
                 <g v-if="section.pathFamily && showPaths">
-                    <g v-for="(path, pathIndex) in section.pathFamily" :key="pathIndex" >
-                        <path fill="none" stroke="black" stroke-width="8" :d="generateLine(path)" class="path" stroke-linejoin="round" />
-                        <path fill="none" :stroke="getCategoryColor(section.label)" stroke-width="4" :d="generateLine(path)" class="path" stroke-linejoin="round"/>
+                    <g v-for="(path, pathIndex) in section.pathFamily" :key="pathIndex">
+                        <path
+                            fill="none"
+                            stroke="black"
+                            stroke-width="8"
+                            :d="generateLine(path)"
+                            class="path"
+                            stroke-linejoin="round"
+                        />
+                        <path
+                            fill="none"
+                            :stroke="getCategoryColor(section.label)"
+                            stroke-width="4"
+                            :d="generateLine(path)"
+                            class="path"
+                            stroke-linejoin="round"
+                        />
                     </g>
                 </g>
             </g>
@@ -36,16 +52,16 @@
         <canvas id="gl-canvas" :height="width" :width="width" class="glCanvas pa-0 ma-0"></canvas>
         <v-row class="options-row" v-if="hasStructures" :style="`width: ${width}px`">
             <v-select
-            v-model="selectedStructure"
-            :items="track.structures"
-            item-text="name"
-            return-object
-            label="Structure"
-            solo
-          ></v-select>
-          <v-spacer></v-spacer>
-        <v-switch v-model="showPathStart" label="Show Path Start" hide-details></v-switch>
-        <v-switch v-model="fillSections" label="Fill Sections" hide-details></v-switch>
+                v-model="selectedStructure"
+                :items="track.structures"
+                item-text="name"
+                return-object
+                label="Structure"
+                solo
+            ></v-select>
+            <v-spacer></v-spacer>
+            <v-switch v-model="showPathStart" label="Show Path Start" hide-details></v-switch>
+            <v-switch v-model="fillSections" label="Fill Sections" hide-details></v-switch>
             <v-switch v-model="showPaths" label="Show Paths" hide-details></v-switch>
         </v-row>
     </div>
@@ -66,7 +82,7 @@ export default {
     },
     data() {
         return {
-            selectedStructure: {name: "undefined", data: []},
+            selectedStructure: { name: "undefined", data: [] },
             fillSections: false,
             showPathStart: false,
             showPaths: false,
@@ -86,13 +102,12 @@ export default {
         track() {
             this.webGLMatrixPool.clear();
         },
-
     },
     computed: {
         track() {
             return this.$store.getters.selectedTrack;
         },
-        hasStructures(){
+        hasStructures() {
             return this.track && this.track.structures && this.track.structures.length > 0;
         },
         zoomed() {
@@ -104,8 +119,8 @@ export default {
         seekerNormalized() {
             return this.$store.getters.seeker / (this.track.getAnalysisDuration() * 1000);
         },
-        secondsToXPosition(){
-            return this.width/(this.track.getAnalysisDuration());
+        secondsToXPosition() {
+            return this.width / this.track.getAnalysisDuration();
         },
         xCenterPositionNormalized() {
             if (this.zoomed) {
@@ -114,7 +129,7 @@ export default {
                 return 0.5;
             }
         },
-        trackVisready(){
+        trackVisready() {
             return this.track && this.track.matrixes.length > 0;
         },
         lineGenerator() {
@@ -130,10 +145,10 @@ export default {
     },
     mounted() {
         this.webGLMatrixPool = new WebGLMatrixPool(document.getElementById("gl-canvas"));
-        window.eventBus.$on("readyForVis", () => {
+        window.eventBus.$on("readyForPrototypeVis", () => {
             if (!this.track) log.error("SSM done but track does not exist");
             clearInterval(this.drawLoop);
-            this.selectedStructure = this.track.structures[this.track.structures.length-1];
+            this.selectedStructure = this.track.structures[this.track.structures.length - 1];
 
             this.webGLMatrixPool.fillMatrixBufferPool(this.track, this.selectedTab);
 
@@ -168,8 +183,8 @@ export default {
                 this.draw();
             }
         },
-        getCategoryColor(index){
-           return vis.categoryColor(index)
+        getCategoryColor(index) {
+            return vis.categoryColor(index);
         },
         generateLine(path) {
             return this.lineGenerator(path);
@@ -184,11 +199,11 @@ export default {
     width: 100%;
     height: 100%;
 }
-.annotations{
+.annotations {
     position: absolute;
     z-index: 5;
 }
-.options-row{
+.options-row {
     z-index: 20;
 }
 </style>

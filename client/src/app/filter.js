@@ -115,6 +115,28 @@ export function gaussianBlur2DOptimized(matrix, size) {
     });
     return blurredMatrixSecondPass;
 }
+export function gaussianBlurFeatures(features, size) {
+    const blurredFeatures = [];
+    const fullKernelSize = size * 2 + 1;
+    const kernel = generate1DgaussianKernel(fullKernelSize, size / 2);
+    const featureAmount = features[0].length;
+
+    for (let i = 0; i < features.length; i++) {
+        const newTimbre = new Float32Array(featureAmount);
+        for (let f = 0; f < featureAmount; f++) {
+            let sum = 0;
+            for (let k = -size; k <= size; k++) {
+                if (i + k >= 0 && i + k < features.length) {
+                    sum += features[i + k][f] * kernel[k + size];
+                }
+            }
+            newTimbre[f] = sum;
+        }
+        blurredFeatures.push(newTimbre);
+    }
+
+    return blurredFeatures;
+}
 
 export function gaussianBlur1D(array, size) {
     const fullKernelSize = size * 2 + 1;

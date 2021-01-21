@@ -389,7 +389,6 @@ export default {
             );
             const startYPos = Math.round(yMid + this.averageLoudness[endOffsetInSamples] * halfHeight * heightFactor);
             points = points.concat(` Q ${x} ${startYPos}, ${x} ${startYHalfPos} Z`);
-            //log.debug(points)
             return points;
         },
     },

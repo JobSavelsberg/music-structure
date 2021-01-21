@@ -59,7 +59,7 @@ export default {
     },
     mounted() {
         this.zoomCanvas = new ZoomCanvas(document.getElementById("GTcanvas"));
-        window.eventBus.$on("readyForVis", () => {
+        window.eventBus.$on("readyForPrototypeVis", () => {
             this.zoomCanvas.setTrackDuration(this.track);
             this.zoomCanvas.setDrawFunction(this.drawGT);
         });

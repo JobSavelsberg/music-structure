@@ -24,7 +24,7 @@ export default {
         },
     },
     mounted() {
-        window.eventBus.$on("readyForVis", () => {
+        window.eventBus.$on("readyForPrototypeVis", () => {
             if (this.createScapePlot) {
                 this.drawSP();
             }
@@ -42,7 +42,6 @@ export default {
 
             //vis.drawScapePlot(this.track, ctx, this.width);
             vis.drawScapePlot(this.track, ctx, this.width, false);
-
         },
     },
 };

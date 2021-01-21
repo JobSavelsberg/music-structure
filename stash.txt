@@ -104,7 +104,7 @@ index 102fd09..102d79b 100644
                  this.courseStructure = result.courseStructure;
                  this.fineStructure = result.fineStructure;
 +                //this.timbreStructure = result.timbreStructure;
-                 window.eventBus.$emit("readyForVis");
+                 window.eventBus.$emit("readyForPrototypeVis");
              });
          log.debug("Setting listerner for", this.getName());
 diff --git a/client/src/app/structure.js b/client/src/app/structure.js
