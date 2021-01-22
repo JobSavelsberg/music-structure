@@ -8,8 +8,8 @@ import * as pathExtraction from "./pathExtraction";
 
 export const GAMMA = 1.7;
 export const CLUSTERAMOUNT = 10;
-export const samples = 500;
-export const sampleDuration = 0.5;
+export const samples = 750;
+export const sampleDuration = 0.25;
 export const sampleBlur = 1; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
 
 export const enhanceBlurLength = 6;
@@ -74,7 +74,7 @@ export default class Track {
         log.info("Processing Track", this.getName());
 
         this.features = new Features(this.analysisData, {
-            //samples: samples,
+            samples: samples,
             sampleDuration: sampleDuration,
             sampleBlur: sampleBlur,
             downsampleAmount: maxTimbreDownSamples,
@@ -112,7 +112,6 @@ export default class Track {
                 tempoRatios,
             })
             .then((result) => {
-                log.debug("Harmonic Structure Final Result", result);
                 this.harmonicStructureCourse = result.harmonicStructure;
             });
         window.eventBus.$on("harmonicStructure", this.harmonicStructureListener);
@@ -120,7 +119,6 @@ export default class Track {
     }
 
     harmonicStructureListener = (result) => {
-        log.debug("Harmonic Structure Listener", result);
         this.harmonicStructureCourse = result.harmonicStructure;
     };
 

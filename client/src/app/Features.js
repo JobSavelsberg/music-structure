@@ -52,8 +52,9 @@ export default class Features {
             this.segmentStartDuration.push([segment.start, segment.duration]);
         });
         this.length = this.segments.length;
-        this.sampleAmount = Math.min(options.samples || Math.ceil(this.duration / options.sampleDuration), 500);
+        this.sampleAmount = Math.min(Math.ceil(this.duration / options.sampleDuration), options.samples);
         this.sampleDuration = analysisData.track.duration / this.sampleAmount;
+        log.info("Sampling, Amount:", this.sampleAmount, "Duration: ", this.sampleDuration);
         this.sampleBlur = options.sampleBlur || 1;
         this.fillBeatsStartDuration(analysisData.beats);
         this.calculateMaxMin();

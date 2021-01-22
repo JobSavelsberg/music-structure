@@ -60,6 +60,15 @@ addEventListener("message", (event) => {
     const uniquenessSSM = uniqueness.computeLocalUniqueness(ssmTimbre, 1, 20);
     graphs.push({ name: "Timbre SSM Subract Uniqueness", buffer: new Float32Array(uniquenessSSM).buffer });
 
+    const small = filter.gaussianBlur2DOptimized(ssmTimbre, 1);
+    const large = filter.gaussianBlur2DOptimized(ssmTimbre, 20);
+
+    const uniquenessSSMS = SSM.subtract(large, small);
+    matrixes.push({
+        name: "Subtracted",
+        buffer: uniquenessSSMS.getBuffer(),
+    });
+
     const ssmPitchSinglePitch = data.allPitches ? ssmPitch.getFirstFeatureMatrix() : ssmPitch;
     //const ssmPitchSinglePitchOffset1 = data.allPitches ? ssmPitch.getFeatureMatrix(1) : ssmPitch;
 

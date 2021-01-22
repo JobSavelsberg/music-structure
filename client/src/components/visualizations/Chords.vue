@@ -1,7 +1,23 @@
 <template>
-    <div class="py-1" v-if="hasChords">
-        <Seeker class="seeker" :ref="'chordsSeeker'" :width="width" :height="height" :color="'rgb(255,255,255,0.3)'" />
-        <svg v-if="hasChords" class="chordsSVG" :width="width" :height="height + chordNameHeight + 5">
+    <div class="py-1">
+        <Seeker
+            v-if="hasChords"
+            class="seeker"
+            :ref="'chordsSeeker'"
+            :width="width"
+            :height="height"
+            :color="'rgb(255,255,255,0.3)'"
+        />
+        <svg v-if="hasChords" class="chordsSVG" :width="width" :height="height">
+            <rect
+                class="chordsBackground"
+                x="0"
+                y="0"
+                :width="width"
+                :height="height"
+                fill="none"
+                @click="clickedBG($event)"
+            ></rect>
             <rect
                 v-for="(chord, index) in chords"
                 :key="index"
@@ -16,10 +32,8 @@
                 :fill="color(chord)"
                 @click="clickedChord(chord)"
             ></rect>
-            <text :y="height + chordNameHeight + 5" :x="seekerTime * scale - 5" fill="white">
-                {{ currentChord.name }}
-            </text>
         </svg>
+        <canvas id="chordNameCanvas" class="chordNameCanvas" :width="width" :height="chordNameHeight"></canvas>
     </div>
 </template>
 
@@ -44,7 +58,10 @@ export default {
     data() {
         return {
             blockHeight: 10,
-            chordNameHeight: 10,
+            chordNameHeight: 20,
+            maxChordViewDistance: 10,
+            canvas: null,
+            ctx: null,
         };
     },
     computed: {
@@ -69,10 +86,67 @@ export default {
         currentChord() {
             return this.chords.find((chord) => this.isPlayingChord(chord, this.seekerTime)) || { name: "" };
         },
+        chordScrollMiddle() {
+            return 40;
+            //return this.seekerTime * this.scale;
+        },
     },
-    watch: {},
-    mounted() {},
+    watch: {
+        seekerTime() {
+            this.drawChordNames();
+        },
+    },
+    mounted() {
+        this.setupCanvas();
+    },
     methods: {
+        setupCanvas() {
+            this.canvas = document.getElementById("chordNameCanvas");
+            if (!this.canvas) {
+                log.warn("canvas not ready: ");
+                return;
+            }
+            this.canvas.width = this.width;
+            this.ctx = this.canvas.getContext("2d");
+            log.debug("CANVAS SET UP");
+            this.drawChordNames();
+        },
+        drawChordNames() {
+            if (!this.ctx && !this.hasChords) {
+                log.debug("No drawing");
+                return;
+            }
+            this.ctx.clearRect(0, 0, this.width, this.chordNameHeight);
+            this.ctx.fillStyle = "white";
+            this.ctx.font = "14px Roboto";
+            this.chords.forEach((chord) => {
+                const chordSeekerStartOffset = chord.start - this.seekerTime;
+                let startX = this.chordScrollMiddle + chordSeekerStartOffset * this.scale * 22;
+                const chordSeekerEndOffset = chord.end - this.seekerTime;
+                const endX = this.chordScrollMiddle + chordSeekerEndOffset * this.scale * 22;
+
+                if (chordSeekerEndOffset > 0 && chordSeekerStartOffset < this.maxChordViewDistance) {
+                    if (chord.start <= this.seekerTime) {
+                        this.ctx.fillStyle = this.color(chord, 0.8);
+                        this.ctx.fillRect(
+                            this.chordScrollMiddle,
+                            0,
+                            endX - this.chordScrollMiddle - 3,
+                            this.chordNameHeight
+                        );
+                        this.ctx.fillStyle = "white";
+                        this.ctx.fillText(chord.name, this.chordScrollMiddle - 40 + 2, this.chordNameHeight - 4);
+                    } else {
+                        const opacity = 1 - chordSeekerStartOffset / this.maxChordViewDistance;
+                        this.ctx.fillStyle = this.color(chord, opacity * 0.8);
+                        this.ctx.fillRect(startX, 0, endX - startX - 3, this.chordNameHeight);
+                        this.ctx.fillStyle = `rgba(255,255,255,${opacity * 1.5})`;
+                        this.ctx.fillText(chord.name, startX + 2, this.chordNameHeight - 4);
+                    }
+                }
+            });
+            this.ctx.fillRect(this.chordScrollMiddle - 1, 0, 2, this.chordNameHeight);
+        },
         color(chord, confidence = 1) {
             return vis.sinebowColorNormalizedRadius(chord.angle, 1, confidence);
         },
@@ -81,6 +155,32 @@ export default {
         },
         clickedChord(chord) {
             player.seekS(chord.start);
+        },
+        clickedBG(event) {
+            let xNormalized = 0;
+            let yNormalized = 0;
+            if (this.$store.state.browser === "Firefox") {
+                xNormalized = event.layerX / this.width;
+                yNormalized = event.layerY / this.height;
+            } else {
+                xNormalized = event.offsetX / this.width;
+                yNormalized = event.layerY / this.height;
+            }
+
+            if (this.useZoom && this.isZoomed) {
+                const xFromMiddle = xNormalized * 2 - 1;
+                const seekerPos = Math.min(
+                    1,
+                    Math.max(
+                        0,
+                        this.$store.getters.seeker / (this.track.getAnalysisDuration() * 1000) +
+                            xFromMiddle / (2 * this.zoomScale)
+                    )
+                );
+                player.seekS(seekerPos * this.track.getAnalysisDuration());
+            } else {
+                player.seekS(xNormalized * this.track.getAnalysisDuration());
+            }
         },
     },
 };

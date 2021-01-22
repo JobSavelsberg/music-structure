@@ -19,13 +19,12 @@ addEventListener("message", (event) => {
         { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: "linmed" },
         data.allPitches
     );
-    log.debug("PitchSSM", pitchSSM);
     const transpositionInvariantPre = SSM.makeTranspositionInvariant(enhancedSSM);
     let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.19);
     strictPathMatrixHalf = SSM.threshold(strictPathMatrixHalf, 0.1);
     const strictPathMatrix = Matrix.fromHalfMatrix(strictPathMatrixHalf);
 
-    const duration = 3; // samples
+    const duration = 4; // samples
     const sampledSegments = structure.createFixedDurationStructureSegments(sampleAmount, data.sampleDuration, duration);
 
     const updateCallback = (harmonicStructure, state = "processing") => {

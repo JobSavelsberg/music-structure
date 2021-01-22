@@ -9,7 +9,7 @@ import * as chordDetection from "../chordDetection";
 addEventListener("message", (event) => {
     const data = event.data;
 
-    const blurredPitches = filter.gaussianBlurFeatures(data.pitchFeatures, 2);
+    const blurredPitches = filter.gaussianBlurFeatures(data.pitchFeatures, 1);
     const chordFeatures = chordDetection.getMajorMinorChordVectors(blurredPitches);
     const maxChordFeatures = chordDetection.maxChordFeatures(chordFeatures, 1);
     const chordIndexes = chordDetection.getChordIndexes(maxChordFeatures);
@@ -18,6 +18,5 @@ addEventListener("message", (event) => {
         chord.start = chord.startSample * data.sampleDuration;
         chord.end = chord.endSample * data.sampleDuration;
     });
-    log.debug("Chords", chords);
     postMessage({ chords: chords, chordsVector: maxChordFeatures });
 });

@@ -107,11 +107,7 @@ export default {
         },
     },
     watch: {},
-    mounted() {
-        window.eventBus.$on("harmonicStructure", () => {
-            log.debug("Updated harmonic structure");
-        });
-    },
+    mounted() {},
     methods: {
         groupAmount(structure) {
             let maxGroupID = 0;

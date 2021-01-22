@@ -8,9 +8,9 @@ import * as noveltyDetection from "../noveltyDetection";
 addEventListener("message", (event) => {
     const data = event.data;
     const ssmTimbre = SSM.calculateSSM(data.timbreFeatures, data.sampleDuration);
-    const blurredTimbreLarge = filter.gaussianBlur2DOptimized(ssmTimbre, 3);
+    const blurredTimbreLarge = filter.gaussianBlur2DOptimized(ssmTimbre, 5);
     const timbreNoveltyColumn = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbreLarge);
-    const smoothTimbreNoveltyColumn = filter.gaussianBlur1D(timbreNoveltyColumn, 3);
+    const smoothTimbreNoveltyColumn = filter.gaussianBlur1D(timbreNoveltyColumn, 5);
     const timbreSegments = structure.createSegmentsFromNovelty(smoothTimbreNoveltyColumn, data.sampleDuration, 0.2);
     const processedTimbreSegments = structure.processTimbreSegments(
         data.timbreFeatures,

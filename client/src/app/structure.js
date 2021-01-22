@@ -22,7 +22,6 @@ export function createFixedDurationStructureSegments(sampleAmount, sampleDuratio
 }
 
 export function createSegmentsFromNovelty(novelty, sampleDuration, threshold = 0.1) {
-    log.debug("Create sections from novelty");
     //const maxima = noveltyDetection.findLocalMaxima(novelty, threshold);
     let peaks = noveltyDetection.findPeaks(novelty);
     peaks = peaks.filter((peak) => peak.confidence > threshold);
