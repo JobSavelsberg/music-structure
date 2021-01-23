@@ -8,8 +8,8 @@ import * as pathExtraction from "./pathExtraction";
 
 export const GAMMA = 1.7;
 export const CLUSTERAMOUNT = 10;
-export const samples = 750;
-export const sampleDuration = 0.25;
+export const samples = 600;
+export const sampleDuration = 0.33;
 export const sampleBlur = 1; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
 
 export const enhanceBlurLength = 6;

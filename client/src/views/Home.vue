@@ -44,6 +44,9 @@
             <v-btn icon @click="showPrototype = !showPrototype">
                 <v-icon>{{ showPrototype ? "mdi-monitor-eye" : "mdi-test-tube" }}</v-icon>
             </v-btn>
+            <v-btn icon @click="clickActivePlayer()">
+                <v-icon>{{ activePlayer ? "mdi-speaker" : "mdi-speaker-off" }}</v-icon>
+            </v-btn>
             <div class="volumeSlider">
                 <v-container>
                     <v-slider
@@ -88,7 +91,7 @@ export default {
         return {
             searchQuery: "",
             synthesizerString: "",
-            volume: 0,
+            volume: 0.75,
             prevVolume: 0.75,
             windowWidth: window.innerWidth,
             windowHeight: window.innerHeight,
@@ -130,6 +133,9 @@ export default {
         allTestSets() {
             return testing.getAllTestSets();
         },
+        activePlayer() {
+            return this.$store.getters.playerActive;
+        },
     },
     watch: {
         selectedIndex(newIndex, oldIndex) {
@@ -142,11 +148,10 @@ export default {
             this.loadTestSet(newTestSet);
         },
         volume(newVol, oldVol) {
-            if (!player.autoConnect) {
-                player.transferPlayback();
-                player.autoConnect = true;
-            }
             player.setVolume(Math.pow(this.volume, 2));
+        },
+        activePlayer() {
+            log.debug("Activeplayer Changed", this.activePlayer);
         },
     },
     components: {
@@ -185,6 +190,13 @@ export default {
             log.debug("Synthesizing", this.synthesizerString);
 
             app.synthesize(this.synthesizerString);
+        },
+        clickActivePlayer() {
+            if (this.activePlayer) {
+                player.releasePlayback();
+            } else {
+                player.transferPlayback();
+            }
         },
     },
 };

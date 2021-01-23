@@ -19,6 +19,7 @@ export default new Vuex.Store({
         seekerUpdateSpeed: 40, // 100ms
         isZoomed: false,
         zoomScale: 10,
+        playerActive: false,
     },
     mutations: {
         setSeeker(state, time_ms) {
@@ -63,6 +64,9 @@ export default new Vuex.Store({
         toggleZoomed(state) {
             state.isZoomed = !state.isZoomed;
         },
+        setPlayerActive(state, active) {
+            state.playerActive = active;
+        },
     },
     actions: {},
     getters: {
@@ -101,6 +105,9 @@ export default new Vuex.Store({
         },
         seekerUpdateSpeed(state) {
             return state.seekerUpdateSpeed;
+        },
+        playerActive(state) {
+            return state.playerActive;
         },
     },
     modules: {},

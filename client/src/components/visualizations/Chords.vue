@@ -1,5 +1,16 @@
 <template>
     <div class="py-1">
+        <v-row>
+            <v-btn icon small @click="collapsed = !collapsed">
+                <v-icon>
+                    {{ collapsed ? "mdi-unfold-more-horizontal" : "mdi-unfold-less-horizontal" }}
+                </v-icon>
+            </v-btn>
+            <p>
+                Chords
+            </p>
+        </v-row>
+
         <Seeker
             v-if="hasChords"
             class="seeker"
@@ -26,7 +37,7 @@
                 stroke-width=".5"
                 rx="3"
                 :x="chord.start * scale"
-                :y="(1 - chord.angle) * (height - blockHeight)"
+                :y="collapsed ? '0' : (1 - chord.angle) * (height - blockHeight)"
                 :width="(chord.end - chord.start) * scale"
                 :height="blockHeight"
                 :fill="color(chord)"
@@ -62,11 +73,12 @@ export default {
             maxChordViewDistance: 10,
             canvas: null,
             ctx: null,
+            collapsed: true,
         };
     },
     computed: {
         height() {
-            return this.blockHeight * 12;
+            return this.blockHeight * (this.collapsed ? 1 : 12);
         },
         track() {
             return this.$store.getters.selectedTrack;
@@ -95,24 +107,26 @@ export default {
         seekerTime() {
             this.drawChordNames();
         },
+        hasChords() {
+            this.setupCanvas();
+        },
     },
     mounted() {
         this.setupCanvas();
     },
     methods: {
         setupCanvas() {
+            if (this.ctx) return;
             this.canvas = document.getElementById("chordNameCanvas");
             if (!this.canvas) {
-                log.warn("canvas not ready: ");
                 return;
             }
             this.canvas.width = this.width;
             this.ctx = this.canvas.getContext("2d");
-            log.debug("CANVAS SET UP");
             this.drawChordNames();
         },
         drawChordNames() {
-            if (!this.ctx && !this.hasChords) {
+            if (!this.ctx || !this.hasChords) {
                 log.debug("No drawing");
                 return;
             }
@@ -191,6 +205,12 @@ export default {
     pointer-events: none;
 }
 .chord {
+    transition: 0.3s;
+}
+.chordsSVG {
+    transition: 0.3s;
+}
+.chordsBackground {
     transition: 0.3s;
 }
 .chord:hover {

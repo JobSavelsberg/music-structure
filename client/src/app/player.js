@@ -3,7 +3,7 @@ import { spotify } from "./app";
 import store from "../store";
 
 export const autoConnect = false;
-
+export let active = false;
 export let deviceId = null;
 let player = null;
 
@@ -11,6 +11,8 @@ let playedTrackBefore = false;
 let trackURI = null;
 
 export async function loadTrack(track) {
+    if (!active) return;
+
     if (!store.state.playerReady) {
         log.warn("Trying to load track while player not ready");
         return;
@@ -25,6 +27,8 @@ export async function loadTrack(track) {
 }
 
 async function play() {
+    if (!active) return;
+
     spotify.play({ uris: [trackURI], position_ms: store.state.seeker }, (err, result) => {
         playedTrackBefore = true;
         log.debug("Playing from", store.state.seeker);
@@ -38,6 +42,8 @@ async function play() {
  */
 let locallyResumed = false;
 export async function resume() {
+    if (!active) return;
+
     if (playedTrackBefore) {
         player.resume().then(() => {
             locallyResumed = true;
@@ -50,6 +56,8 @@ export async function resume() {
 
 let locallyPaused = false;
 export async function pause() {
+    if (!active) return;
+
     if (playedTrackBefore) {
         player.pause().then(() => {
             locallyPaused = true;
@@ -63,16 +71,21 @@ export async function pause() {
  * @param {*} time_ms in ms
  */
 export async function seekMS(time_ms) {
+    if (!active) return;
+
     // Seek
     player.seek(time_ms);
     store.commit("setSeeker", time_ms);
 }
 export async function seekS(time_seconds) {
+    if (!active) return;
+
     return seekMS(time_seconds * 1000);
 }
 
 let playingSegment = null;
 export async function playSegment(segment) {
+    if (!active) return;
     store.commit("setSeeker", segment.start * 1000);
     resume().then(() => {
         playingSegment = segment;
@@ -85,12 +98,16 @@ export async function playSegment(segment) {
 }
 
 export function setVolume(volume) {
+    if (!active) return;
+
     if (player) {
         player.setVolume(volume);
     }
 }
 
 async function stateChangedCallback(newState) {
+    if (!active) return;
+
     if (!playedTrackBefore) return;
     const { current_track, position, duration } = newState;
     store.commit("setSeeker", position);
@@ -182,7 +199,6 @@ export async function initialize(token) {
                 window.setTimeout(store.commit("playerReady", true), 1);
                 startSeekerInterval();
             }
-
         });
 
         // Not Ready
@@ -202,9 +218,31 @@ export async function initialize(token) {
     });
 }
 
-export function transferPlayback(){
-    const deviceIdArray = [deviceId];
-    spotify.transferMyPlayback(deviceIdArray)
+export function transferPlayback() {
+    if (!active) {
+        log.debug("Transfering playback");
+        const deviceIdArray = [deviceId];
+        spotify.transferMyPlayback(deviceIdArray).then((result) => {});
+        active = true;
+        store.commit("setPlayerActive", active);
+
+        loadTrack(store.getters.selectedTrack);
+    }
+}
+
+export function releasePlayback() {
+    if (!active) return;
+    spotify.getMyDevices().then((result) => {
+        result.devices.forEach((device) => {
+            if (!device.is_active) {
+                spotify.transferMyPlayback([device.id]);
+                active = false;
+                store.commit("setPlayerActive", active);
+                return true;
+            }
+        });
+    });
+    return false;
 }
 
 async function waitForSpotifyWebPlaybackSDKToLoad() {
