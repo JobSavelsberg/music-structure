@@ -1,27 +1,25 @@
 <template>
-  <div class="callback">
-  </div>
+  <div class="callback"></div>
 </template>
 
 <script>
-import { requestFirstToken } from "../app/authentication"
+import { requestFirstToken } from "../app/authentication";
 
 export default {
-  name: 'Callback',
-  components: {
+  name: "Callback",
+  components: {},
+  beforeCreate() {
+    let params = new URLSearchParams(window.location.search);
+    let code = params.get("code");
+    requestFirstToken(code).then(() => {
+      this.$router.push("/home/-1");
+    });
   },
-  beforeCreate () {
-      let params = new URLSearchParams(window.location.search);
-      let code = params.get('code')
-      requestFirstToken(code).then(()=>{
-        this.$router.push('/home');
-      })
-  }
-}
+};
 </script>
 
 <style>
-.callback{
-  height: 100%,
+.callback {
+  height: 100%;
 }
 </style>

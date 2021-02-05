@@ -11,7 +11,7 @@ addEventListener("message", (event) => {
 
     const blurredPitches = filter.gaussianBlurFeatures(data.pitchFeatures, 1);
     const chordFeatures = chordDetection.getMajorMinorChordVectors(blurredPitches);
-    const maxChordFeatures = chordDetection.maxChordFeatures(chordFeatures, 1);
+    const maxChordFeatures = chordDetection.maxChordFeatures(chordFeatures, 2);
     const chordIndexes = chordDetection.getChordIndexes(maxChordFeatures);
     const chords = chordDetection.getChords(chordIndexes);
     chords.forEach((chord) => {

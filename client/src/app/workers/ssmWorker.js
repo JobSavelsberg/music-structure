@@ -81,7 +81,7 @@ addEventListener("message", (event) => {
         { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: "linmed" },
         data.allPitches
     );
-    //matrixes.push({ name: "Enhanced", buffer: enhancedSSM.getBuffer() });
+    matrixes.push({ name: "Enhanced", buffer: enhancedSSM.getBuffer() });
     log.debug("Enhance Time", performance.now() - startTime);
 
     // Make transposition invariant; take max of all pitches
@@ -232,11 +232,11 @@ addEventListener("message", (event) => {
         return clone;
     });
     const solo0and = SSM.soloAnd(strictPathMatrix, group0InSamples);
-    matrixes.push({ name: "S0&", buffer: solo0and.getBuffer() });
+    //matrixes.push({ name: "S0&", buffer: solo0and.getBuffer() });
     const solo0or = SSM.soloOr(strictPathMatrix, group0InSamples);
-    matrixes.push({ name: "S0||", buffer: solo0or.getBuffer() });
+    //matrixes.push({ name: "S0||", buffer: solo0or.getBuffer() });
     const inner0 = SSM.showInner(strictPathMatrix, group0InSamples);
-    matrixes.push({ name: "Inner0", buffer: inner0.getBuffer() });
+    //matrixes.push({ name: "Inner0", buffer: inner0.getBuffer() });
     const inner0Half = HalfMatrix.fromMatrix(inner0);
     const enhancedInner = SSM.enhanceSSM(inner0Half, {
         blurLength: data.enhanceBlurLength,
@@ -244,11 +244,11 @@ addEventListener("message", (event) => {
         strategy: "med",
     });
     const inner0FullEnhanced = Matrix.fromHalfMatrix(enhancedInner);
-    matrixes.push({ name: "Inner0^", buffer: inner0FullEnhanced.getBuffer() });
+    //matrixes.push({ name: "Inner0^", buffer: inner0FullEnhanced.getBuffer() });
     const mute0and = SSM.muteAnd(strictPathMatrix, group0InSamples);
-    matrixes.push({ name: "M0&", buffer: mute0and.getBuffer() });
+    //matrixes.push({ name: "M0&", buffer: mute0and.getBuffer() });
     const mute0or = SSM.muteOr(strictPathMatrix, group0InSamples);
-    matrixes.push({ name: "M0||", buffer: mute0or.getBuffer() });
+    //matrixes.push({ name: "M0||", buffer: mute0or.getBuffer() });
     //log.debug(greedyStructure)
 
     //const [greedyStructure1, groupAmount1, segments1] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "pruned");
@@ -303,16 +303,16 @@ addEventListener("message", (event) => {
     visualizePathExtraction(strictPathMatrix, 20, 40, matrixes);
 
     const blurredTimbreSmall = filter.gaussianBlur2DOptimized(ssmTimbre, 2);
-    matrixes.push({
+    /*matrixes.push({
         name: "BlurTimbre Small",
         buffer: blurredTimbreSmall.getBuffer(),
-    });
+    });*/
 
     const blurredTimbreLarge = filter.gaussianBlur2DOptimized(ssmTimbre, 8);
-    matrixes.push({
+    /*matrixes.push({
         name: "BlurTimbre Large",
         buffer: blurredTimbreLarge.getBuffer(),
-    });
+    });*/
 
     //const timbreNovelty = noveltyDetection.detect(blurredTimbre, 10);
     /*graphs.push({

@@ -15,13 +15,13 @@ const routes = [
     component: Login
   },
   {
-    path: '/home',
+    path: '/home/:id',
     name: 'Home',
     component: Home,
     beforeEnter(to, from, next) {
       if (auth.isAuthorized()) {
         next();
-      }else{
+      } else {
         next('/');
       }
     }

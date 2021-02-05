@@ -40,8 +40,8 @@ export const colorWheel = d3
     ]);
 
 export const chords = {
-    major: { name: "Major", weight: 1, template: [1, 0, 0, 0, 0.9, 0, 0, 0.9, 0, 0, 0, 0] },
-    minor: { name: "minor", weight: 1, template: [1, 0, 0, 0.9, 0, 0, 0, 0.9, 0, 0, 0, 0] },
+    major: { name: "Major", weight: 1, template: [1, 0, 0, 0, 0.7, 0, 0, 0.7, 0, 0, 0, 0] },
+    minor: { name: "minor", weight: 1, template: [1, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0, 0, 0] },
     sus2: { name: "Sus2", weight: 0.9, template: [1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0] },
     sus4: { name: "Sus4", weight: 0.9, template: [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0] },
     dim: { name: "Dim", weight: 0.9, template: [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0] },
