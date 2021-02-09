@@ -3,11 +3,11 @@ A web application that connects with a user's spotify to show visualizations of 
 
 # Setup
 ### npm install
-The project is separated into a **server** and **client**. 
-Both of which are node packages. Make sure [npm](https://www.npmjs.com/) is installed and run the following bash commands:
+The project is separated into a **server** and **client**.
+Both of which are node packages. The **server** package.json is located at the root, and the **client** package.json is in the client directory. Make sure [npm](https://www.npmjs.com/) is installed and run the following bash commands:
 ```bash
+npm install
 cd client && npm install
-cd server && npm install
 ```
 
 ### environment variables
@@ -23,4 +23,25 @@ SPOTIFY_REDIRECT=http://localhost:8080/callback
 
 HOST_URL=http://localhost
 SERVER_PORT=5000
+PORT=5000
+```
+
+In the client directory also create a `.env` file and add the folloring variables:
+
+```
+NODE_ENV=development
+
+SERVER_PORT=5000
+VUE_APP_HOST_URL=http://localhost:${SERVER_PORT}
+```
+# Running the app
+To run the app locally, open 2 terminals at the project root level, one will be the client, and one the server:
+
+Terminal 1:
+```
+npm run client
+```
+Terminal 2:
+```
+npm run server
 ```
