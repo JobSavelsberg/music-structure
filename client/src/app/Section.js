@@ -1,5 +1,6 @@
 import assert from "assert";
 import * as log from "../dev/log";
+import * as audioUtil from "./audioUtil";
 
 import * as _ from "lodash";
 /*
@@ -11,6 +12,10 @@ export default class Section {
 
     confidence = 1;
     groupID = 0;
+
+    key = -1;
+
+    mdsFeature;
 
     // family variables
     parent = false;
@@ -126,5 +131,9 @@ export default class Section {
 
         const thisClone = this.clone();
         return [thisClone.subtract(otherSection)];
+    }
+
+    getKeyName() {
+        return audioUtil.keyNames[this.key];
     }
 }

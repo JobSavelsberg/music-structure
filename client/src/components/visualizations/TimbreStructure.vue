@@ -24,9 +24,10 @@
                 :scale="scale"
                 :showLoudness="showLoudness"
                 :coloring="'circular'"
-                :positioning="'circular'"
+                :positioning="'linear'"
                 :verticalOffset="paddingTop"
-                :containerHeight="height"
+                :containerHeight="height - sectionHeight / 2"
+                :loop="false"
             />
         </svg>
         <svg

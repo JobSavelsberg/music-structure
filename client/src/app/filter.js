@@ -138,7 +138,7 @@ export function gaussianBlurFeatures(features, size) {
     return blurredFeatures;
 }
 
-export function gaussianBlur1D(array, size) {
+export function gaussianBlur1D(array, size, edgeStrategy = "zeropad") {
     const fullKernelSize = size * 2 + 1;
     const kernel = generate1DgaussianKernel(fullKernelSize, size / 2);
     const blurredArray = new Float32Array(array.length);
@@ -148,6 +148,16 @@ export function gaussianBlur1D(array, size) {
         for (let k = -size; k <= size; k++) {
             if (i + k >= 0 && i + k < array.length) {
                 sum += array[i + k] * kernel[k + size];
+            } else {
+                switch (edgeStrategy) {
+                    case "zeropad":
+                        break;
+                    case "mirror":
+                        if (i - k >= 0 && i - k < array.length) {
+                            sum += array[i - k] * kernel[k + size];
+                        }
+                        break;
+                }
             }
         }
         blurredArray[i] = sum;

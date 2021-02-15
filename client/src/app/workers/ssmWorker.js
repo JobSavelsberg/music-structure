@@ -7,6 +7,8 @@ import * as scapePlot from "../scapePlot";
 import * as pathExtraction from "../pathExtraction";
 import * as events from "../events";
 import * as uniqueness from "../uniqueness";
+import * as homogenous from "../homogenous";
+import * as Features from "../Features";
 
 import Matrix from "../dataStructures/Matrix";
 import HalfMatrix from "../dataStructures/HalfMatrix";
@@ -110,6 +112,16 @@ addEventListener("message", (event) => {
         name: "StrictPath",
         buffer: strictPathMatrix.getBuffer(),
     });
+
+    const timeLagMatrix = Matrix.createTimeLagMatrix(strictPathMatrix);
+    matrixes.push({ name: "TLStrict", buffer: timeLagMatrix.getBuffer() });
+
+    const [homogenousScore, homogenousLength] = homogenous.homogenousFeature(strictPathMatrix);
+    graphs.push({ name: "homogenousScore", buffer: homogenousScore.buffer });
+    graphs.push({ name: "homogenousLength", buffer: homogenousLength.buffer });
+
+    const filteredHomogenous = homogenous.findHomogenousSections(strictPathMatrix);
+    graphs.push({ name: "filteredHomogenous", buffer: filteredHomogenous.buffer });
 
     //const simplePaths = pathExtraction.simplePathDetect(strictPathMatrix);
     //log.debug("Simple Paths", simplePaths)

@@ -7,7 +7,6 @@ export const measures = {
 
 const maxEuclidianPitchDistance = Math.sqrt(12);
 
-
 export function cosine(a, b) {
     var adotv = 0;
     var amag = 0;
@@ -88,4 +87,19 @@ export function squaredDistanceTransposed(a, b, p) {
         dist += diff * diff;
     }
     return dist;
+}
+
+export function correlate(featureA, featureB) {
+    const avgA = featureA.reduce((sum, val) => sum + val) / featureA.length;
+    const avgB = featureB.reduce((sum, val) => sum + val) / featureB.length;
+
+    let sum = 0;
+    for (let i = 0; i < featureA.length; i++) {
+        sum += (featureA[i] - avgA) * (featureB[i] - avgB);
+    }
+
+    const sumSquaresA = featureA.reduce((sum, val) => sum + Math.pow(val - avgA, 2));
+    const sumSquaresB = featureB.reduce((sum, val) => sum + Math.pow(val - avgB, 2));
+
+    return sum / Math.sqrt(sumSquaresA * sumSquaresB);
 }

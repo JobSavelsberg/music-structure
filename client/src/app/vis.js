@@ -4,6 +4,8 @@ import * as audioUtil from "./audioUtil";
 
 import * as Track from "./Track";
 
+const PHI = (1 + Math.sqrt(5)) / 2;
+
 export const zeroOneColor = d3
     .scaleSequential()
     .domain([0, 1])
@@ -42,6 +44,13 @@ export const divergingColor = d3
     .scaleDiverging()
     .domain([-1, 0, 1])
     .interpolator(d3.interpolateRdBu);
+
+export function goldenRatioCategoricalColor(i, offset) {
+    const angle = (offset - i * PHI) % 1;
+    const color = sinebowColorNormalized(angle);
+    return color;
+}
+
 export const categoryColor = d3.scaleOrdinal().range(d3.schemeCategory10);
 export function categoryColorWithOpacity(color, opacity) {
     const c = d3.rgb(categoryColor(color));

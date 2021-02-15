@@ -5,9 +5,12 @@ import * as filter from "../filter";
 import * as events from "../events";
 import * as noveltyDetection from "../noveltyDetection";
 import * as chordDetection from "../chordDetection";
+import * as keyDetection from "../keyDetection";
 
 addEventListener("message", (event) => {
     const data = event.data;
+
+    const key = keyDetection.detect(data.pitchFeatures, 0, data.pitchFeatures.length);
 
     const blurredPitches = filter.gaussianBlurFeatures(data.pitchFeatures, 1);
     const chordFeatures = chordDetection.getMajorMinorChordVectors(blurredPitches);
@@ -18,5 +21,5 @@ addEventListener("message", (event) => {
         chord.start = chord.startSample * data.sampleDuration;
         chord.end = chord.endSample * data.sampleDuration;
     });
-    postMessage({ chords: chords, chordsVector: maxChordFeatures });
+    postMessage({ chords: chords, chordsVector: maxChordFeatures, key: key });
 });

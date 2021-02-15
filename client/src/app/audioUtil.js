@@ -3,6 +3,32 @@ import * as log from "../dev/log";
 const d3 = require("d3");
 export const circleOfFifths = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5]; // Starting from C=0
 export const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+export const keyNames = [
+    "C",
+    "Db",
+    "D",
+    "Eb",
+    "E",
+    "F",
+    "F#",
+    "G",
+    "Ab",
+    "A",
+    "Bb",
+    "B",
+    "Cm",
+    "Dbm",
+    "Dm",
+    "Ebm",
+    "Em",
+    "Fm",
+    "F#m",
+    "Gm",
+    "Abm",
+    "Am",
+    "Bbm",
+    "Bm",
+];
 
 //https://www.vectorstock.com/royalty-free-vector/color-wheel-spectrum-scheme-selection-color-vector-25483441
 export const colorWheel = d3

@@ -33,6 +33,9 @@ import * as vis from "../../app/vis";
 import * as log from "../../dev/log";
 import * as player from "../../app/player";
 import { sampleDuration } from "../../app/Track";
+import * as audioUtil from "../../app/audioUtil";
+import * as svgVariableWidthLine from "svg-variable-width-line";
+import * as d3 from "d3";
 
 export default {
     props: [
@@ -44,12 +47,14 @@ export default {
         "showLoudness",
         "coloring",
         "positioning",
+        "loop",
     ],
     components: {},
     data() {
         return {
             glowOpacity: 0.4,
             glowSize: 6,
+            seekerWasInSection: false,
         };
     },
     computed: {
@@ -72,7 +77,7 @@ export default {
             switch (this.coloring) {
                 default:
                 case "cluster" || "group":
-                    return vis.categoryColorWithOpacity(this.section.groupID, 1);
+                    return vis.goldenRatioCategoricalColor(this.section.groupID, 0);
                 case "circular":
                     return vis.sinebowColorNormalizedRadius(this.section.colorAngle, this.section.colorRadius, 1);
                 case "linear":
@@ -80,10 +85,10 @@ export default {
             }
         },
         seekerIsInSection() {
-            return (
+            const isSeekerInSection =
                 this.$store.getters.seeker / 1000 >= this.section.start &&
-                this.$store.getters.seeker / 1000 < this.section.end
-            );
+                this.$store.getters.seeker / 1000 < this.section.end;
+            return isSeekerInSection;
         },
 
         x() {
@@ -106,7 +111,17 @@ export default {
             let roundoff = 4;
             let step = 4 / this.width;
             step = Math.max(0.001, step);
-            const yMid = this.y + halfHeight;
+
+            const yMid = (time) => {
+                if (this.section.graph === undefined) return this.y + halfHeight;
+                const factorOfWidth = (time - this.section.start) / (this.section.end - this.section.start);
+                const sampleInSection = Math.min(
+                    Math.floor(factorOfWidth * this.section.graph.length),
+                    this.section.graph.length - 1
+                );
+                const mdsValue = this.section.graph[sampleInSection];
+                return mdsValue * (this.containerHeight - this.height) + halfHeight;
+            };
 
             const tooSmall = this.width <= roundoff * 2;
             if (tooSmall) {
@@ -115,16 +130,18 @@ export default {
 
             const firstSample = Math.round((this.x + roundoff) / this.scale / this.track.features.sampleDuration);
             const firstLoudness = this.showLoudness ? this.loudness(firstSample) : 1;
+            const firstYMid = yMid(this.section.start);
 
             let lastSample = Math.floor(
                 (this.x + this.width - roundoff) / this.scale / this.track.features.sampleDuration
             );
 
             const lastLoudness = this.showLoudness ? this.loudness(lastSample) : 1;
+            const lastYMid = yMid(this.section.end);
 
-            let path = `M ${this.x} ${Math.round(yMid)} L ${this.x} ${yMid -
-                Math.max(0, halfHeight * firstLoudness - roundoff)} Q ${this.x} ${yMid -
-                halfHeight * firstLoudness}, ${this.x + roundoff} ${yMid - halfHeight * firstLoudness}`;
+            let path = `M ${this.x} ${Math.round(firstYMid)} L ${this.x} ${firstYMid -
+                Math.max(0, halfHeight * firstLoudness - roundoff)} Q ${this.x} ${firstYMid -
+                halfHeight * firstLoudness}, ${this.x + roundoff} ${firstYMid - halfHeight * firstLoudness}`;
 
             const startFraction = roundoff / this.width;
             const endFraction = 1 - roundoff / this.width;
@@ -134,17 +151,18 @@ export default {
                 const pointX = this.x + i * this.width;
                 const sample = Math.round(pointX / this.scale / this.track.features.sampleDuration);
                 const loudness = this.showLoudness ? this.loudness(sample) : 1;
-                const pointY = yMid - halfHeight * loudness;
+                const pointY = yMid(pointX / this.scale) - halfHeight * loudness;
                 path = path.concat(" L ", pointX, " ", pointY);
             }
 
             // Turnaround on the right
-            path = path.concat(" L ", this.x + this.width - roundoff, " ", yMid - halfHeight * lastLoudness);
+            path = path.concat(" L ", this.x + this.width - roundoff, " ", lastYMid - halfHeight * lastLoudness);
             path = path.concat(
-                ` Q ${this.x + this.width} ${yMid - halfHeight * lastLoudness}, ${this.x + this.width} ${yMid -
-                    Math.max(0, halfHeight * lastLoudness - roundoff)} L ${this.x + this.width} ${yMid +
-                    Math.max(0, halfHeight * lastLoudness - roundoff)} Q ${this.x + this.width} ${yMid +
-                    halfHeight * lastLoudness}, ${this.x + this.width - roundoff} ${yMid + halfHeight * lastLoudness}`
+                ` Q ${this.x + this.width} ${lastYMid - halfHeight * lastLoudness}, ${this.x + this.width} ${lastYMid -
+                    Math.max(0, halfHeight * lastLoudness - roundoff)} L ${this.x + this.width} ${lastYMid +
+                    Math.max(0, halfHeight * lastLoudness - roundoff)} Q ${this.x + this.width} ${lastYMid +
+                    halfHeight * lastLoudness}, ${this.x + this.width - roundoff} ${lastYMid +
+                    halfHeight * lastLoudness}`
             );
 
             // Bottom
@@ -152,21 +170,36 @@ export default {
                 const pointX = this.x + i * this.width;
                 const sample = Math.round(pointX / this.scale / this.track.features.sampleDuration);
                 const loudness = this.showLoudness ? this.loudness(sample) : 1;
-                const pointY = yMid + halfHeight * loudness;
+                const pointY = yMid(pointX / this.scale) + halfHeight * loudness;
                 path = path.concat(" L ", pointX, " ", pointY);
             }
 
             // close of path with last sample
             path = path.concat(
-                ` L ${this.x + roundoff} ${yMid + halfHeight * firstLoudness} Q ${this.x} ${yMid +
-                    halfHeight * firstLoudness}, ${this.x} ${yMid +
+                ` L ${this.x + roundoff} ${firstYMid + halfHeight * firstLoudness} Q ${this.x} ${firstYMid +
+                    halfHeight * firstLoudness}, ${this.x} ${firstYMid +
                     Math.max(0, halfHeight * firstLoudness - roundoff)} Z `
             );
 
             return path;
         },
     },
-    watch: {},
+    watch: {
+        seekerIsInSection() {
+            if (
+                this.loop &&
+                !this.seekerIsInSection &&
+                this.$store.getters.seeker / 1000 >= this.section.end &&
+                this.$store.getters.seeker / 1000 < this.section.end + 0.1
+            ) {
+                const offset = 0;
+                const timeExtra = this.$store.getters.seeker / 1000 - this.section.end;
+                setTimeout(() => {
+                    player.seekS(this.section.start + timeExtra);
+                }, offset * 1000);
+            }
+        },
+    },
     mounted() {},
     methods: {
         loudness(sample) {
@@ -183,6 +216,7 @@ export default {
         hover(event) {},
         unhover() {},
         click(event) {
+            log.debug("clicked", audioUtil.keyNames[this.section.key]);
             if (event.shiftKey) {
                 const startInSamples = this.section.start / this.track.features.sampleDuration;
                 const endInSamples = this.section.end / this.track.features.sampleDuration;

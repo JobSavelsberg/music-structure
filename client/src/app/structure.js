@@ -889,6 +889,43 @@ export function MDSColorGivenDistanceMatrix(segments, distanceMatrix) {
     return coloredSegments;
 }
 
+export function MDSIntuitionFlip(coloredSamples, timbreFeatures) {
+    const loudness = similarity.correlate(
+        coloredSamples,
+        timbreFeatures.map((val) => val[0])
+    );
+    const darkness = similarity.correlate(
+        coloredSamples,
+        timbreFeatures.map((val) => val[1])
+    );
+    const mids = similarity.correlate(
+        coloredSamples,
+        timbreFeatures.map((val) => val[2])
+    );
+    const attack = similarity.correlate(
+        coloredSamples,
+        timbreFeatures.map((val) => val[3])
+    );
+
+    log.debug("loudness", loudness, "darkness", darkness, "mids", mids, "attack", attack);
+
+    if (Math.sign(loudness) > 0 && Math.sign(darkness) < 0) {
+        return coloredSamples;
+    }
+
+    // By default the graph should display high loudness as high value
+    if (Math.sign(loudness) < 0) {
+        return coloredSamples.map((val) => 1 - val);
+    }
+
+    // If graph depicts mostly darkness, we want bright sounds to have a high value
+    if (Math.sign(darkness) > 0 && Math.abs(darkness) > Math.abs(loudness)) {
+        return coloredSamples.map((val) => 1 - val);
+    }
+
+    return coloredSamples;
+}
+
 export function computeOverlapSize(a, b) {
     if (a.start <= b.start && a.end > b.start) return a.end - b.start;
     if (b.start <= a.start && b.end > a.start) return b.end - a.start;

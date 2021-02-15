@@ -3,6 +3,7 @@ import store from "../store";
 import Features from "./Features";
 import * as workers from "./workers/workers";
 import * as log from "../dev/log";
+import * as audioUtil from "./audioUtil";
 
 import * as pathExtraction from "./pathExtraction";
 
@@ -53,6 +54,7 @@ export default class Track {
     events = [];
     timbreStructure = [];
     timbreFeatureGraph;
+    segmentedTimbreGraph = [];
 
     features;
 
@@ -99,6 +101,14 @@ export default class Track {
             log.debug("Chords", result);
             this.chordsVector = result.chordsVector;
             this.chords = result.chords;
+            this.key = result.key;
+            log.debug(
+                "Key comparison: mine:",
+                result.key,
+                "spotify:",
+                audioUtil.keyNames[this.analysisData.track.key],
+                this.analysisData.track.mode === 1 ? "major" : "minor"
+            );
         });
     }
 
@@ -134,6 +144,7 @@ export default class Track {
             log.debug("TimbreStructure", result);
             this.timbreStructure = result.timbreStructure;
             this.events = result.events;
+            this.segmentedTimbreGraph = result.segmentedTimbreGraph;
         });
     }
 

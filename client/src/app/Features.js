@@ -371,3 +371,35 @@ export default class Features {
         }
     }
 }
+
+export function downSample(features, sampleAmount) {
+    const ratio = features.length / sampleAmount;
+    const newFeatures = [];
+    for (let i = 0; i < sampleAmount; i++) {
+        const average = new Float32Array(12);
+        const firstIndex = Math.floor(i * ratio);
+        const firstWeight = 1 - (i * ratio - firstIndex);
+        const lastIndex = Math.floor((i + 1) * ratio);
+        const lastWeight = (i + 1) * ratio - lastIndex;
+
+        if (firstWeight > 0) {
+            for (let f = 0; f < 12; f++) {
+                average[f] += (features[firstIndex][f] * firstWeight) / ratio;
+            }
+        }
+        if (lastWeight > 0) {
+            for (let f = 0; f < 12; f++) {
+                average[f] += (features[lastIndex][f] * lastWeight) / ratio;
+            }
+        }
+
+        //middle
+        for (let j = firstIndex + 1; j < lastIndex; j++) {
+            for (let f = 0; f < 12; f++) {
+                average[f] += features[j][f] / ratio;
+            }
+        }
+        newFeatures.push(average);
+    }
+    return newFeatures;
+}

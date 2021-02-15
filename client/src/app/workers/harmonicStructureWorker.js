@@ -6,6 +6,7 @@ import * as events from "../events";
 import * as noveltyDetection from "../noveltyDetection";
 import Matrix from "../dataStructures/Matrix";
 import HalfMatrix from "../dataStructures/HalfMatrix";
+import * as keyDetection from "../keyDetection";
 
 addEventListener("message", (event) => {
     const data = event.data;
@@ -35,6 +36,13 @@ addEventListener("message", (event) => {
             if (a.groupID === b.groupID) {
                 return a.start - b.start;
             }
+        });
+
+        sortedHarmonicStructureMDS.forEach((section) => {
+            const startInSamples = Math.floor(section.start / data.sampleDuration);
+            const endInSamples = Math.floor(section.end / data.sampleDuration);
+            const key = keyDetection.detect(data.pitchFeatures, startInSamples, endInSamples);
+            section.key = key;
         });
 
         postMessage({ state, harmonicStructure: sortedHarmonicStructureMDS });

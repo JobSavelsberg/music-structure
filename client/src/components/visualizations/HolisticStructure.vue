@@ -25,8 +25,9 @@
                 :height="sectionHeight"
                 :scale="scale"
                 :showLoudness="showLoudness"
-                :coloring="'circular'"
+                :coloring="'cluster'"
                 :verticalOffset="paddingTop"
+                :loop="false"
             />
             <g v-if="showFineStructure">
                 <Section
@@ -37,7 +38,8 @@
                     :scale="scale"
                     :verticalOffset="paddingTop + spaceBetweenCourseFine + sectionHeight * groupAmount(courseStructure)"
                     :showLoudness="showLoudness"
-                    :coloring="'circular'"
+                    :coloring="'cluster'"
+                    :loop="false"
                 />
             </g>
         </svg>

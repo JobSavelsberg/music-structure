@@ -15,6 +15,8 @@
             <div v-if="!showPrototype">
                 <HolisticStructure :width="width" />
                 <Chords :width="width" />
+                <TimbreSegmentedGraph :width="width" />
+
                 <TimbreStructure :width="width" />
                 <TimbreGraph :width="width" />
             </div>
@@ -35,6 +37,8 @@ import PitchTimbre from "./visualizations/PitchTimbre";
 import Structure from "./visualizations/Structure";
 import HolisticStructure from "./visualizations/HolisticStructure";
 import TimbreStructure from "./visualizations/TimbreStructure";
+import TimbreSegmentedGraph from "./visualizations/TimbreSegmentedGraph";
+
 import Chords from "./visualizations/Chords";
 
 import TimbreGraph from "./visualizations/TimbreGraph";
@@ -42,6 +46,7 @@ import TimbreGraph from "./visualizations/TimbreGraph";
 import * as log from "../dev/log";
 import * as player from "../app/player";
 import * as vis from "../app/vis";
+import * as d3 from "d3";
 
 export default {
     props: ["width", "showPrototype"],
@@ -57,6 +62,7 @@ export default {
         TimbreGraph,
         TimbreStructure,
         Chords,
+        TimbreSegmentedGraph,
     },
     data() {
         return {
