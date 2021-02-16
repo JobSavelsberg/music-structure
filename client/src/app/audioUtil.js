@@ -71,23 +71,27 @@ export function getNoteName(i) {
 
 var DEGREES_PER_RADIAN = 180 / Math.PI;
 var RADIANS_PER_DEGREE = Math.PI / 180;
-var TWO_PI = 2 * Math.PI;
-var OFFSET = (3 * Math.PI) / 2; // full cycle is 2pi
+const TWO_PI = 2 * Math.PI;
+const OFFSET = Math.PI / 2; // (3 * Math.PI) / 2; // full cycle is 2pi
 
 export function tonality(pitches) {
     let x = 0;
     let y = 0;
     let energy = 0;
     for (let i = 0; i < 12; i++) {
-        const angle = (-circleOfFifths[i] / 12.0) * TWO_PI + OFFSET;
-        const radius = pitches[i]; // Between 0 and 1
-        energy += radius / 12;
-        x += radius * Math.cos(angle);
-        y += radius * Math.sin(angle);
+        const vangle = -(circleOfFifths[i] / 12.0) * TWO_PI + OFFSET;
+        const vradius = pitches[i]; // Between 0 and 1
+        energy += vradius / 12;
+        x += vradius * Math.cos(vangle);
+        y += vradius * Math.sin(vangle);
     }
-
-    const angle = (Math.atan2(x, y) + Math.PI) / TWO_PI;
+    const angle = (1 - Math.atan2(x, y) / TWO_PI + 0.25) % 1;
     const radius = Math.sqrt(x * x + y * y);
+    if (angle > 0.029 && angle < 0.03) {
+        log.debug(pitches, angle, radius, energy);
+        log.debug(JSON.parse(JSON.stringify(pitches)));
+        log.debug(x, y);
+    }
     return [angle, radius, energy];
 }
 

@@ -106,7 +106,12 @@ export function detect(pitchFeatures, start, end) {
             averagePitches[p] += pitchFeatures[i][p] / length;
         }
     }
-    const correlation = correlate(averagePitches);
+
+    return detectSingle(averagePitches);
+}
+
+export function detectSingle(pitches) {
+    const correlation = correlate(pitches);
     let max = Number.NEGATIVE_INFINITY;
     let maxIndex = -1;
     correlation.forEach((val, index) => {
@@ -149,4 +154,14 @@ export function correlate(pitches) {
     }
 
     return [...rMajor, ...rMinor];
+}
+
+export function circleOfFifthsAngle(keyIndex) {
+    if (keyIndex < 12) {
+        //major
+        return audioUtil.circleOfFifths[keyIndex] / 12;
+    } else {
+        // minor
+        return ((audioUtil.circleOfFifths[keyIndex % 12] - 3 + 12) % 12) / 12;
+    }
 }

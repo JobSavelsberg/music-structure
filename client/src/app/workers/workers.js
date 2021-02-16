@@ -46,7 +46,7 @@ export async function computeTimbreStructure(timbreFeatures, sampleDuration) {
     return new Promise((resolve) => {
         if (timbreStructureWorkerBusy) {
             timbreStructureWorker.terminate();
-            timbreStructureWorker = new Worker("./timbreGraphWorker.js", { type: "module" });
+            timbreStructureWorker = new Worker("./timbreStructureWorker.js", { type: "module" });
         }
         timbreStructureWorker.postMessage({
             timbreFeatures,

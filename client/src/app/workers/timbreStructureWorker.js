@@ -10,8 +10,9 @@ import Section from "../Section";
 addEventListener("message", (event) => {
     const data = event.data;
 
+    log.debug("TIMBRESTRUCTURE");
     const smoothingLength = 5;
-    const confidenceThreshold = 0.3;
+    const confidenceThreshold = 0.4;
     const smoothedFeatures = filter.gaussianBlurFeatures(data.timbreFeatures, smoothingLength);
     const downSampleAmount = 300;
     const downSampledFeatures = Features.downSample(smoothedFeatures, downSampleAmount);
@@ -37,7 +38,7 @@ addEventListener("message", (event) => {
             const start = prevPeakSample * downSampleDuration;
             const end = start + segment.length * downSampleDuration;
             const section = new Section({ start, end });
-            const smoothedSegment = filter.gaussianBlur1D(segment, 5, "mirror");
+            const smoothedSegment = filter.gaussianBlur1D(segment, 3, "mirror");
             section.graph = smoothedSegment;
             section.mdsFeature = segment.reduce((a, v, i) => (a * i + v) / (i + 1));
             segmentedTimbreGraph.push(section);

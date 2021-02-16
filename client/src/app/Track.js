@@ -50,6 +50,8 @@ export default class Track {
 
     chordsVector = [];
     chords = [];
+    tonalityFeature = [];
+    keyFeature = [];
 
     events = [];
     timbreStructure = [];
@@ -102,6 +104,8 @@ export default class Track {
             this.chordsVector = result.chordsVector;
             this.chords = result.chords;
             this.key = result.key;
+            this.tonalityFeature = result.tonalityFeature;
+            this.keyFeature = result.keyFeature;
             log.debug(
                 "Key comparison: mine:",
                 result.key,

@@ -919,7 +919,7 @@ export function MDSIntuitionFlip(coloredSamples, timbreFeatures) {
     }
 
     // If graph depicts mostly darkness, we want bright sounds to have a high value
-    if (Math.sign(darkness) > 0 && Math.abs(darkness) > Math.abs(loudness)) {
+    if (Math.sign(darkness) > 0 && Math.abs(darkness) > 2 * Math.abs(loudness)) {
         return coloredSamples.map((val) => 1 - val);
     }
 

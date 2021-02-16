@@ -14,9 +14,9 @@
             </div>
             <div v-if="!showPrototype">
                 <HolisticStructure :width="width" />
+                <Tonality :width="width" />
                 <Chords :width="width" />
                 <TimbreSegmentedGraph :width="width" />
-
                 <TimbreStructure :width="width" />
                 <TimbreGraph :width="width" />
             </div>
@@ -38,7 +38,7 @@ import Structure from "./visualizations/Structure";
 import HolisticStructure from "./visualizations/HolisticStructure";
 import TimbreStructure from "./visualizations/TimbreStructure";
 import TimbreSegmentedGraph from "./visualizations/TimbreSegmentedGraph";
-
+import Tonality from "./visualizations/Tonality";
 import Chords from "./visualizations/Chords";
 
 import TimbreGraph from "./visualizations/TimbreGraph";
@@ -63,6 +63,7 @@ export default {
         TimbreStructure,
         Chords,
         TimbreSegmentedGraph,
+        Tonality,
     },
     data() {
         return {
