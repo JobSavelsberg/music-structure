@@ -16,27 +16,54 @@ addEventListener("message", (event) => {
     const key = keyDetection.detect(data.pitchFeatures, 0, data.pitchFeatures.length);
 
     // chords
-    const blurredPitches = filter.gaussianBlurFeatures(data.pitchFeatures, 2);
+    const minChordDuration = 0.5;
+    const blurLengthInSeconds = 0.5;
+    const blurLengthInSamples = (1 / data.fastSampledPitchDuration) * blurLengthInSeconds;
+    const blurredPitches = filter.gaussianBlurFeatures(data.fastSampledPitch, blurLengthInSamples);
     const chordFeatures = chordDetection.getMajorMinorChordVectors(blurredPitches);
     const maxChordFeatures = chordDetection.maxChordFeatures(chordFeatures, 2);
     const chordIndexes = chordDetection.getChordIndexes(maxChordFeatures);
-    const chords = chordDetection.getChords(chordIndexes);
-    chords.forEach((chord) => {
-        chord.start = chord.startSample * data.sampleDuration;
-        chord.end = chord.endSample * data.sampleDuration;
-    });
+    log.debug("Chord", chordIndexes);
+    const medianBlurredChordIndexes = filter.maxFrequencyFilter(chordIndexes, 24, blurLengthInSamples);
+    log.debug("Chord mdeian", medianBlurredChordIndexes);
+    const chords = chordDetection.getChords(medianBlurredChordIndexes);
+    const prunedChords = [];
+    for (let i = 0; i < chords.length; i++) {
+        const chord = chords[i];
+        chord.start = chord.startSample * data.fastSampledPitchDuration;
+        chord.end = chord.endSample * data.fastSampledPitchDuration;
+        if (chord.end - chord.start < minChordDuration) {
+            if (prunedChords.length > 0) {
+                prunedChords[prunedChords.length - 1].endSample = chord.endSample;
+                prunedChords[prunedChords.length - 1].end = chord.end;
+            }
+        } else {
+            prunedChords.push(chord);
+        }
+    }
 
     // tonality feature
-    const smallBlurredPitch = filter.gaussianBlurFeatures(data.pitchFeatures, 15);
-    const largeBlurredPitch = filter.gaussianBlurFeatures(data.pitchFeatures, 25);
+    const smallBlurredPitch = filter.gaussianBlurFeatures(data.fastSampledPitch, 2);
+    const largeBlurredPitch = filter.gaussianBlurFeatures(data.fastSampledPitch, 40);
 
-    const tonalityFeature = [];
+    const tonalityFeatureSmall = [];
+    const tonalityFeatureLarge = [];
+
     const keyFeature = [];
     const chordFeature = [];
     for (let i = 0; i < smallBlurredPitch.length; i++) {
-        tonalityFeature.push(audioUtil.tonality(smallBlurredPitch[i]));
+        tonalityFeatureSmall.push(audioUtil.tonality(smallBlurredPitch[i]));
+        tonalityFeatureLarge.push(audioUtil.tonality(largeBlurredPitch[i]));
+
         keyFeature.push(keyDetection.detectSingle(largeBlurredPitch[i]));
     }
 
-    postMessage({ chords: chords, chordsVector: maxChordFeatures, key: key, tonalityFeature, keyFeature });
+    postMessage({
+        chords: prunedChords,
+        chordsVector: maxChordFeatures,
+        key: key,
+        tonalityFeatureSmall,
+        tonalityFeatureLarge,
+        keyFeature,
+    });
 });

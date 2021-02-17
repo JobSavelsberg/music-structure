@@ -79,7 +79,7 @@ export default {
                 case "cluster" || "group":
                     return vis.goldenRatioCategoricalColor(this.section.groupID, 0);
                 case "circular":
-                    return vis.sinebowColorNormalizedRadius(this.section.colorAngle, this.section.colorRadius, 1);
+                    return vis.sinebowColorNormalizedRadius(this.section.colorAngle, 1, 1);
                 case "linear":
                     return vis.zeroOneColorWarm(this.section.mdsFeature);
             }

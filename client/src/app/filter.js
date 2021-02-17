@@ -178,8 +178,31 @@ export function createFades(feature, padding) {
     return feature;
 }
 
-export function median1D(feature, resolution) {
-    const buckets = new Float32Array(resolution);
+export function maxFrequencyFilter(feature, resolution, size) {
+    const buckets = new Int32Array(resolution);
+
+    const blurredFeature = [];
+
+    feature.forEach((val, i) => {
+        for (let o = -size; o <= size; o++) {
+            if (i + o >= 0 && i + o < feature.length) {
+                buckets[feature[i + o]]++;
+            }
+        }
+
+        let maxFrequency = -1;
+        let maxValue = -1;
+        for (let i = 0; i < resolution; i++) {
+            if (buckets[i] > maxFrequency) {
+                maxFrequency = buckets[i];
+                maxValue = i;
+            }
+            buckets[i] = 0;
+        }
+        blurredFeature.push(maxValue);
+    });
+
+    return blurredFeature;
 }
 
 export function median2D(matrix, resolution, width, height) {

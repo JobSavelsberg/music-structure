@@ -50,7 +50,9 @@ export default class Track {
 
     chordsVector = [];
     chords = [];
-    tonalityFeature = [];
+    tonalityFeatureSmall = [];
+    tonalityFeatureLarge = [];
+
     keyFeature = [];
 
     events = [];
@@ -99,21 +101,30 @@ export default class Track {
     }
 
     computeChords() {
-        workers.computeChords(this.features.sampled.pitches, this.features.sampleDuration).then((result) => {
-            log.debug("Chords", result);
-            this.chordsVector = result.chordsVector;
-            this.chords = result.chords;
-            this.key = result.key;
-            this.tonalityFeature = result.tonalityFeature;
-            this.keyFeature = result.keyFeature;
-            log.debug(
-                "Key comparison: mine:",
-                result.key,
-                "spotify:",
-                audioUtil.keyNames[this.analysisData.track.key],
-                this.analysisData.track.mode === 1 ? "major" : "minor"
-            );
-        });
+        workers
+            .computeChords(
+                this.features.sampled.pitches,
+                this.features.fastSampledPitch,
+                this.features.sampleDuration,
+                this.features.fastSampleDuration
+            )
+            .then((result) => {
+                log.debug("Chords", result);
+                this.chordsVector = result.chordsVector;
+                this.chords = result.chords;
+                this.key = result.key;
+                this.tonalityFeatureSmall = result.tonalityFeatureSmall;
+                this.tonalityFeatureLarge = result.tonalityFeatureLarge;
+
+                this.keyFeature = result.keyFeature;
+                log.debug(
+                    "Key comparison: mine:",
+                    result.key,
+                    "spotify:",
+                    audioUtil.keyNames[this.analysisData.track.key],
+                    this.analysisData.track.mode === 1 ? "major" : "minor"
+                );
+            });
     }
 
     computeHarmonicStructure() {

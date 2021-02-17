@@ -1,10 +1,9 @@
-import { thresholdFreedmanDiaconis } from "d3";
 import * as log from "../dev/log";
 import * as audioUtil from "./audioUtil";
 
 const tryRemovePercussion = true;
 
-export default class Segment {
+export default class SpotifySegment {
     segment = null;
     start = 0;
     duration = 0;
@@ -65,31 +64,30 @@ export default class Segment {
                 (1 - this.percussiony) * this.pitches[p] +
                 this.percussiony * prevSegment.pitches[p] * this.pitches[p] +
                 (nextSegment.pitches[p] * this.pitches[p]) / 2;
-
         }
 
         this.processedPitchSmooth = true;
     }
 
-    processPitchEqualizeBass(){
+    processPitchEqualizeBass() {
         let maxPitch = 0;
-        this.pitches.forEach(pitch => {
-            if(pitch > maxPitch){
-                maxPitch = pitch
+        this.pitches.forEach((pitch) => {
+            if (pitch > maxPitch) {
+                maxPitch = pitch;
             }
-        })
+        });
 
         let secondMaxPitch = 0;
-        this.pitches.forEach(pitch => {
-            if(pitch< maxPitch && pitch > secondMaxPitch){
+        this.pitches.forEach((pitch) => {
+            if (pitch < maxPitch && pitch > secondMaxPitch) {
                 secondMaxPitch = pitch;
             }
-        })
+        });
 
-        const equalizeAmount = 0. // 1 is full equalize: loudest is same as second loudest, 0 is none
-        const scale = 1/(1-(maxPitch - secondMaxPitch)*equalizeAmount);
+        const equalizeAmount = 0; // 1 is full equalize: loudest is same as second loudest, 0 is none
+        const scale = 1 / (1 - (maxPitch - secondMaxPitch) * equalizeAmount);
         for (let p = 0; p < this.pitches.length; p++) {
-            this.pitches[p] = Math.min(1,this.pitches[p]*scale);
+            this.pitches[p] = Math.min(1, this.pitches[p] * scale);
         }
     }
 
@@ -117,6 +115,9 @@ export default class Segment {
     getStart() {
         return this.start;
     }
+    getEnd() {
+        return this.start + this.duration;
+    }
     getOriginalTimbres() {
         return this.segment.timbre;
     }
@@ -143,16 +144,16 @@ export default class Segment {
             audioUtil.loudness(this.loudness_end),
         ];
     }
-    getAverageLoudness(nextSegmentLoudness){
+    getAverageLoudness(nextSegmentLoudness) {
         const loudnessFeatures = this.getLoudnessFeatures();
         const start = loudnessFeatures[0];
         const end = nextSegmentLoudness;
         const max = loudnessFeatures[1];
         const maxTime = loudnessFeatures[2];
 
-        const avgFirst = (max+start)/2 ;
-        const avgSecond = (max+end)/2 ;
-        const avg = avgFirst*maxTime+avgSecond* (1-maxTime);
+        const avgFirst = (max + start) / 2;
+        const avgSecond = (max + end) / 2;
+        const avg = avgFirst * maxTime + avgSecond * (1 - maxTime);
         return avg;
     }
 }

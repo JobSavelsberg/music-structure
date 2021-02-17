@@ -1,5 +1,5 @@
 import * as log from "../dev/log";
-import Segment from "./Segment";
+import SpotifySegment from "./SpotifySegment";
 import * as chordDetection from "./chordDetection";
 import * as filter from "./filter";
 
@@ -36,6 +36,9 @@ export default class Features {
     sampleStartDuration = [];
     sampleBlur = 0; // in proportion to duration (<1 is no blur, 2 is blur of twice duration)
 
+    fastSampledPitch = [];
+    fastSampleDuration = 0.1;
+
     downSampledTimbre = [];
 
     directLoudnessSampleDuration = 0.25;
@@ -48,7 +51,7 @@ export default class Features {
     constructor(analysisData, options = {}) {
         this.duration = analysisData.track.duration;
         analysisData.segments.forEach((segment) => {
-            this.segments.push(new Segment(segment));
+            this.segments.push(new SpotifySegment(segment));
             this.segmentStartDuration.push([segment.start, segment.duration]);
         });
         this.length = this.segments.length;
@@ -63,6 +66,7 @@ export default class Features {
         this.sampleFeatures();
         this.processSamples();
         this.downSampledTimbre = this.downSampleTimbre(options.downsampleAmount);
+        this.fastSampledPitch = this.sample("pitches", { sampleDuration: this.fastSampleDuration });
     }
 
     /**
@@ -203,6 +207,60 @@ export default class Features {
             }
         });
         this.averageLoudness /= this.sampled.smoothedAvgLoudness.length;
+    }
+
+    sample(feature, options) {
+        const sampledFeature = [];
+
+        let sampleAmount = 0;
+        let sampleDuration = 0;
+        if (options.sampleDuration) {
+            // make sure the length of the track is divisble by sampleDuration
+            sampleAmount = Math.round(this.duration / options.sampleDuration);
+            sampleDuration = this.duration / sampleAmount;
+        }
+        if (options.sampleAmount) {
+            sampleAmount = options.sampleAmount;
+            sampleDuration = this.duration / sampleAmount;
+        }
+
+        let i = 0;
+        for (let s = 0; s < sampleAmount; s++) {
+            const averageFeature = new Float32Array(12).fill(0);
+
+            const sampleStart = s * sampleDuration;
+            const sampleEnd = (s + 1) * sampleDuration;
+
+            // Sample is contained in segment, simply copy pitch from segment and go to next sample
+            if (this.segments[i].getEnd() > sampleEnd) {
+                averageFeature.forEach((val, f) => (averageFeature[f] = val + this.segments[i][feature][f]));
+                sampledFeature.push(averageFeature);
+                continue;
+            }
+
+            // add part of first segment
+            if (this.segments[i].getEnd() > sampleStart) {
+                const weight = (this.segments[i].getEnd() - sampleStart) / sampleDuration;
+                averageFeature.forEach((val, f) => (averageFeature[f] = val + weight * this.segments[i][feature][f]));
+                i++;
+            }
+
+            // while entire segment is contained in sample
+            while (i < this.segments.length && this.segments[i].getEnd() < sampleEnd) {
+                const weight = this.segments[i].duration / sampleDuration;
+                averageFeature.forEach((val, f) => (averageFeature[f] = val + weight * this.segments[i][feature][f]));
+                i++;
+            }
+
+            // add part of last segment
+            if (i < this.segments.length) {
+                const weight = (sampleEnd - this.segments[i].start) / sampleDuration;
+                averageFeature.forEach((val, f) => (averageFeature[f] = val + weight * this.segments[i][feature][f]));
+            }
+
+            sampledFeature.push(averageFeature);
+        }
+        return sampledFeature;
     }
 
     /**

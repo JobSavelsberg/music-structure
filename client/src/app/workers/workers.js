@@ -88,7 +88,7 @@ export async function computeHarmonicStructure(options) {
 
 let chordWorker;
 let chordWorkerBusy = false;
-export async function computeChords(pitchFeatures, sampleDuration) {
+export async function computeChords(pitchFeatures, fastSampledPitch, sampleDuration, fastSampledPitchDuration) {
     return new Promise((resolve) => {
         if (chordWorkerBusy) {
             chordWorker.terminate();
@@ -96,7 +96,9 @@ export async function computeChords(pitchFeatures, sampleDuration) {
         }
         chordWorker.postMessage({
             pitchFeatures,
+            fastSampledPitch,
             sampleDuration,
+            fastSampledPitchDuration,
         });
         chordWorkerBusy = true;
 

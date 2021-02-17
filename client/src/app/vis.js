@@ -6,6 +6,59 @@ import * as Track from "./Track";
 
 const PHI = (1 + Math.sqrt(5)) / 2;
 
+export const colorWheelOld = d3
+    .scaleLinear()
+    .domain([
+        0,
+        1 / 12,
+        2 / 12,
+        2.8 / 12,
+        3.8 / 12,
+        4.3 / 12,
+        5.3 / 12,
+        6.8 / 12,
+        8 / 12,
+        8.8 / 12,
+        9.3 / 12,
+        10.5 / 12,
+        1,
+    ])
+    .interpolate(d3.interpolateHcl)
+    .range([
+        d3.rgb("#FE0000"),
+        d3.rgb("#FF7300"),
+        d3.rgb("#FFAA01"),
+        d3.rgb("#FFD300"),
+        d3.rgb("#FFFF01"),
+        d3.rgb("#9FEE00"),
+        d3.rgb("#01CC00"),
+        d3.rgb("#009899"),
+        d3.rgb("#1241AB"),
+        d3.rgb("#3914B1"),
+        d3.rgb("#7209AC"),
+        d3.rgb("#CD0174"),
+        d3.rgb("#FE0000"),
+    ]);
+
+export const colorWheel = d3
+    .scaleLinear()
+    .domain([0, 1 / 12, 2 / 12, 3 / 12, 4 / 12, 5 / 12, 6 / 12, 7 / 12, 8 / 12, 9 / 12, 10 / 12, 11 / 12, 1])
+    .interpolate(d3.interpolateHcl)
+    .range([
+        d3.rgb("#E74320"), //C
+        d3.rgb("#EE6B09"), //G
+        d3.rgb("#F6A204"), //D
+        d3.rgb("#FFD703"), //A
+        d3.rgb("#69AD31"), //E
+        d3.rgb("#1C7E37"), //B
+        d3.rgb("#359277"), //F#
+        d3.rgb("#2897DB"), //Db
+        d3.rgb("#4665CE"), //Ab
+        d3.rgb("#72439C"), //Eb
+        d3.rgb("#992F9E"), //Bb
+        d3.rgb("#E36079"), //F
+        d3.rgb("#E74320"), //C
+    ]);
 export const zeroOneColor = d3
     .scaleSequential()
     .domain([0, 1])
@@ -65,7 +118,17 @@ export function lightness(color, lightness) {
 export function sinebowColorNormalizedRadius(angle, radius, confidence = 1) {
     const color = sinebowColorNormalized(angle);
     const colorHSL = d3.hsl(color);
-    colorHSL.s = Math.pow(radius, 0.2);
+    colorHSL.s = radius; //Math.pow(radius, 0.2);
+    colorHSL.l = (colorHSL.l - 0.5) * radius + 0.5;
+    const c = d3.rgb(colorHSL);
+    return `rgba(${c.r},${c.g},${c.b},${confidence})`;
+}
+
+export function circleOfFifthsColor(angle, radius, confidence = 1) {
+    const color = colorWheel(angle);
+    const colorHSL = d3.hsl(color);
+    colorHSL.s = radius; //Math.pow(radius, 0.2);
+    colorHSL.l = (colorHSL.l - 0.5) * radius + 0.5;
     const c = d3.rgb(colorHSL);
     return `rgba(${c.r},${c.g},${c.b},${confidence})`;
 }
