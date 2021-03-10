@@ -1,7 +1,6 @@
 import * as log from "../../dev/log";
 addEventListener("message", (event) => {
     log.debug(event.data);
-    log.debug("Hi from clusterWorker");
 });
 
 /**

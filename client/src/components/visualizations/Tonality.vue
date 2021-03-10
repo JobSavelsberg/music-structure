@@ -18,7 +18,15 @@
             :height="height"
             :color="'rgb(255,255,255,0.3)'"
         />
-        <canvas id="tonalityCanvas" class="tonalityCanvas" :width="width" :height="height"></canvas>
+
+        <canvas
+            id="tonalityCanvas"
+            class="tonalityCanvas"
+            :width="width"
+            :height="height"
+            @click="clickCanvas($event)"
+        ></canvas>
+
         <div :style="`height: ${!collapsed * co5Size}px`" class="circleOfFifthsTonality">
             <svg v-if="hasTonality" class="tonalitySVG" :width="co5Size" :height="!collapsed * co5Size">
                 <circle :cx="co5Size / 2" :cy="co5Size / 2" :r="co5Size / 2" fill="black"></circle>
@@ -91,6 +99,7 @@ import * as keyDetection from "../../app/keyDetection";
 import Seeker from "./Seeker";
 import Section from "./Section";
 
+import ClickableBackground from "./ClickableBackground";
 import SeparatorBackground from "./SeparatorBackground";
 
 import * as testing from "../../app/testing";
@@ -109,7 +118,7 @@ export default {
             sectionHeight: 15,
             showLoudness: true,
             accumulativeAngle: [],
-            collapsed: false,
+            collapsed: true,
             co5Size: 300,
         };
     },
@@ -187,12 +196,9 @@ export default {
     },
     methods: {
         setupCanvas() {
-            log.debug("Set up canvas");
             if (this.ctx) return;
             this.canvas = document.getElementById("tonalityCanvas");
             if (!this.canvas) {
-                log.debug("No canvas");
-
                 return;
             }
 
@@ -202,7 +208,7 @@ export default {
         },
         tonalityPointerPath(tonality) {
             const scale = this.co5Size / 2;
-            const radius = tonality[this.currentFastSample][1] * 0.65;
+            const radius = Math.tanh(tonality[this.currentFastSample][1] * 3) * 0.65;
             const x = 0; // Math.cos(this.tonality[this.currentSample][0] * Math.PI * 2);
             const y = -1; //Math.sin(this.tonality[this.currentSample][0] * Math.PI * 2);
 
@@ -213,23 +219,16 @@ export default {
             return path;
         },
         drawTonality() {
-            log.debug("Drawing Tonality");
             if (!this.ctx || !this.hasTonality) {
-                log.debug("No drawing");
                 return;
             }
             this.ctx.clearRect(0, 0, this.width, this.height);
 
             for (let i = 0; i < this.tonality.length; i++) {
                 const x = i * this.fastSampleDuration * this.scale;
-                this.ctx.fillStyle = this.color(1 - this.tonality[i][0], this.tonality[i][1], 1);
+                this.ctx.fillStyle = this.color(1 - this.tonality[i][0], Math.tanh(this.tonality[i][1] * 3), 1);
                 this.ctx.fillRect(x, 0, this.fastSampleDuration * this.scale + 2, this.sectionHeight);
-                this.ctx.fillStyle = vis.sinebowColorNormalizedRadius(
-                    keyDetection.circleOfFifthsAngle(this.keyFeature[i]),
-                    1,
-                    1
-                );
-                this.ctx.fillStyle = this.color(1 - this.tonalitySlow[i][0], this.tonalitySlow[i][1], 1);
+                this.ctx.fillStyle = this.color(1 - this.tonalitySlow[i][0], Math.tanh(this.tonalitySlow[i][1] * 3), 1);
                 this.ctx.fillRect(
                     x,
                     this.sectionHeight + 2,
@@ -266,6 +265,19 @@ export default {
         },
         keyName(keyNumber) {
             return audioUtil.keyNames[keyNumber];
+        },
+        clickCanvas(event) {
+            let xNormalized = 0;
+            let yNormalized = 0;
+            if (this.$store.state.browser === "Firefox") {
+                xNormalized = event.layerX / this.width;
+                yNormalized = event.layerY / this.height;
+            } else {
+                xNormalized = event.offsetX / this.width;
+                yNormalized = event.layerY / this.height;
+            }
+
+            player.seekS(xNormalized * this.track.getAnalysisDuration());
         },
     },
 };

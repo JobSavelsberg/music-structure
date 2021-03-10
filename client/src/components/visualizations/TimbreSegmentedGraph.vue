@@ -25,13 +25,7 @@
                     />
                 </linearGradient>
             </defs>
-            <rect
-                class="timbreSegmentedGraphBackground"
-                id="timbreSegmentedGraphBackground"
-                :width="width"
-                :height="height"
-                @click="click($event)"
-            ></rect>
+            <ClickableBackground :width="width" :height="height"></ClickableBackground>
             <GraphSection
                 v-for="(section, index) in segmentedTimbreGraph"
                 :key="index + 'segmented'"
@@ -53,6 +47,7 @@ import * as log from "../../dev/log";
 import * as vis from "../../app/vis";
 import Seeker from "./Seeker";
 import GraphSection from "./GraphSection";
+import ClickableBackground from "./ClickableBackground";
 
 import * as testing from "../../app/testing";
 import ZoomCanvas from "../../app/visualization/ZoomCanvas";
@@ -64,6 +59,7 @@ export default {
     components: {
         Seeker,
         GraphSection,
+        ClickableBackground,
     },
     data() {
         return {
@@ -103,32 +99,6 @@ export default {
         color(mdsFeature) {
             return vis.sinebowColorNormalizedRadius(mdsFeature, 1, 1);
         },
-        click(event) {
-            let xNormalized = 0;
-            let yNormalized = 0;
-            if (this.$store.state.browser === "Firefox") {
-                xNormalized = event.layerX / this.width;
-                yNormalized = event.layerY / this.height;
-            } else {
-                xNormalized = event.offsetX / this.width;
-                yNormalized = event.layerY / this.height;
-            }
-
-            if (this.useZoom && this.isZoomed) {
-                const xFromMiddle = xNormalized * 2 - 1;
-                const seekerPos = Math.min(
-                    1,
-                    Math.max(
-                        0,
-                        this.$store.getters.seeker / (this.track.getAnalysisDuration() * 1000) +
-                            xFromMiddle / (2 * this.zoomScale)
-                    )
-                );
-                player.seekS(seekerPos * this.track.getAnalysisDuration());
-            } else {
-                player.seekS(xNormalized * this.track.getAnalysisDuration());
-            }
-        },
     },
 };
 </script>
@@ -136,8 +106,5 @@ export default {
 <style scoped>
 .seeker {
     pointer-events: none;
-}
-.timbreSegmentedGraphBackground {
-    opacity: 0;
 }
 </style>

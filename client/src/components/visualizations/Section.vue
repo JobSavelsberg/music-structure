@@ -216,6 +216,8 @@ export default {
         hover(event) {},
         unhover() {},
         click(event) {
+            this.$store.commit("setInputFocus", false);
+
             log.debug("clicked", audioUtil.keyNames[this.section.key]);
             if (event.shiftKey) {
                 const startInSamples = this.section.start / this.track.features.sampleDuration;

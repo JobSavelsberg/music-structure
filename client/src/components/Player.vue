@@ -15,10 +15,19 @@
         </div>
 
         <!-- Waveform -->
+        <Seeker
+            class="seeker"
+            :ref="'holisticSeeker'"
+            :width="width"
+            :height="height + markerLabelHeight"
+            :color="'rgb(255,255,255,1)'"
+            :markerOpacity="1"
+            showMarkerLabel
+        />
         <div v-show="!loadingTrack" class="waveformWrapper" @click="clickedWaveform">
-            <canvas id="waveform" :height="height" class="waveform pa-0 ma-0"></canvas>
+            <canvas id="waveform" :height="height + markerLabelHeight" class="waveform pa-0 ma-0"></canvas>
             <svg
-                v-if="!loadingTrack"
+                v-if="false && !loadingTrack"
                 :height="height"
                 :width="width"
                 class="seekerSVG"
@@ -46,11 +55,16 @@ import * as log from "../dev/log";
 import * as player from "../app/player";
 import * as auth from "../app/authentication";
 import * as vis from "../app/vis";
+import Seeker from "./visualizations/Seeker";
 
 export default {
     props: ["width"],
+    components: {
+        Seeker,
+    },
     data() {
         return {
+            markerLabelHeight: 15,
             height: 50,
             canvas: null,
             ctx: null,
@@ -120,8 +134,8 @@ export default {
                 log.error("Can't draw waveform; canvas context is not created");
                 return;
             }
-            this.ctx.clearRect(0, 0, this.width, this.height);
-            vis.renderWaveform(this.ctx, this.width, this.height, this.track);
+            this.ctx.clearRect(0, 0, this.width, this.height + this.markerLabelHeight);
+            vis.renderWaveform(this.ctx, 0, this.markerLabelHeight, this.width, this.height, this.track);
         },
         playPause() {
             this.playing ? player.pause() : player.resume();
@@ -134,6 +148,15 @@ export default {
                 xNormalized = event.offsetX / this.width;
             }
             player.seekS(xNormalized * this.track.getAnalysisDuration());
+        },
+        rightClick(event) {
+            let xNormalized = 0;
+            if (this.$store.state.browser === "Firefox") {
+                xNormalized = event.layerX / this.width;
+            } else {
+                xNormalized = event.offsetX / this.width;
+            }
+            this.track.placeMarker(xNormalized * this.track.getAnalysisDuration());
         },
     },
 };

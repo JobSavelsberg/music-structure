@@ -30,7 +30,6 @@ export function findHomogenousSections(ssm) {
         }
     }
 
-    log.debug(peaks);
     return testSections;
 }
 

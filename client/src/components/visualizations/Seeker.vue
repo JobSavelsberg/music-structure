@@ -6,15 +6,27 @@
         class="seekerSVG"
         :style="`transform: translate(${0}px, 0px);`"
         @click="clickedSVG"
+        @click.right="rightClick"
+        @contextmenu.prevent
     >
         <rect
             class="seekerRect"
             :x="!isVertical * ((useZoom && isZoomed ? 0.5 : seekerNormalized) * width - 1.25)"
-            :y="isVertical * ((useZoom && isZoomed ? 0.5 : seekerNormalized) * height - 1.25)"
+            :y="
+                isVertical * ((useZoom && isZoomed ? 0.5 : seekerNormalized) * height - 1.25) + showMarkerLabel ? 15 : 0
+            "
             :width="isVertical ? width * 2 : 2.5"
-            :height="isVertical ? 2.5 : height * 2"
+            :height="(isVertical ? 2.5 : height * 2) - (showMarkerLabel ? 15 : 0)"
             :fill="seekerColor"
         ></rect>
+        <Markers
+            :ref="'markers'"
+            :v-if="drawMarkers"
+            :width="width"
+            :height="height"
+            :opacity="markerOpacity || 0.3"
+            :showMarkerLabel="showMarkerLabel"
+        ></Markers>
     </svg>
 </template>
 
@@ -22,9 +34,13 @@
 import * as d3 from "d3";
 import * as log from "../../dev/log";
 import * as player from "../../app/player";
+import Markers from "./Markers";
 
 export default {
-    props: ["width", "height", "useZoom", "vertical", "color"],
+    props: ["width", "height", "useZoom", "vertical", "color", "drawMarkers", "markerOpacity", "showMarkerLabel"],
+    components: {
+        Markers,
+    },
     data() {
         return {};
     },
@@ -58,7 +74,11 @@ export default {
     },
     mounted() {},
     methods: {
+        clicked(event) {
+            this.clickedSVG(event);
+        },
         clickedSVG(event) {
+            this.$store.commit("setInputFocus", false);
             let xNormalized = 0;
             let yNormalized = 0;
             if (this.$store.state.browser === "Firefox") {
@@ -77,16 +97,18 @@ export default {
                 player.seekS(xNormalized * this.track.getAnalysisDuration());
             }
         },
+        rightClick(event) {
+            this.$store.commit("setInputFocus", false);
+            log.debug(this.$refs);
+            this.$refs.markers.rightClick(event);
+        },
     },
 };
 </script>
 
 <style>
-.seekerSVGWrapper {
-    position: relative;
-}
 .seekerSVG {
     position: absolute;
-    z-index: 10;
+    z-index: 50;
 }
 </style>

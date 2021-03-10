@@ -47,7 +47,6 @@ addEventListener("message", (event) => {
             })
         );
     });
-    log.debug("Event sections", eventSections);
     structures.push({ name: "Events", data: eventSections });
 
     //createBeatGraph(data, graphs);

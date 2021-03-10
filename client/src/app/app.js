@@ -43,13 +43,6 @@ export async function selectTrackAtIndex(index) {
     store.commit("loadingTrack", true);
     const selectedTrack = store.getters.selectedTrack;
     const newTrack = store.getters.trackList[index];
-    log.debug(newTrack)
-    spotify.getAudioFeaturesForTrack(selectedTrack.getID(), (error, result) => {
-        log.debug(result);
-    })
-    spotify.getAlbum(newTrack.trackData.album.id, (error, result) => {
-        log.debug(result);
-    });
     if (selectedTrack && selectedTrack !== newTrack) selectedTrack.deselect();
     return getAnalysis(newTrack).then(() => {
         store.commit("setSelectedIndex", index);
@@ -128,9 +121,9 @@ export async function search(query) {
 }
 
 export async function loadArtistTopTracks(artistID) {
-    spotify.getArtistTopTracks(artistID, 'from_token').then(result => {
-        loadTracksFromSpotify(result.tracks)
-    })
+    spotify.getArtistTopTracks(artistID, "from_token").then((result) => {
+        loadTracksFromSpotify(result.tracks);
+    });
 }
 
 export async function loadTestSet(testSetKey) {

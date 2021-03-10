@@ -20,15 +20,8 @@
             :color="'rgb(255,255,255,0.3)'"
         />
         <svg v-if="hasChords" class="chordsSVG" :width="width" :height="height">
-            <rect
-                class="chordsBackground"
-                x="0"
-                y="0"
-                :width="width"
-                :height="height"
-                fill="none"
-                @click="clickedBG($event)"
-            ></rect>
+            <ClickableBackground :width="width" :height="height"></ClickableBackground>
+
             <rect
                 v-for="(chord, index) in chords"
                 :key="index"
@@ -37,7 +30,7 @@
                 stroke-width=".5"
                 rx="3"
                 :x="chord.start * scale"
-                :y="collapsed ? '0' : (1 - chord.angle) * (height - blockHeight)"
+                :y="collapsed ? '0' : ((2 - chord.angle + chordGapOffset) % 1) * (height - blockHeight)"
                 :width="(chord.end - chord.start) * scale"
                 :height="blockHeight"
                 :fill="color(chord)"
@@ -53,7 +46,7 @@ import * as log from "../../dev/log";
 import * as vis from "../../app/vis";
 import Seeker from "./Seeker";
 import Section from "./Section";
-
+import ClickableBackground from "./ClickableBackground";
 import StructureBackground from "./StructureBackground";
 
 import * as testing from "../../app/testing";
@@ -65,6 +58,7 @@ export default {
     props: ["width"],
     components: {
         Seeker,
+        ClickableBackground,
     },
     data() {
         return {
@@ -101,6 +95,25 @@ export default {
         chordScrollMiddle() {
             return 40;
             //return this.seekerTime * this.scale;
+        },
+        chordGapOffset() {
+            const chordTotalDuration = new Float32Array(12);
+
+            this.chords.forEach((chord) => {
+                chordTotalDuration[Math.round(chord.angle * 12)] += chord.end - chord.start;
+            });
+
+            let min = Number.POSITIVE_INFINITY;
+            let minIndex = -1;
+            for (let i = 0; i < 12; i++) {
+                if (chordTotalDuration[i] < min) {
+                    min = chordTotalDuration[i];
+                    minIndex = i;
+                }
+            }
+
+            log.debug("Chord total duration", chordTotalDuration);
+            return minIndex / 12;
         },
     },
     watch: {
@@ -162,39 +175,13 @@ export default {
             this.ctx.fillRect(this.chordScrollMiddle - 1, 0, 2, this.chordNameHeight);
         },
         color(chord, confidence = 1) {
-            return vis.sinebowColorNormalizedRadius(chord.angle, 1, confidence);
+            return vis.circleOfFifthsColor(chord.angle % 1, 1, confidence);
         },
         isPlayingChord(chord) {
             return this.seekerTime >= chord.start && this.seekerTime < chord.end;
         },
         clickedChord(chord) {
             player.seekS(chord.start);
-        },
-        clickedBG(event) {
-            let xNormalized = 0;
-            let yNormalized = 0;
-            if (this.$store.state.browser === "Firefox") {
-                xNormalized = event.layerX / this.width;
-                yNormalized = event.layerY / this.height;
-            } else {
-                xNormalized = event.offsetX / this.width;
-                yNormalized = event.layerY / this.height;
-            }
-
-            if (this.useZoom && this.isZoomed) {
-                const xFromMiddle = xNormalized * 2 - 1;
-                const seekerPos = Math.min(
-                    1,
-                    Math.max(
-                        0,
-                        this.$store.getters.seeker / (this.track.getAnalysisDuration() * 1000) +
-                            xFromMiddle / (2 * this.zoomScale)
-                    )
-                );
-                player.seekS(seekerPos * this.track.getAnalysisDuration());
-            } else {
-                player.seekS(xNormalized * this.track.getAnalysisDuration());
-            }
         },
     },
 };

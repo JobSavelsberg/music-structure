@@ -23,9 +23,7 @@ addEventListener("message", (event) => {
     const chordFeatures = chordDetection.getMajorMinorChordVectors(blurredPitches);
     const maxChordFeatures = chordDetection.maxChordFeatures(chordFeatures, 2);
     const chordIndexes = chordDetection.getChordIndexes(maxChordFeatures);
-    log.debug("Chord", chordIndexes);
     const medianBlurredChordIndexes = filter.maxFrequencyFilter(chordIndexes, 24, blurLengthInSamples);
-    log.debug("Chord mdeian", medianBlurredChordIndexes);
     const chords = chordDetection.getChords(medianBlurredChordIndexes);
     const prunedChords = [];
     for (let i = 0; i < chords.length; i++) {
@@ -45,6 +43,7 @@ addEventListener("message", (event) => {
     // tonality feature
     const smallBlurredPitch = filter.gaussianBlurFeatures(data.fastSampledPitch, 2);
     const largeBlurredPitch = filter.gaussianBlurFeatures(data.fastSampledPitch, 40);
+    const hugeBlurredPitch = filter.gaussianBlurFeatures(data.fastSampledPitch, 70);
 
     const tonalityFeatureSmall = [];
     const tonalityFeatureLarge = [];
@@ -55,7 +54,7 @@ addEventListener("message", (event) => {
         tonalityFeatureSmall.push(audioUtil.tonality(smallBlurredPitch[i]));
         tonalityFeatureLarge.push(audioUtil.tonality(largeBlurredPitch[i]));
 
-        keyFeature.push(keyDetection.detectSingle(largeBlurredPitch[i]));
+        keyFeature.push(keyDetection.detectSingle(hugeBlurredPitch[i]));
     }
 
     postMessage({

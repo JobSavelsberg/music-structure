@@ -257,10 +257,10 @@ export function renderSSM(track, left, width, yOffset, height, ctx) {
     }
 }
 
-export function renderWaveform(ctx, width, height, track, options = {}) {
+export function renderWaveform(ctx, x, y, width, height, track, options = {}) {
     const segments = track.features.segments;
     const scale = width / track.features.duration;
-    ctx.fillStyle = "white";
+    ctx.fillStyle = "#bbbbbb";
     if (options.detailed) {
         ctx.beginPath();
         ctx.moveTo(0, height);
@@ -281,9 +281,9 @@ export function renderWaveform(ctx, width, height, track, options = {}) {
         segments.forEach((segment) => {
             ctx.fillRect(
                 segment.start * scale,
-                height,
+                y + (1 - audioUtil.loudness(segment.loudness_max)) * height,
                 segment.duration * scale,
-                -audioUtil.loudness(segment.loudness_max) * height
+                y + height
             );
         });
     }

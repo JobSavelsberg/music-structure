@@ -10,7 +10,6 @@ import Section from "../Section";
 addEventListener("message", (event) => {
     const data = event.data;
 
-    log.debug("TIMBRESTRUCTURE");
     const smoothingLength = 5;
     const confidenceThreshold = 0.4;
     const smoothedFeatures = filter.gaussianBlurFeatures(data.timbreFeatures, smoothingLength);

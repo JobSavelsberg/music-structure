@@ -1,3 +1,4 @@
+import { stat } from "fs";
 import Vue from "vue";
 import Vuex from "vuex";
 import Track from "../app/Track";
@@ -20,6 +21,7 @@ export default new Vuex.Store({
         isZoomed: false,
         zoomScale: 10,
         playerActive: false,
+        inputFocus: false,
     },
     mutations: {
         setSeeker(state, time_ms) {
@@ -67,6 +69,9 @@ export default new Vuex.Store({
         setPlayerActive(state, active) {
             state.playerActive = active;
         },
+        setInputFocus(state, focus) {
+            state.inputFocus = focus;
+        },
     },
     actions: {},
     getters: {
@@ -108,6 +113,9 @@ export default new Vuex.Store({
         },
         playerActive(state) {
             return state.playerActive;
+        },
+        isInputFocused(state) {
+            return state.inputFocus;
         },
     },
     modules: {},

@@ -91,6 +91,7 @@ export default {
             } else {
                 player.seekS(xNormalized * this.track.getAnalysisDuration());
             }
+            this.$store.commit("setInputFocus", false);
         },
     },
 };

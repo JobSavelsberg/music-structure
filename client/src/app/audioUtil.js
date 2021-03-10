@@ -86,12 +86,7 @@ export function tonality(pitches) {
         y += vradius * Math.sin(vangle);
     }
     const angle = (1 - Math.atan2(x, y) / TWO_PI + 0.25) % 1;
-    const radius = Math.sqrt(x * x + y * y);
-    if (angle > 0.029 && angle < 0.03) {
-        log.debug(pitches, angle, radius, energy);
-        log.debug(JSON.parse(JSON.stringify(pitches)));
-        log.debug(x, y);
-    }
+    const radius = Math.sqrt(x * x + y * y) / (energy * 12);
     return [angle, radius, energy];
 }
 

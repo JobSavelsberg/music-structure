@@ -99,23 +99,16 @@ export default {
         zoomed() {
             return this.$store.state.isZoomed;
         },
+        playing() {
+            return this.$store.getters.playing;
+        },
     },
     mounted() {
-        this._keyListener = function(e) {
-            if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault(); // present "Save Page" from getting triggered.
-
-                this.$store.commit("toggleZoomed");
-            }
-        };
-        document.addEventListener("keydown", this._keyListener.bind(this));
         window.eventBus.$on("readyForPrototypeVis", () => {
             this.readyForPrototypeVis = true;
         });
     },
-    beforeDestroy() {
-        document.removeEventListener("keydown", this._keyListener);
-    },
+
     methods: {
         visChanged(newVis, oldVis) {},
     },

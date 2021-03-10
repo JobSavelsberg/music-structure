@@ -14,11 +14,13 @@
             :width="width"
             :height="height"
             :color="'rgb(255,255,255,0.3)'"
+            :drawMarkers="false"
         />
-        <svg v-if="hasStructure" class="structureSVG" :width="width" :height="height">
-            <SeparatorBackground :width="width" :height="height" :scale="scale" />
+        <svg v-if="hasStructure" class="structureSVG" :width="width" :height="height" @contextmenu.prevent="rightClick">
+            <SeparatorBackground :width="width" :height="height" :scale="scale" @click="clicked" />
             <rect class="glowRect"></rect>
             <Section
+                class="structureSection"
                 v-for="(section, index) in courseStructure"
                 :key="index + 'course'"
                 :section="section"
@@ -42,6 +44,7 @@
                     :loop="false"
                 />
             </g>
+            <Markers :ref="'markers'" :width="width" :height="height" :opacity="0.3"></Markers>
         </svg>
         <v-skeleton-loader
             v-if="!hasStructure"
@@ -57,6 +60,7 @@ import * as log from "../../dev/log";
 import * as vis from "../../app/vis";
 import Seeker from "./Seeker";
 import Section from "./Section";
+import Markers from "./Markers";
 
 import SeparatorBackground from "./SeparatorBackground";
 
@@ -71,6 +75,7 @@ export default {
         Seeker,
         SeparatorBackground,
         Section,
+        Markers,
     },
     data() {
         return {
@@ -120,14 +125,24 @@ export default {
             }
             return maxGroupID + 1;
         },
+        rightClick(event) {
+            this.$refs["holisticSeeker"].rightClick(event);
+        },
+        clicked(event) {
+            this.$refs["holisticSeeker"].clicked(event);
+        },
     },
 };
 </script>
 
 <style scoped>
 .structureSVG {
+    z-index: 100;
 }
 .seeker {
     pointer-events: none;
+}
+.structureSection {
+    z-index: 100;
 }
 </style>

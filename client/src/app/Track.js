@@ -4,8 +4,10 @@ import Features from "./Features";
 import * as workers from "./workers/workers";
 import * as log from "../dev/log";
 import * as audioUtil from "./audioUtil";
+import * as vis from "./vis";
 
 import * as pathExtraction from "./pathExtraction";
+import * as d3 from "d3";
 
 export const GAMMA = 1.7;
 export const CLUSTERAMOUNT = 10;
@@ -34,6 +36,9 @@ export default class Track {
     trackData = null;
     analysisData = null;
     groundTruth = null;
+
+    markers = []; // {time, color, label}
+    markersCreated = 0;
 
     matrixes = []; // {name, matrix}
     scapePlot = null;
@@ -78,7 +83,7 @@ export default class Track {
     process() {
         this.processing = true;
         log.info("Processing Track", this.getName());
-
+        log.debug("Analysis File", this.analysisData);
         this.features = new Features(this.analysisData, {
             samples: samples,
             sampleDuration: sampleDuration,
@@ -109,7 +114,6 @@ export default class Track {
                 this.features.fastSampleDuration
             )
             .then((result) => {
-                log.debug("Chords", result);
                 this.chordsVector = result.chordsVector;
                 this.chords = result.chords;
                 this.key = result.key;
@@ -156,7 +160,6 @@ export default class Track {
 
     computeTimbreStructure() {
         workers.computeTimbreStructure(this.features.sampled.timbres, this.features.sampleDuration).then((result) => {
-            log.debug("TimbreStructure", result);
             this.timbreStructure = result.timbreStructure;
             this.events = result.events;
             this.segmentedTimbreGraph = result.segmentedTimbreGraph;
@@ -295,6 +298,21 @@ export default class Track {
             }
         });
         return closestSegment;
+    }
+
+    placeMarker(time) {
+        log.debug("Placemarker", time);
+        // Delete marker if it exists at that time
+        const alreadyPlacedMarkerIndex = this.markers.findIndex((marker) => Math.abs(marker.time - time) < 1);
+        if (alreadyPlacedMarkerIndex >= 0) {
+            this.markers.splice(alreadyPlacedMarkerIndex, 1);
+            return;
+        }
+
+        const color = d3.color(vis.goldenRatioCategoricalColor(this.markersCreated, 0)).formatHex();
+        const label = String.fromCharCode(97 + this.markersCreated).toUpperCase();
+        this.markers.push({ time, color, label });
+        this.markersCreated++;
     }
 
     static createWithAnalysis(trackData, analysisData) {

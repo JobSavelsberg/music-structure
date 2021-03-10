@@ -2,6 +2,7 @@ import * as log from "../dev/log";
 import SpotifySegment from "./SpotifySegment";
 import * as chordDetection from "./chordDetection";
 import * as filter from "./filter";
+import { lowerFirst } from "lodash";
 
 const timbreNormalizationAmount = 0.2;
 
@@ -97,6 +98,7 @@ export default class Features {
             this.raw.timbres[i] = s.segment.timbre;
             this.raw.loudness[i] = s.getLoudnessFeatures();
             s.processPitch();
+
             this.processed.pitches.push(s.pitches);
 
             this.processed.loudness.push(s.getLoudnessFeatures());

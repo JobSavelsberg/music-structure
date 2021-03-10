@@ -201,7 +201,6 @@ export default {
         },
         click(event, index) {
             this.clicks++;
-            log.debug("Click");
             if (this.clicks === 1) {
                 var self = this;
                 this.timer = setTimeout(() => {
