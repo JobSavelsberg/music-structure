@@ -65,10 +65,10 @@ addEventListener("message", (event) => {
     const large = filter.gaussianBlur2DOptimized(ssmTimbre, 20);
 
     const uniquenessSSMS = SSM.subtract(large, small);
-    matrixes.push({
+    /*matrixes.push({
         name: "Subtracted",
         buffer: uniquenessSSMS.getBuffer(),
-    });
+    });*/
 
     const ssmPitchSinglePitch = data.allPitches ? ssmPitch.getFirstFeatureMatrix() : ssmPitch;
     //const ssmPitchSinglePitchOffset1 = data.allPitches ? ssmPitch.getFeatureMatrix(1) : ssmPitch;
@@ -113,7 +113,7 @@ addEventListener("message", (event) => {
     });
 
     const timeLagMatrix = Matrix.createTimeLagMatrix(strictPathMatrix);
-    matrixes.push({ name: "TLStrict", buffer: timeLagMatrix.getBuffer() });
+    //matrixes.push({ name: "TLStrict", buffer: timeLagMatrix.getBuffer() });
 
     const [homogenousScore, homogenousLength] = homogenous.homogenousFeature(strictPathMatrix);
     graphs.push({ name: "homogenousScore", buffer: homogenousScore.buffer });
@@ -505,7 +505,7 @@ export function visualizeKernel(data, matrixes) {
     });
     kernelMatrix.data = kernel;
     kernelMatrix.normalize();
-    matrixes.push({ name: "Kernel", buffer: kernelMatrix.getBuffer() });
+    //matrixes.push({ name: "Kernel", buffer: kernelMatrix.getBuffer() });
 }
 
 export function showAllEnhancementMethods(ssmPitch, data, matrixes) {
@@ -516,7 +516,7 @@ export function showAllEnhancementMethods(ssmPitch, data, matrixes) {
     );
     let transpositionInvariantLin = SSM.makeTranspositionInvariant(enhancedSSMLin);
     transpositionInvariantLin = SSM.rowColumnAutoThreshold(transpositionInvariantLin, data.thresholdPercentage);
-    matrixes.push({ name: "transinv Lin", buffer: transpositionInvariantLin.getBuffer() });
+    //matrixes.push({ name: "transinv Lin", buffer: transpositionInvariantLin.getBuffer() });
 
     const enhancedSSMGauss = SSM.enhanceSSM(
         ssmPitch,
@@ -525,7 +525,7 @@ export function showAllEnhancementMethods(ssmPitch, data, matrixes) {
     );
     let transpositionInvariantGauss = SSM.makeTranspositionInvariant(enhancedSSMGauss);
     transpositionInvariantGauss = SSM.rowColumnAutoThreshold(transpositionInvariantGauss, data.thresholdPercentage);
-    matrixes.push({ name: "transinv Gauss", buffer: transpositionInvariantGauss.getBuffer() });
+    //matrixes.push({ name: "transinv Gauss", buffer: transpositionInvariantGauss.getBuffer() });
 
     const enhancedSSMOnedir = SSM.enhanceSSM(
         ssmPitch,
@@ -534,7 +534,7 @@ export function showAllEnhancementMethods(ssmPitch, data, matrixes) {
     );
     let transpositionInvariantOnedir = SSM.makeTranspositionInvariant(enhancedSSMOnedir);
     transpositionInvariantOnedir = SSM.rowColumnAutoThreshold(transpositionInvariantOnedir, data.thresholdPercentage);
-    matrixes.push({ name: "transinv Onedir", buffer: transpositionInvariantOnedir.getBuffer() });
+    //matrixes.push({ name: "transinv Onedir", buffer: transpositionInvariantOnedir.getBuffer() });
 
     const enhancedSSMOnedirmed = SSM.enhanceSSM(
         ssmPitch,
@@ -546,7 +546,7 @@ export function showAllEnhancementMethods(ssmPitch, data, matrixes) {
         transpositionInvariantOnedirmed,
         data.thresholdPercentage
     );
-    matrixes.push({ name: "transinv Onedirmed", buffer: transpositionInvariantOnedirmed.getBuffer() });
+    //matrixes.push({ name: "transinv Onedirmed", buffer: transpositionInvariantOnedirmed.getBuffer() });
 }
 
 export function computeStructureFeature(pathSSM, matrixes, graphs, blurLength, medianBlurDimensions = [16, 2]) {
@@ -584,10 +584,10 @@ export function computeStructureFeature(pathSSM, matrixes, graphs, blurLength, m
         buffer: normalizedMedianTimeLag.getBuffer(),
     });*/
     const blurredBinaryTimeLagMatrixNorm = filter.gaussianBlur2DOptimized(normalizedMedianTimeLag, blurLength);
-    matrixes.push({
+    /*matrixes.push({
         name: `Blur Norm TL ${blurLength}`,
         buffer: blurredBinaryTimeLagMatrixNorm.getBuffer(),
-    });
+    });*/
 
     const structureFeatureNoveltyNorm = noveltyDetection.computeNoveltyFromTimeLag(blurredBinaryTimeLagMatrixNorm);
     graphs.push({
@@ -605,7 +605,7 @@ export function visualizePathExtraction(pathSSM, startSample, endSample, matrixe
         startSample,
         endSample
     );
-    matrixes.push({ name: "DTW", buffer: pathExtractVis.getBuffer() });
+    //matrixes.push({ name: "DTW", buffer: pathExtractVis.getBuffer() });
 }
 
 export function createScapePlot(pathSSM, data, message) {

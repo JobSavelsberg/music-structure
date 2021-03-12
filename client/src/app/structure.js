@@ -487,23 +487,24 @@ export function findGreedyDecomposition(
 
 function getPathFamily(section, sampleDuration, groupID) {
     const pathFamilySections = [];
+    if (!section.pathFamily) return [];
     section.pathFamily.forEach((path, index) => {
         const start = path[path.length - 1][1] * sampleDuration;
         const end = (path[0][1] + 1) * sampleDuration;
         const pathConfidence = section.pathFamilyScores ? section.pathFamilyScores[index] : section.pathScores[index];
         const newSection = new Section({ start, end, groupID, confidence: pathConfidence });
         /*if (!isSameSectionWithinError(best, section, 2)) {
-            // This is debatable, we might want to show this (why it got high fitness to begin with)
-            //if (!overlapWithStructureSections(section, structureSections)) {
-            structureSections.push(section);
-            //}
-        } else {
-            // It's the best path itself, but use the segment defined by the coverage in the path family
-            best.start = start;
-            best.end = end;
-            best.confidence = 1;
-            structureSections.push(best);
-        }*/
+        // This is debatable, we might want to show this (why it got high fitness to begin with)
+        //if (!overlapWithStructureSections(section, structureSections)) {
+        structureSections.push(section);
+        //}
+    } else {
+        // It's the best path itself, but use the segment defined by the coverage in the path family
+        best.start = start;
+        best.end = end;
+        best.confidence = 1;
+        structureSections.push(best);
+    }*/
         newSection.pathFamily = section.pathFamily;
         pathFamilySections.push(newSection);
     });

@@ -2,31 +2,31 @@ import * as log from "../dev/log";
 
 const d3 = require("d3");
 export const circleOfFifths = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5]; // Starting from C=0
-export const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+export const noteNames = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
 export const keyNames = [
     "C",
-    "Db",
+    "D♭",
     "D",
-    "Eb",
+    "E♭",
     "E",
     "F",
-    "F#",
+    "F♯",
     "G",
-    "Ab",
+    "A♭",
     "A",
-    "Bb",
+    "B♭",
     "B",
     "Cm",
-    "Dbm",
+    "D♭m",
     "Dm",
-    "Ebm",
+    "E♭m",
     "Em",
     "Fm",
-    "F#m",
+    "F♯m",
     "Gm",
-    "Abm",
+    "A♭m",
     "Am",
-    "Bbm",
+    "B♭m",
     "Bm",
 ];
 
@@ -74,12 +74,102 @@ var RADIANS_PER_DEGREE = Math.PI / 180;
 const TWO_PI = 2 * Math.PI;
 const OFFSET = Math.PI / 2; // (3 * Math.PI) / 2; // full cycle is 2pi
 
+function sortWithIndeces(toSort) {
+    const toSortValIndex = [];
+    for (var i = 0; i < toSort.length; i++) {
+        toSortValIndex.push([toSort[i], i]);
+    }
+    toSortValIndex.sort(function(left, right) {
+        return left[0] < right[0] ? -1 : 1;
+    });
+    const toSortIndex = [];
+    for (var j = 0; j < toSort.length; j++) {
+        toSortIndex.push(toSortValIndex[j][1]);
+    }
+    return toSortIndex;
+}
+
 export function tonality(pitches) {
     let x = 0;
     let y = 0;
     let energy = 0;
     for (let i = 0; i < 12; i++) {
         const vangle = -(circleOfFifths[i] / 12.0) * TWO_PI + OFFSET;
+        const vradius = pitches[i]; // Between 0 and 1
+        energy += vradius / 12;
+        x += vradius * Math.cos(vangle);
+        y += vradius * Math.sin(vangle);
+    }
+    const angle = (1 - Math.atan2(x, y) / TWO_PI + 0.25) % 1;
+    const radius = Math.sqrt(x * x + y * y) / (energy * 12);
+    //return tonalityThirds(pitches);
+    return [angle, radius, energy];
+}
+
+export function tonalityThirds(pitches) {
+    let x = 0;
+    let y = 0;
+    let energy = 0;
+
+    const sortedPitchIndexes = sortWithIndeces(pitches).reverse();
+    for (let i = 0; i < pitches.length; i++) {
+        const index = sortedPitchIndexes[i];
+        if (index === -1) continue;
+        sortedPitchIndexes[i] = -1;
+        const vangle = -(circleOfFifths[index] / 12.0) * TWO_PI + OFFSET;
+        const vradius = pitches[index]; // Between 0 and 1
+        energy += vradius / 12;
+        x += vradius * Math.cos(vangle);
+        y += vradius * Math.sin(vangle);
+
+        const majThirdIndex = (index + 4) % 12;
+        if (sortedPitchIndexes.includes(majThirdIndex)) {
+            const vangle = -(((12 + circleOfFifths[majThirdIndex] - 3.5) % 12) / 12.0) * TWO_PI + OFFSET;
+            const vradius = pitches[majThirdIndex]; // Between 0 and 1
+            energy += vradius / 12;
+            x += vradius * Math.cos(vangle);
+            y += vradius * Math.sin(vangle);
+            sortedPitchIndexes[sortedPitchIndexes.indexOf(majThirdIndex)] = -1;
+        }
+    }
+    const angle = (1 - Math.atan2(x, y) / TWO_PI + 0.25) % 1;
+    const radius = Math.sqrt(x * x + y * y) / (energy * 12);
+    return [angle, radius, energy];
+}
+
+export function tonalityThird(pitches) {
+    let x = 0;
+    let y = 0;
+    let energy = 0;
+
+    let maxIndex = -1;
+    let max = -1;
+    let secondMaxIndex = -1;
+    let secondMax = -1;
+
+    for (let i = 0; i < 12; i++) {
+        if (pitches[i] > max) {
+            max = pitches[i];
+            maxIndex = i;
+        }
+        if (pitches[i] >= secondMax && i !== maxIndex) {
+            secondMax = pitches[i];
+            secondMaxIndex = i;
+        }
+    }
+    // major third apart
+    if ((12 + secondMaxIndex - maxIndex) % 12 !== 4) {
+        secondMaxIndex = -1;
+    }
+
+    for (let i = 0; i < 12; i++) {
+        let vangle = -(circleOfFifths[i] / 12.0) * TWO_PI + OFFSET;
+
+        if (i === secondMaxIndex) {
+            // add differently
+            vangle = -(((12 + circleOfFifths[i] - 3.5) % 12) / 12.0) * TWO_PI + OFFSET;
+        }
+
         const vradius = pitches[i]; // Between 0 and 1
         energy += vradius / 12;
         x += vradius * Math.cos(vangle);

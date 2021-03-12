@@ -2,6 +2,7 @@ import * as log from "../dev/log";
 import * as audioUtil from "./audioUtil";
 
 const tryRemovePercussion = true;
+const equalizeBass = false;
 
 export default class SpotifySegment {
     segment = null;
@@ -50,6 +51,8 @@ export default class SpotifySegment {
         const decay = 0.5;
         const shortness = this.duration < minDuration ? 1 : decay - (this.duration - 0.15);
         this.percussiony = Math.max(Math.min(1, (1 - this.tonalityRadius) * this.tonalityEnergy * 2) * shortness, 0);
+        this.percussiony = Math.max(0, Math.min(1, 1 - this.tonalityRadius * 6));
+        this.percussiony = Math.max(0, Math.min(1, (1 - this.tonalityRadius) * this.tonalityEnergy));
         this.processedPitch = true;
     }
 
@@ -59,7 +62,7 @@ export default class SpotifySegment {
         if (this.processedPitchSmooth) return;
         if (!this.processedPitch) throw Error("processed pitchSmooth called before setting initial pitch");
 
-        for (let p = 0; p < this.pitches.length; p++) {
+        for (let p = 4; p < this.pitches.length; p++) {
             this.pitches[p] =
                 (1 - this.percussiony) * this.pitches[p] +
                 (this.percussiony *
@@ -67,28 +70,34 @@ export default class SpotifySegment {
                     2;
         }
 
+        //this.pitches[11] = this.percussiony;
+        //this.pitches[10] = 1 - this.tonalityRadius;
+        //this.pitches[9] = this.tonalityEnergy;
+
         this.processedPitchSmooth = true;
     }
 
     processPitchEqualizeBass() {
-        let maxPitch = 0;
-        this.pitches.forEach((pitch) => {
-            if (pitch > maxPitch) {
-                maxPitch = pitch;
-            }
-        });
+        if (equalizeBass) {
+            let maxPitch = 0;
+            this.pitches.forEach((pitch) => {
+                if (pitch > maxPitch) {
+                    maxPitch = pitch;
+                }
+            });
 
-        let secondMaxPitch = 0;
-        this.pitches.forEach((pitch) => {
-            if (pitch < maxPitch && pitch > secondMaxPitch) {
-                secondMaxPitch = pitch;
-            }
-        });
+            let secondMaxPitch = 0;
+            this.pitches.forEach((pitch) => {
+                if (pitch < maxPitch && pitch > secondMaxPitch) {
+                    secondMaxPitch = pitch;
+                }
+            });
 
-        const equalizeAmount = 0; // 1 is full equalize: loudest is same as second loudest, 0 is none
-        const scale = 1 / (1 - (maxPitch - secondMaxPitch) * equalizeAmount);
-        for (let p = 0; p < this.pitches.length; p++) {
-            this.pitches[p] = Math.min(1, this.pitches[p] * scale);
+            const equalizeAmount = 0; // 1 is full equalize: loudest is same as second loudest, 0 is none
+            const scale = 1 / (1 - (maxPitch - secondMaxPitch) * equalizeAmount);
+            for (let p = 0; p < this.pitches.length; p++) {
+                this.pitches[p] = Math.min(1, this.pitches[p] * scale);
+            }
         }
     }
 

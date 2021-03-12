@@ -111,7 +111,7 @@ export default {
                         1,
                         null
                     );
-                    this.zoomCanvas.drawText(time + 0.5, y + this.innerSpacing + this.blockHeight / 2, value);
+                    //this.zoomCanvas.drawText(time + 0.5, y + this.innerSpacing + this.blockHeight * 0.75, value);
                 });
             });
         },

@@ -2,7 +2,7 @@ import * as similarity from "./similarity";
 import * as log from "../dev/log";
 const d3 = require("d3");
 
-export const notes = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
+export const notes = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "G♯", "A", "B♭", "B"];
 export const circleOfFifths = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5]; // Starting from C=0
 
 export const colorWheel = d3

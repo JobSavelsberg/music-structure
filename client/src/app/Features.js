@@ -62,6 +62,8 @@ export default class Features {
         this.sampleBlur = options.sampleBlur || 1;
         this.fillBeatsStartDuration(analysisData.beats);
         this.calculateMaxMin();
+        log.debug(this.timbreBiggest);
+        log.debug("total biggest timbre", this.timbreTotalBiggest);
         this.processSegments();
         if (this.segments.length) this.processDirectLoudness();
         this.sampleFeatures();
