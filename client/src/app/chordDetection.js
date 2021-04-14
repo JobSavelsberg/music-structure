@@ -1,43 +1,10 @@
 import * as similarity from "./similarity";
+import * as audioUtil from"./audioUtil";
 import * as log from "../dev/log";
 const d3 = require("d3");
 
 export const notes = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "G♯", "A", "B♭", "B"];
 export const circleOfFifths = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5]; // Starting from C=0
-
-export const colorWheel = d3
-    .scaleLinear()
-    .domain([
-        0,
-        1 / 12,
-        2 / 12,
-        2.8 / 12,
-        3.8 / 12,
-        4.3 / 12,
-        5.3 / 12,
-        6.8 / 12,
-        8 / 12,
-        8.8 / 12,
-        9.3 / 12,
-        10.5 / 12,
-        1,
-    ])
-    .interpolate(d3.interpolateHcl)
-    .range([
-        d3.rgb("#FE0000"),
-        d3.rgb("#FF7300"),
-        d3.rgb("#FFAA01"),
-        d3.rgb("#FFD300"),
-        d3.rgb("#FFFF01"),
-        d3.rgb("#9FEE00"),
-        d3.rgb("#01CC00"),
-        d3.rgb("#009899"),
-        d3.rgb("#1241AB"),
-        d3.rgb("#3914B1"),
-        d3.rgb("#7209AC"),
-        d3.rgb("#CD0174"),
-        d3.rgb("#FE0000"),
-    ]);
 
 export const chords = {
     major: { name: "Major", weight: 1, template: [1, 0, 0, 0, 0.8, 0, 0, 0.5, 0, 0, 0, 0] },
@@ -198,7 +165,7 @@ export function tonalVectorColor(pitches) {
     const [angle, radius, energy] = tonality(pitches);
 
     //const color = d3.color(d3.interpolateSinebow((angle+OFFSET)%1.0));
-    const color = d3.hsl(colorWheel(angle));
+    const color = d3.hsl(audioUtil.colorWheel(angle));
     const saturation = Math.min((radius * 3) / (energy * 12), 1); // 3 because chord usually minimally 3 tones
     color.s = saturation;
     return color.hex();

@@ -94,6 +94,9 @@ function loadTracksFromSpotify(tracks, keepCurrentTrack = true) {
     store.commit("clearTrackList");
     tracks.forEach((trackData) => {
         if (allTracks.has(trackData.id)) {
+            if (trackData.groundTruth) {
+                allTracks.get(trackData.id).groundTruth = trackData.groundTruth;
+            }
             store.commit("addToTrackList", allTracks.get(trackData.id));
         } else {
             const track = new Track(trackData);
@@ -138,6 +141,7 @@ export async function loadTestSet(testSetKey) {
                 .then((results) => {
                     if (results.tracks.items.length > 0) {
                         let spotifyTrack = results.tracks.items[0];
+                        log.debug(track.query, track);
                         spotifyTrack.groundTruth = track;
                         spotifyTracks.push(spotifyTrack);
                     }

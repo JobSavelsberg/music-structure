@@ -2,6 +2,7 @@ import assert from "assert";
 import { NumberType, getNumberTypeByName } from "./NumberType";
 import * as log from "../../dev/log";
 import * as Matrix from "./Matrix";
+import { drop } from "lodash";
 export default class HalfMatrix {
     static get NumberType() {
         return NumberType;
@@ -294,6 +295,40 @@ export default class HalfMatrix {
         let i = this.length;
         while (i--) {
             this.data[i] = (this.data[i] - min) / (max - min);
+        }
+    }
+
+    getMeanAndStandardDeviation() {
+        if (this.featureAmount > 1) return 0;
+        let sum = 0;
+        for (let y = 0; y < this.size; y++) {
+            const cellsBefore = ((y * y + y) / 2) * this.featureAmount;
+            for (let x = 0; x < y + 1; x++) {
+                sum += this.data[cellsBefore + x] / this.numberType.scale;
+            }
+        }
+        const mean = sum / this.data.length;
+        let meanSquared = 0;
+        for (let y = 0; y < this.size; y++) {
+            const cellsBefore = ((y * y + y) / 2) * this.featureAmount;
+            for (let x = 0; x < y + 1; x++) {
+                meanSquared += Math.pow(this.data[cellsBefore + x] / this.numberType.scale - mean, 2);
+            }
+        }
+        const sd = Math.sqrt(meanSquared / this.data.length);
+        return [mean, sd];
+    }
+
+    changeDistribution(deltaMean, deltaDeviation) {
+        const [mean, sd] = this.getMeanAndStandardDeviation();
+        let i = this.length;
+        while (i--) {
+            let val = this.data[i] / this.numberType.scale;
+            val -= mean;
+            val *= deltaDeviation;
+            val += mean + deltaMean;
+            val = Math.min(1, Math.max(0, val));
+            this.data[i] = val * this.numberType.scale;
         }
     }
 }

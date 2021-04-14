@@ -10,7 +10,7 @@
 
                 <Beats :width="width" />
                 <PitchTimbre :width="width" />
-                <ScapePlot :width="width" />
+                <!--<ScapePlot :width="width" />-->
             </div>
             <div v-if="!showPrototype">
                 <HolisticStructure :width="width" />
@@ -55,7 +55,7 @@ export default {
         GroundTruth,
         Beats,
         Graphs,
-        ScapePlot,
+        //ScapePlot,
         PitchTimbre,
         Structure,
         HolisticStructure,

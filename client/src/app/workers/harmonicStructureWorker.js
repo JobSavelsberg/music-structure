@@ -12,17 +12,18 @@ addEventListener("message", (event) => {
     const data = event.data;
     const sampleAmount = data.pitchFeatures.length;
 
-    const smoothedpitchFeatures = filter.gaussianBlurFeatures(data.pitchFeatures, 8);
+    const smoothedpitchFeatures = filter.gaussianBlurFeatures(data.pitchFeatures, 1);
 
-    const pitchSSM = SSM.calculateSSM(data.pitchFeatures, data.sampleDuration, data.allPitches, 0.4);
+    const pitchSSM = SSM.calculateSSM(smoothedpitchFeatures, data.sampleDuration, data.allPitches, 0.35, "euclidean");
     const enhancedSSM = SSM.enhanceSSM(
         pitchSSM,
         { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: "linmed" },
         data.allPitches
     );
     const transpositionInvariantPre = SSM.makeTranspositionInvariant(enhancedSSM);
-    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.19);
-    strictPathMatrixHalf = SSM.threshold(strictPathMatrixHalf, 0.1);
+    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.4);
+    strictPathMatrixHalf = SSM.multiply(strictPathMatrixHalf, 1.1);
+    strictPathMatrixHalf = SSM.threshold(strictPathMatrixHalf, 0.15);
     const strictPathMatrix = Matrix.fromHalfMatrix(strictPathMatrixHalf);
 
     const duration = 4; // samples

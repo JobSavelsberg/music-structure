@@ -6,16 +6,33 @@ import HalfMatrix from "./dataStructures/HalfMatrix";
 import { NumberType } from "./dataStructures/NumberType";
 import asciichart from "asciichart";
 
-export function calculateSSM(features, sampleDuration, allPitches = false, threshold = 0) {
+export function calculateSSM(
+    features,
+    sampleDuration,
+    allPitches = false,
+    threshold = 0,
+    similarityFunction = "cosine"
+) {
     const ssm = new HalfMatrix({
         size: features.length,
         numberType: HalfMatrix.NumberType.UINT8,
         sampleDuration: sampleDuration,
         featureAmount: allPitches ? 12 : 1,
     });
-    ssm.fillFeaturesNormalized(
-        (x, y, f) => Math.max(0, sim.cosineTransposed(features[x], features[y], f) - threshold) / (1 - threshold)
-    );
+    ssm.fillFeaturesNormalized((x, y, f) => {
+        if (similarityFunction === "cosine") {
+            return Math.max(0, sim.cosineTransposed(features[x], features[y], f) - threshold) / (1 - threshold);
+        } else if (similarityFunction === "euclidean") {
+            const val = sim.euclidianPitchTransposed(features[x], features[y], f);
+            if (val < 0 || val > 1) {
+                log.debug(x, y, val, features[x], features[y]);
+            }
+            return (
+                Math.max(0, Math.min(1, sim.euclidianPitchTransposed(features[x], features[y], f) - threshold)) /
+                (1 - threshold)
+            );
+        }
+    });
     return ssm;
 }
 
@@ -37,7 +54,8 @@ export function enhanceSSM(ssm, options, allPitches = false) {
             enhancementPasses.push(onedirectionalSmoothing(ssm, -1, Math.floor(blurLength / 2), tempoRatio));
         if (strategy === "linear" || strategy === "lin")
             enhancementPasses.push(linearSmoothing(ssm, blurLength, tempoRatio));
-        if (strategy === "gauss") enhancementPasses.push(gaussianSmoothing(ssm, blurLength, tempoRatio));
+        if (strategy === "gaussian" || strategy === "gauss")
+            enhancementPasses.push(gaussianSmoothing(ssm, blurLength, tempoRatio));
         if (strategy === "onedirmed")
             enhancementPasses.push(
                 medianSmoothing(
@@ -57,6 +75,10 @@ export function enhanceSSM(ssm, options, allPitches = false) {
         if (strategy === "linmed")
             enhancementPasses.push(
                 medianSmoothing(linearSmoothing(ssm, blurLength, tempoRatio), blurLength * 1.5, tempoRatio)
+            );
+        if (strategy === "gaussmed")
+            enhancementPasses.push(
+                medianSmoothing(gaussianSmoothing(ssm, blurLength, tempoRatio), blurLength * 1.5, tempoRatio)
             );
         if (strategy === "med") enhancementPasses.push(medianSmoothing(ssm, blurLength, tempoRatio));
     }
@@ -240,6 +262,28 @@ export function autoThreshold(ssm, percentage) {
             Math.min(Math.max(ssm.data[i] / typeScale - thresholdValue, 0) / (1 - thresholdValue), 1) * typeScale;
     }
     return thresholdSSM;
+}
+
+export function multiply(ssm, factor) {
+    let multSSM;
+    if (ssm instanceof Matrix) {
+        multSSM = Matrix.from(ssm);
+    } else {
+        multSSM = HalfMatrix.from(ssm);
+    }
+
+    multSSM.fillNormalized((x, y) => {
+        const val = factor * ssm.getValueNormalizedMirrored(x, y);
+        if (val < 0) {
+            return 0;
+        } else if (val > 1) {
+            return 1;
+        } else {
+            return val;
+        }
+    });
+
+    return multSSM;
 }
 
 export function threshold(ssm, threshold) {

@@ -37,6 +37,7 @@ export default {
             return this.$store.getters.selectedTrack;
         },
         trackHasGroundTruth() {
+            log.debug("TESTING IF IT HAS GROUND TRUTH", this.track.groundTruth);
             return this.track && this.track.groundTruth !== null;
         },
         height() {

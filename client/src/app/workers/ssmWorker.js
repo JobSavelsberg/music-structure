@@ -49,9 +49,19 @@ addEventListener("message", (event) => {
     });
     structures.push({ name: "Events", data: eventSections });
 
-    //createBeatGraph(data, graphs);
+    let [ssmPitchOOG, ssmTimbreOOG] = calculateSSM(data, 0.35, "euclidean");
+    ssmPitchOOG.changeDistribution(-0.4, 2.1);
+    matrixes.push({ name: "PitchNothing", buffer: Matrix.fromHalfMatrix(ssmPitchOOG).getBuffer() });
 
-    const { ssmPitch, ssmTimbre } = calculateSSM(data, 0.4);
+    //createBeatGraph(data, graphs);
+    data.pitchFeatures = filter.gaussianBlurFeatures(data.pitchFeatures, 2); //3 6 12
+
+    const [ssmPitch, ssmTimbre] = calculateSSM(data, 0.35, "euclidean");
+    ssmPitch.changeDistribution(-0.4, 2.1);
+    log.debug("Featureblur Mean, SD:", ssmPitch.getMeanAndStandardDeviation());
+
+    matrixes.push({ name: "Pitch", buffer: Matrix.fromHalfMatrix(ssmPitch).getBuffer() });
+
     const ssmTimbrePitch = Matrix.combine(ssmPitch, ssmTimbre);
     matrixes.push({
         name: "Raw",
@@ -76,13 +86,42 @@ addEventListener("message", (event) => {
     //createBasicNoveltyFeatures(ssmPitchSinglePitch, ssmTimbre, graphs);
 
     // Enhance pitch SSM, diagonal smoothing, still contains 12 pitches
-    let startTime = performance.now();
-    const enhancedSSM = SSM.enhanceSSM(
-        ssmPitch,
-        { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: "linmed" },
+
+    // data.enhanceBlurLength
+    data.enhanceBlurLength = 8;
+    //data.tempoRatios = [1.5];
+    const strategy = "linmed";
+    // data.tempoRatios
+    // linmed
+
+    /*const enhancedSSMOOG = SSM.enhanceSSM(
+        ssmPitchOOG,
+        { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: strategy },
         data.allPitches
     );
+    //enhancedSSMOOG.changeDistribution(-0.3, 1.7);
+    matrixes.push({ name: "EnhancedNothing", buffer: enhancedSSMOOG.getBuffer() });
+*/
+    let startTime = performance.now();
+
+    const enhancedSSM = SSM.enhanceSSM(
+        ssmPitch,
+        { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: strategy },
+        data.allPitches
+    );
+    //enhancedSSM.changeDistribution(-0.3, 1.7);
+
     matrixes.push({ name: "Enhanced", buffer: enhancedSSM.getBuffer() });
+
+    const enhancedSSM2 = SSM.enhanceSSM(
+        ssmPitch,
+        { blurLength: data.enhanceBlurLength * 2, tempoRatios: data.tempoRatios, strategy: "gaussian" },
+        data.allPitches
+    );
+    //enhancedSSM.changeDistribution(-0.3, 1.7);
+
+    matrixes.push({ name: "EnhancedCOMP", buffer: enhancedSSM2.getBuffer() });
+
     log.debug("Enhance Time", performance.now() - startTime);
 
     // Make transposition invariant; take max of all pitches
@@ -102,9 +141,24 @@ addEventListener("message", (event) => {
     //showAllEnhancementMethods(ssmPitch, data, matrixes);
 
     // 15 15 for mazurka
-    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.19);
-    strictPathMatrixHalf = SSM.threshold(strictPathMatrixHalf, 0.1);
 
+    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.4);
+    /*matrixes.push({
+        name: "RowCol",
+        buffer: Matrix.fromHalfMatrix(strictPathMatrixHalf).getBuffer(),
+    });
+
+    strictPathMatrixHalf = SSM.multiply(strictPathMatrixHalf, 1.3);
+
+    matrixes.push({
+        name: "Mult",
+        buffer: Matrix.fromHalfMatrix(strictPathMatrixHalf).getBuffer(),
+    });*/
+
+    strictPathMatrixHalf = SSM.threshold(strictPathMatrixHalf, 0.1);
+    strictPathMatrixHalf = SSM.multiply(strictPathMatrixHalf, 1.3);
+
+    log.debug("Mean, SD:", strictPathMatrixHalf.getMeanAndStandardDeviation());
     const strictPathMatrix = Matrix.fromHalfMatrix(strictPathMatrixHalf);
 
     matrixes.push({
@@ -199,7 +253,7 @@ addEventListener("message", (event) => {
     //const [greedyStructureSampled, groupAmountSampled, segmentsSampled] = structure.findGreedyDecomposition(strictPathMatrix, sampledSegments, data.sampleDuration, "classic");
     //structures.push({ name: "Greedy sections classic sampled", data: greedyStructureSampled, separateByGroup: true, groupAmount: groupAmountSampled })
 
-    const [mutorStructure, mutorGroupAmount, segmentsMutor] = structure.findMuteDecomposition(
+    /* const [mutorStructure, mutorGroupAmount, segmentsMutor] = structure.findMuteDecomposition(
         strictPathMatrix,
         sampledSegments,
         data.sampleDuration,
@@ -242,6 +296,8 @@ addEventListener("message", (event) => {
         clone.end = Math.floor(clone.end / data.sampleDuration);
         return clone;
     });
+
+    
     const solo0and = SSM.soloAnd(strictPathMatrix, group0InSamples);
     //matrixes.push({ name: "S0&", buffer: solo0and.getBuffer() });
     const solo0or = SSM.soloOr(strictPathMatrix, group0InSamples);
@@ -261,7 +317,7 @@ addEventListener("message", (event) => {
     const mute0or = SSM.muteOr(strictPathMatrix, group0InSamples);
     //matrixes.push({ name: "M0||", buffer: mute0or.getBuffer() });
     //log.debug(greedyStructure)
-
+    */
     //const [greedyStructure1, groupAmount1, segments1] = structure.findGreedyDecomposition(strictPathMatrix, structureSegments, data.sampleDuration, "pruned");
     //structures.push({ name: "Greedy sections pruned", data: greedyStructure1, separateByGroup: true, groupAmount: groupAmount1 })
 
@@ -292,17 +348,17 @@ addEventListener("message", (event) => {
 
     //const classicSquashedStructureNoOverlap = structure.squash('no-overlap',greedyStructureSampled, groupAmountCustom2Sampled);
     //structures.push({ name: "Classic Squashed structure no-overlap", data: classicSquashedStructureNoOverlap})
-    const squashedStructureFillGap = structure.squash("fill-gap", mutorStructure, mutorGroupAmount);
-    structures.push({ name: "Squashed structure", data: squashedStructureFillGap });
+    //const squashedStructureFillGap = structure.squash("fill-gap", mutorStructure, mutorGroupAmount);
+    //structures.push({ name: "Squashed structure", data: squashedStructureFillGap });
 
-    if (!data.synthesized) {
+    /*if (!data.synthesized) {
         const squashedStructureFillGapMDS = structure.MDSColorSegments(mutorStructure, strictPathMatrix);
         structures.push({
             name: "Squashed structure MDS color",
             data: squashedStructureFillGapMDS,
             verticalPosition: true,
         });
-    }
+    }*/
 
     //const squashedStructureNoOverlap = structure.squash('no-overlap',greedyStructureCustom2Sampled, groupAmountCustom2Sampled);
     //structures.push({ name: "Custom2 Squashed structure no-overlap", data: squashedStructureNoOverlap})
@@ -393,8 +449,8 @@ addEventListener("message", (event) => {
         log.debug("Took", performance.now() - startTime);
     }
 
-    message.courseStructure = structure.MDSColorSegments(mutorStructure, strictPathMatrix);
-    message.fineStructure = structure.MDSColorSegments(mutorSubStructure, strictPathMatrix);
+    //message.courseStructure = structure.MDSColorSegments(mutorStructure, strictPathMatrix);
+    //message.fineStructure = structure.MDSColorSegments(mutorSubStructure, strictPathMatrix);
 
     message.matrixes = matrixes;
     message.graphs = graphs;
@@ -417,7 +473,7 @@ export function timed(name, f) {
     return result;
 }
 
-export function calculateSSM(data, threshold) {
+export function calculateSSM(data, threshold, similarityFunction = "cosine") {
     if (data.synthesized) {
         const ssmPitch = new HalfMatrix(data.synthesizedSSMPitch);
         const ssmTimbre = new HalfMatrix(data.synthesizedSSMTimbre);
@@ -425,12 +481,12 @@ export function calculateSSM(data, threshold) {
     } else {
         // Calculate raw SSM: pitchSSM with 12 pitches, timbreSSM
         const ssmPitch = timed("ssmPitch", () =>
-            SSM.calculateSSM(data.pitchFeatures, data.sampleDuration, data.allPitches, threshold)
+            SSM.calculateSSM(data.pitchFeatures, data.sampleDuration, data.allPitches, threshold, similarityFunction)
         );
         const ssmTimbre = timed("ssmTimbre", () =>
-            SSM.calculateSSM(data.timbreFeatures, data.sampleDuration, false, threshold)
+            SSM.calculateSSM(data.timbreFeatures, data.sampleDuration, false, threshold, similarityFunction)
         );
-        return { ssmPitch, ssmTimbre };
+        return [ssmPitch, ssmTimbre];
     }
 }
 

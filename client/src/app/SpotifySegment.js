@@ -1,7 +1,7 @@
 import * as log from "../dev/log";
 import * as audioUtil from "./audioUtil";
 
-const tryRemovePercussion = true;
+const tryRemovePercussion = false;
 const equalizeBass = false;
 
 export default class SpotifySegment {
@@ -14,6 +14,7 @@ export default class SpotifySegment {
     loudness_end = 0;
 
     pitches = [];
+    noise = [];
     timbres = [];
     timbresScaled = [];
 
@@ -50,9 +51,17 @@ export default class SpotifySegment {
         const minDuration = 0.2;
         const decay = 0.5;
         const shortness = this.duration < minDuration ? 1 : decay - (this.duration - 0.15);
+
+        for (let p = 0; p < 12; p++) {
+            this.noise.push(
+                Math.max(0, this.pitches[(p + 11) % 12] + this.pitches[p] + this.pitches[(p + 1) % 12] - 2)
+            );
+        }
+
         this.percussiony = Math.max(Math.min(1, (1 - this.tonalityRadius) * this.tonalityEnergy * 2) * shortness, 0);
         this.percussiony = Math.max(0, Math.min(1, 1 - this.tonalityRadius * 6));
         this.percussiony = Math.max(0, Math.min(1, (1 - this.tonalityRadius) * this.tonalityEnergy));
+        this.percussiony = this.noise.reduce((sum, val) => sum + val / 12) * 2;
         this.processedPitch = true;
     }
 
@@ -62,7 +71,7 @@ export default class SpotifySegment {
         if (this.processedPitchSmooth) return;
         if (!this.processedPitch) throw Error("processed pitchSmooth called before setting initial pitch");
 
-        for (let p = 4; p < this.pitches.length; p++) {
+        for (let p = 0; p < this.pitches.length; p++) {
             this.pitches[p] =
                 (1 - this.percussiony) * this.pitches[p] +
                 (this.percussiony *

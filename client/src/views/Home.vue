@@ -101,6 +101,7 @@ export default {
             synthesizing: false,
             selectedTestSet: null,
             showPrototype: false,
+            contentRatio: 0.97,
         };
     },
     computed: {
@@ -132,7 +133,7 @@ export default {
             return Math.round((this.windowWidth - this.mainContentWidth) / 2 / 4) * 4;
         },
         mainContentWidth() {
-            const size = Math.min(this.windowWidth, this.windowHeight) * 0.85;
+            const size = Math.min(this.windowWidth, this.windowHeight) * this.contentRatio;
             return size;
         },
         allTestSets() {

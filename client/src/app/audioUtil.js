@@ -31,7 +31,7 @@ export const keyNames = [
 ];
 
 //https://www.vectorstock.com/royalty-free-vector/color-wheel-spectrum-scheme-selection-color-vector-25483441
-export const colorWheel = d3
+export const colorWheelOld = d3
     .scaleLinear()
     .domain([
         0,
@@ -63,6 +63,39 @@ export const colorWheel = d3
         d3.rgb("#7209AC"),
         d3.rgb("#CD0174"),
         d3.rgb("#FE0000"),
+    ]);
+export const colorWheel = d3
+    .scaleLinear()
+    .domain([
+        0,
+        1 / 12,
+        2 / 12,
+        3 / 12,
+        4 / 12,
+        5 / 12,
+        6 / 12,
+        7 / 12,
+        8 / 12,
+        9 / 12,
+        10 / 12,
+        11 / 12,
+        1,
+    ])
+    .interpolate(d3.interpolateHcl)
+    .range([
+        d3.rgb("#da321f"),
+        d3.rgb("#e06300"),
+        d3.rgb("#e89b00"),
+        d3.rgb("#ebcb03"),
+        d3.rgb("#9fbb04"),
+        d3.rgb("#2cbe03"),
+        d3.rgb("#03b779"),
+        d3.rgb("#06b3bd"),
+        d3.rgb("#3875cc"),
+        d3.rgb("#7503db"),
+        d3.rgb("#c203ae"),
+        d3.rgb("#e84b90"),
+        d3.rgb("#da321f"),
     ]);
 
 export function getNoteName(i) {

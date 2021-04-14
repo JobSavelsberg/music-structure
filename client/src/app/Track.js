@@ -76,6 +76,7 @@ export default class Track {
         this.trackData = trackData;
 
         if (trackData.groundTruth) {
+            log.debug("Ground truth for", this.getName());
             this.groundTruth = trackData.groundTruth;
         }
     }

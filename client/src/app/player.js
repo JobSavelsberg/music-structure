@@ -3,7 +3,7 @@ import { spotify } from "./app";
 import store from "../store";
 
 export const autoConnect = false;
-export let active = true;
+export let active = false;
 export let deviceId = null;
 let player = null;
 

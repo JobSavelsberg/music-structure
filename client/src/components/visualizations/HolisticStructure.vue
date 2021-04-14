@@ -27,7 +27,7 @@
                 :height="sectionHeight"
                 :scale="scale"
                 :showLoudness="showLoudness"
-                :coloring="'cluster'"
+                :coloring="'circular'"
                 :verticalOffset="paddingTop"
                 :loop="false"
             />
@@ -40,7 +40,7 @@
                     :scale="scale"
                     :verticalOffset="paddingTop + spaceBetweenCourseFine + sectionHeight * groupAmount(courseStructure)"
                     :showLoudness="showLoudness"
-                    :coloring="'cluster'"
+                    :coloring="'circular'"
                     :loop="false"
                 />
             </g>

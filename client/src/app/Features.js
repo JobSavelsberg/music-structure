@@ -20,6 +20,7 @@ export default class Features {
     raw = { pitches: [], timbres: [], loudness: [] };
     processed = {
         pitches: [],
+        noise: [],
         timbres: [],
         loudness: [],
         avgLoudness: [],
@@ -102,7 +103,8 @@ export default class Features {
             s.processPitch();
 
             this.processed.pitches.push(s.pitches);
-
+            this.processed.noise.push(s.noise);
+            
             this.processed.loudness.push(s.getLoudnessFeatures());
             const nextSegmentStartLoudness =
                 i + 1 < this.segments.length ? this.segments[i + 1].getLoudnessFeatures()[0] : 0;
