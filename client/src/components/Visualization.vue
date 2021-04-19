@@ -14,9 +14,13 @@
             </div>
             <div v-if="!showPrototype">
                 <HolisticStructure :width="width" />
-                <Tonality :width="width" />
-                <Chords :width="width" />
+                <!--div style="height: 200px"></div>-->
+
                 <TimbreSegmentedGraph :width="width" />
+                <Chords :width="width" />
+                                <Tonality :width="width" />
+
+                <div style="height: 600px"></div>
                 <TimbreStructure :width="width" />
                 <TimbreGraph :width="width" />
             </div>

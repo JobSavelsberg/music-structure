@@ -97,7 +97,7 @@ export default class Track {
 
         //this.tsne();
         //this.cluster();
-        this.calculateSSM();
+        //this.calculateSSM();
         this.computeChords();
         this.computeHarmonicStructure();
         this.computeTimbreStructure();

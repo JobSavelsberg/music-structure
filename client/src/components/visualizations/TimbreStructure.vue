@@ -43,7 +43,7 @@
                 :cx="eventSize + event.time * scale"
                 :cy="eventSize + event.mdsFeature * (eventHeight - eventSize * 2)"
                 :r="eventSize"
-                :fill="color(event, event.confidence + 0.3)"
+                :fill="color(event, event.confidence + 0.5)"
                 @click="clickEvent(event)"
             ></circle>
         </svg>
@@ -74,7 +74,7 @@ export default {
         return {
             paddingTop: 10,
             sectionHeight: 25,
-            eventSize: 5,
+            eventSize: 7,
             eventHeight: 30,
             showLoudness: true,
         };

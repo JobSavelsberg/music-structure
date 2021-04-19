@@ -1,7 +1,7 @@
 <template>
     <div class="py-1" v-if="hasStructure">
         <v-row>
-            <v-col>Timbre Segmented Graph</v-col>
+            <v-col>Timbre</v-col>
             <v-spacer></v-spacer>
             <v-btn icon small @click="showLoudness = !showLoudness" :color="showLoudness ? 'white' : 'dimgrey'">
                 <v-icon>mdi-equalizer</v-icon>
@@ -39,6 +39,8 @@
                 :containerHeight="height"
             />
         </svg>
+        <hr class="divider" />
+        <Events :width="width" />
     </div>
 </template>
 
@@ -47,6 +49,8 @@ import * as log from "../../dev/log";
 import * as vis from "../../app/vis";
 import Seeker from "./Seeker";
 import GraphSection from "./GraphSection";
+import Events from "./Events";
+
 import ClickableBackground from "./ClickableBackground";
 
 import * as testing from "../../app/testing";
@@ -60,6 +64,7 @@ export default {
         Seeker,
         GraphSection,
         ClickableBackground,
+        Events,
     },
     data() {
         return {
@@ -106,5 +111,11 @@ export default {
 <style scoped>
 .seeker {
     pointer-events: none;
+}
+.divider {
+    border: 1px solid #333333;
+    border-radius: 2px;
+    background: #333333;
+    margin: 20px 0px;
 }
 </style>

@@ -236,12 +236,12 @@ export default {
                     this.sectionHeight
                 );
                 this.ctx.fillStyle = this.color(keyDetection.circleOfFifthsAngle(this.keyFeature[i]), 1, 1);
-                this.ctx.fillRect(
+                /*this.ctx.fillRect(
                     x,
                     (this.sectionHeight + 2) * 2,
                     this.fastSampleDuration * this.scale + 2,
                     this.sectionHeight
-                );
+                );*/
             }
         },
         computeAccumulativeAngle(tonality) {
@@ -259,7 +259,7 @@ export default {
             }
             return accumulativeAngle;
         },
-        color(angle, saturation = 1, opacity = 1) {
+        color(angle, saturation = 1.3, opacity = 1) {
             if (angle < 0) angle += Math.abs(Math.floor(angle));
             return vis.circleOfFifthsColor(angle % 1, saturation, opacity);
         },
