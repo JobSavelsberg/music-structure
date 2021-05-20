@@ -1,29 +1,40 @@
-import Matrix from "ml-matrix";
-import HalfMatrix from "./dataStructures/Matrix";
+//import Matrix from "ml-matrix";
+//import HalfMatrix from "./dataStructures/Matrix";
 import * as log from "../dev/log";
 import seedrandom from "seedrandom";
 import numeric from "numeric";
 import { features } from "process";
-
-export function getMDSFeatureWithGradientDescent(
+const {
+    Matrix,
+    inverse,
+    solve,
+    linearDependencies,
+    QrDecomposition,
+    LuDecomposition,
+    CholeskyDecomposition,
+    EigenvalueDecomposition,
+    pseudoInverse,
+} = require("ml-matrix");
+export function getMDSFeature(
     distanceMatrix,
     { lr = 40, maxSteps = 20, minLossDifference = 1e-6, momentum = 0, logEvery = 5 } = {}
-){
+) {
     let feature = classicalMDS(distanceMatrix.getNestedArray(), 1);
-    feature = feature.map(val => val[0])
+    feature = feature.map((val) => val[0]);
 
     //normalize to [0, 1]
 
     let max = Math.max(...feature);
     let min = Math.min(...feature);
 
-    feature = feature.map(val => (val-min) / (max - min))
+    feature = feature.map((val) => (val - min) / (max - min));
 
     return feature;
 }
 
-export function getMdsCoordinatesWithGradientDescent(
+export function getMdsCoordinates(
     distanceMatrix,
+    strategy = "Classic",
     { lr = 40, maxSteps = 20, minLossDifference = 1e-6, momentum = 0, logEvery = 5 } = {}
 ) {
     // transform matrix to Matrix
@@ -43,10 +54,21 @@ export function getMdsCoordinatesWithGradientDescent(
         logEvery,
     });*/
 
-    const coords = classicalMDS(distanceMatrix.getNestedArray(), 2);
-
-
-    //const coords = mlCoordinates.coordinates.data;
+    //const coordsOld = classicalMDS(distanceMatrix.getNestedArray(), 2);
+    //log.debug("oldcoords", coordsOld);
+    let coords;
+    switch (strategy) {
+        case "Classic": // fastest
+            coords = classicalMDS(distanceMatrix.getNestedArray(), 2);
+            break;
+        case "GD": //best
+            coords = getMdsCoordinatesWithGradientDescentMatrix(new Matrix(distanceMatrix.getNestedArray())).coordinates
+                .data;
+            break;
+        case "GN": //slowest
+            coords = getMdsCoordinatesWithGaussNewton(new Matrix(distanceMatrix.getNestedArray())).coordinates.data;
+            break;
+    }
     let centerX = 0;
     let centerY = 0;
 
@@ -60,6 +82,19 @@ export function getMdsCoordinatesWithGradientDescent(
         coords[i][0] -= centerX;
         coords[i][1] -= centerY;
     }
+
+    // scale by largest
+    let maxRadius = 0;
+    for (let i = 0; i < coords.length; i++) {
+        const coord = coords[i];
+        const radius = Math.sqrt(coord[0] * coord[0] + coord[1] + coord[1]);
+        if (radius > maxRadius) maxRadius = radius;
+    }
+
+    for (let i = 0; i < coords.length; i++) {
+        coords[i] = [coords[i][0] / maxRadius, coords[i][1] / maxRadius];
+    }
+
     return coords;
 }
 
@@ -106,7 +141,7 @@ export function getMdsCoordinatesWithGradientDescent(
  */
 function getMdsCoordinatesWithGradientDescentMatrix(
     distances,
-    { lr = 3, maxSteps = 200, minLossDifference = 1e-7, momentum = 0, logEvery = 25 } = {}
+    { lr = 4, maxSteps = 1000, minLossDifference = 1e-7, momentum = 0, logEvery = 10 } = {}
 ) {
     const numCoordinates = distances.rows;
     let coordinates = getInitialMdsCoordinates(numCoordinates);
@@ -164,10 +199,11 @@ function getMdsCoordinatesWithGradientDescentMatrix(
  * @param {!number} logEvery - if larger than zero, this value determines the
  *   steps between logs to the console.
  * @returns {{coordinates: Matrix, lossPerStep: number[]}}
+ * { lr = 0.1, maxSteps = 200, minLossDifference = 1e-7, logEvery = 0 }
  */
 function getMdsCoordinatesWithGaussNewton(
     distances,
-    { lr = 0.1, maxSteps = 200, minLossDifference = 1e-7, logEvery = 0 } = {}
+    { lr = 0.7, maxSteps = 100, minLossDifference = 0.0001, logEvery = 5 } = {}
 ) {
     const numCoordinates = distances.rows;
     let coordinates = getInitialMdsCoordinates(numCoordinates);
@@ -193,7 +229,7 @@ function getMdsCoordinatesWithGaussNewton(
 
         // Apply the update.
         const { residuals, jacobian } = getResidualsWithJacobian(distances, coordinates);
-        const update = Matrix.pseudoInverse(jacobian).mmul(residuals);
+        const update = pseudoInverse(jacobian).mmul(residuals);
         for (let coordIndex = 0; coordIndex < numCoordinates; coordIndex++) {
             for (let dimension = 0; dimension < dimensions; dimension++) {
                 const updateIndex = coordIndex * dimensions + dimension;
@@ -401,11 +437,11 @@ function classicalMDS(distances, dimensions) {
     });
 }
 
-export function getAngleAndRadius(mdsCoordinate){
-    const x = mdsCoordinate[0]
+export function getAngleAndRadius(mdsCoordinate) {
+    const x = mdsCoordinate[0];
     const y = mdsCoordinate[1];
-    let angle = Math.atan2(y,x) / (2 * Math.PI);
+    let angle = Math.atan2(y, x) / (2 * Math.PI);
     angle = angle < 0 ? 1 + angle : angle;
-    const radius = Math.sqrt(Math.pow(x,2) + Math.pow(y,2));
+    const radius = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
     return [angle, radius];
 }

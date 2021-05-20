@@ -157,10 +157,10 @@ export default class SpotifySegment {
     }
     getLoudnessFeatures() {
         return [
-            audioUtil.loudness(this.loudness_start),
-            audioUtil.loudness(this.loudness_max),
+            audioUtil.loudnessPerceived(this.loudness_start),
+            audioUtil.loudnessPerceived(this.loudness_max),
             this.loudness_max_time,
-            audioUtil.loudness(this.loudness_end),
+            audioUtil.loudnessPerceived(this.loudness_end),
         ];
     }
     getAverageLoudness(nextSegmentLoudness) {

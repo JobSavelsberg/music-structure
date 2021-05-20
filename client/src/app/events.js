@@ -35,8 +35,8 @@ export function color(events) {
     distanceMatrix.fill((x, y) => {
         return similarity.cosine(events[x].timbre, events[y].timbre);
     });
-    const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
-    const MdsFeature = mds.getMDSFeatureWithGradientDescent(distanceMatrix);
+    const MdsCoordinates = mds.getMdsCoordinates(distanceMatrix);
+    const MdsFeature = mds.getMDSFeature(distanceMatrix);
     events.forEach((event, index) => {
         const [angle, radius] = mds.getAngleAndRadius(MdsCoordinates[index]);
         event.colorAngle = angle;

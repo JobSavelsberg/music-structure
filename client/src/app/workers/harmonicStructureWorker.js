@@ -20,24 +20,18 @@ addEventListener("message", (event) => {
         { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: "linmed" },
         data.allPitches
     );
+    const colormatrix = SSM.rowColumnAutoThreshold(enhancedSSM, 0.1);
     const transpositionInvariantPre = SSM.makeTranspositionInvariant(enhancedSSM);
-    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.4);
-    strictPathMatrixHalf = SSM.multiply(strictPathMatrixHalf, 1.1);
-    strictPathMatrixHalf = SSM.threshold(strictPathMatrixHalf, 0.15);
+    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.17);
+    //strictPathMatrixHalf = SSM.multiply(strictPathMatrixHalf, 1.1);
     const strictPathMatrix = Matrix.fromHalfMatrix(strictPathMatrixHalf);
 
-    const duration = 4; // samples
+    const duration = 3; // samples
     const sampledSegments = structure.createFixedDurationStructureSegments(sampleAmount, data.sampleDuration, duration);
 
-    const updateCallback = (harmonicStructure, state = "processing") => {
-        const harmonicStructureMDS = structure.MDSColorSegments(harmonicStructure, strictPathMatrix);
-        const sortedHarmonicStructureMDS = harmonicStructureMDS.sort((a, b) => {
-            if (a.groupID < b.groupID) return -1;
-            if (b.groupID < a.groupID) return 1;
-            if (a.groupID === b.groupID) {
-                return a.start - b.start;
-            }
-        });
+    const updateCallback = (harmonicStructure, state = "processing", strategy = "Classic") => {
+        log.debug("HarmoniccStructure", harmonicStructure);
+        const sortedHarmonicStructureMDS = colorHarmonicStructure(harmonicStructure, colormatrix, strategy);
 
         sortedHarmonicStructureMDS.forEach((section) => {
             const startInSamples = Math.floor(section.start / data.sampleDuration);
@@ -48,7 +42,7 @@ addEventListener("message", (event) => {
 
         postMessage({ state, harmonicStructure: sortedHarmonicStructureMDS });
     };
-    const [harmonicStructure, mutorGroupAmount, segmentsMutor] = structure.findMuteDecomposition(
+    let [harmonicStructure, mutorGroupAmount, segmentsMutor] = structure.findMuteDecomposition(
         strictPathMatrix,
         sampledSegments,
         data.sampleDuration,
@@ -56,5 +50,19 @@ addEventListener("message", (event) => {
         "or",
         updateCallback
     );
-    updateCallback(harmonicStructure, "done");
+
+    updateCallback(harmonicStructure, "done", "GD");
 });
+
+function colorHarmonicStructure(harmonicStructure, ssm, strategy) {
+    log.debug(strategy);
+    const harmonicStructureMDS = structure.MDSColorSegments(harmonicStructure, ssm, "DTW", strategy);
+    const sortedHarmonicStructureMDS = harmonicStructureMDS.sort((a, b) => {
+        if (a.groupID < b.groupID) return -1;
+        if (b.groupID < a.groupID) return 1;
+        if (a.groupID === b.groupID) {
+            return a.start - b.start;
+        }
+    });
+    return sortedHarmonicStructureMDS;
+}

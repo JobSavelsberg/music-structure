@@ -185,6 +185,7 @@ function gaussianSmoothing(ssm, length, tempoRatio) {
     for (let i = -blur; i < 1 + blur; i++) {
         tempos[i + blur] = Math.round(i * tempoRatio);
     }
+    //const lengthRatio = 1/Math.sqrt(1+tempoRatio);
 
     smoothedSSM.fillFeatures((x, y, f) => {
         let sum = 0;
@@ -300,6 +301,70 @@ export function threshold(ssm, threshold) {
             return 0;
         } else {
             return (originalValue - threshold) / (1 - threshold);
+        }
+    });
+
+    return thresholdSSM;
+}
+export function rowColumnAutoThresholdBinary(ssm, percentageRow, percentageCol = percentageRow) {
+    const typeScale = ssm.numberType.scale;
+
+    const rowBinaryMatrix = new HalfMatrix({ size: ssm.size, numberType: NumberType.UINT8 });
+    const colBinaryMatrix = new HalfMatrix({ size: ssm.size, numberType: NumberType.UINT8 });
+    let frequencies = new Uint16Array(typeScale + 1);
+
+    for (let row = 0; row < ssm.size; row++) {
+        frequencies.fill(0);
+        for (let col = 0; col < ssm.size; col++) {
+            frequencies[ssm.getValueMirrored(col, row)]++;
+        }
+        let stopPosition = ssm.size * percentageRow;
+        let thresholdValue = 0;
+        for (let i = typeScale; i > 0; i--) {
+            stopPosition -= frequencies[i];
+            if (stopPosition <= 0) {
+                thresholdValue = i;
+                break;
+            }
+        }
+        for (let col = 0; col <= row; col++) {
+            if (ssm.getValue(col, row) >= thresholdValue) {
+                rowBinaryMatrix.setValue(col, row, 1);
+            } else {
+                rowBinaryMatrix.setValue(col, row, 0);
+            }
+        }
+    }
+
+    for (let col = 0; col < ssm.size; col++) {
+        frequencies.fill(0);
+        for (let row = 0; row < ssm.size; row++) {
+            frequencies[ssm.getValueMirrored(col, row)]++;
+        }
+        let stopPosition = ssm.size * percentageCol;
+        let thresholdValue = 0;
+        for (let i = typeScale; i > 0; i--) {
+            stopPosition -= frequencies[i];
+            if (stopPosition <= 0) {
+                thresholdValue = i;
+                break;
+            }
+        }
+
+        for (let row = col; row <= ssm.size; row++) {
+            if (ssm.getValue(col, row) >= thresholdValue) {
+                colBinaryMatrix.setValue(col, row, 1);
+            } else {
+                colBinaryMatrix.setValue(col, row, 0);
+            }
+        }
+    }
+    const thresholdSSM = HalfMatrix.from(ssm);
+    thresholdSSM.fill((x, y) => {
+        if (rowBinaryMatrix.getValue(x, y) > 0 && colBinaryMatrix.getValue(x, y) > 0) {
+            return ssm.getValueMirrored(x, y);
+        } else {
+            return ssm.getValueMirrored(x, y);
         }
     });
 

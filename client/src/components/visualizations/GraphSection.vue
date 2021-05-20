@@ -136,8 +136,8 @@ export default {
         width() {
             return Math.max(1, (this.section.end - this.section.start) * this.scale - 2);
         },
-        smoothedAvgLoudness() {
-            return this.track && this.track.features.sampled.smoothedAvgLoudness;
+        dynamicsArray() {
+            return this.track && this.track.features.sampled.dynamics;
         },
         directLoudness() {
             return this.track && this.track.features.directLoudness;
@@ -164,7 +164,7 @@ export default {
                     const y = (1 - point) * (this.containerHeight - this.height) + halfHeight;
                     const w =
                         (this.showLoudness
-                            ? this.loudness(Math.round(xTime / this.track.features.sampleDuration))
+                            ? this.dynamics(Math.round(xTime / this.track.features.sampleDuration))
                             : 1) *
                         this.height *
                         this.strokeWidth;
@@ -195,12 +195,12 @@ export default {
     watch: {},
     mounted() {},
     methods: {
-        loudness(sample) {
-            return this.smoothedAvgLoudness[sample] / this.track.features.maxLoudness || 0;
+        dynamics(sample) {
+            return (this.dynamicsArray && this.dynamicsArray[sample]) || 0;
         },
         loudnessTime(time) {
             const sample = Math.floor(time / this.track.features.sampleDuration);
-            return this.smoothedAvgLoudness[sample] / this.track.features.maxLoudness || 0;
+            return this.dynamicsArray[sample] / this.track.features.maxLoudness || 0;
         },
         directLoudnessTime(time) {
             const sample = Math.floor(time / this.track.features.directLoudnessSampleDuration);

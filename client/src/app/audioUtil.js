@@ -66,21 +66,7 @@ export const colorWheelOld = d3
     ]);
 export const colorWheel = d3
     .scaleLinear()
-    .domain([
-        0,
-        1 / 12,
-        2 / 12,
-        3 / 12,
-        4 / 12,
-        5 / 12,
-        6 / 12,
-        7 / 12,
-        8 / 12,
-        9 / 12,
-        10 / 12,
-        11 / 12,
-        1,
-    ])
+    .domain([0, 1 / 12, 2 / 12, 3 / 12, 4 / 12, 5 / 12, 6 / 12, 7 / 12, 8 / 12, 9 / 12, 10 / 12, 11 / 12, 1])
     .interpolate(d3.interpolateHcl)
     .range([
         d3.rgb("#da321f"),
@@ -222,10 +208,12 @@ export function tonalVectorColor(pitches) {
     color.s = saturation;
     return color.hex();
 }
-
 export function loudness(db) {
-    const l = Math.max(0, 60 + db) / 60;
-    return l * l;
+    return Math.max(0, 60 + db) / 60;
+}
+
+export function loudnessPerceived(db) {
+    return Math.pow(2, db / 10);
 }
 
 export function logCompression(value, gamma = 1) {

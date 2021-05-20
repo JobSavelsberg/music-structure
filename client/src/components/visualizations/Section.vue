@@ -55,6 +55,7 @@ export default {
             glowOpacity: 0.4,
             glowSize: 6,
             seekerWasInSection: false,
+            noLoudness: 0.8,
         };
     },
     computed: {
@@ -77,9 +78,9 @@ export default {
             switch (this.coloring) {
                 default:
                 case "cluster" || "group":
-                    return vis.goldenRatioCategoricalColor(this.section.groupID, 0);
+                    return vis.goldenRatioCategoricalColor(this.section.groupID, 0, 1);
                 case "circular":
-                    return vis.sinebowColorNormalizedRadius(this.section.colorAngle, 1, 1);
+                    return vis.sinebowColorNormalizedRadius(this.section.colorAngle, this.section.colorRadius, 1);
                 case "linear":
                     return vis.zeroOneColorWarm(this.section.mdsFeature);
             }
@@ -99,9 +100,6 @@ export default {
         },
         width() {
             return Math.max(1, (this.section.end - this.section.start) * this.scale - 2);
-        },
-        smoothedAvgLoudness() {
-            return this.track && this.track.features.sampled.smoothedAvgLoudness;
         },
         directLoudness() {
             return this.track && this.track.features.directLoudness;
@@ -129,14 +127,14 @@ export default {
             }
 
             const firstSample = Math.round((this.x + roundoff) / this.scale / this.track.features.sampleDuration);
-            const firstLoudness = this.showLoudness ? this.loudness(firstSample) : 1;
+            const firstLoudness = this.showLoudness ? this.dynamics(firstSample) : this.noLoudness;
             const firstYMid = yMid(this.section.start);
 
             let lastSample = Math.floor(
                 (this.x + this.width - roundoff) / this.scale / this.track.features.sampleDuration
             );
 
-            const lastLoudness = this.showLoudness ? this.loudness(lastSample) : 1;
+            const lastLoudness = this.showLoudness ? this.dynamics(lastSample) : this.noLoudness;
             const lastYMid = yMid(this.section.end);
 
             let path = `M ${this.x} ${Math.round(firstYMid)} L ${this.x} ${firstYMid -
@@ -147,10 +145,12 @@ export default {
             const endFraction = 1 - roundoff / this.width;
 
             // Top
+            const pointXSet = [];
             for (let i = startFraction + step; i < endFraction - step; i += step) {
                 const pointX = this.x + i * this.width;
+                pointXSet.push(pointX);
                 const sample = Math.round(pointX / this.scale / this.track.features.sampleDuration);
-                const loudness = this.showLoudness ? this.loudness(sample) : 1;
+                const loudness = this.showLoudness ? this.dynamics(sample) : this.noLoudness;
                 const pointY = yMid(pointX / this.scale) - halfHeight * loudness;
                 path = path.concat(" L ", pointX, " ", pointY);
             }
@@ -166,10 +166,10 @@ export default {
             );
 
             // Bottom
-            for (let i = endFraction - step; i > startFraction + step; i -= step) {
-                const pointX = this.x + i * this.width;
+            pointXSet.reverse();
+            for (const pointX of pointXSet) {
                 const sample = Math.round(pointX / this.scale / this.track.features.sampleDuration);
-                const loudness = this.showLoudness ? this.loudness(sample) : 1;
+                const loudness = this.showLoudness ? this.dynamics(sample) : this.noLoudness;
                 const pointY = yMid(pointX / this.scale) + halfHeight * loudness;
                 path = path.concat(" L ", pointX, " ", pointY);
             }
@@ -202,12 +202,12 @@ export default {
     },
     mounted() {},
     methods: {
-        loudness(sample) {
-            return this.smoothedAvgLoudness[sample] / this.track.features.maxLoudness || 0;
+        dynamics(sample) {
+            return this.track.features.sampled.dynamics[sample];
         },
         loudnessTime(time) {
             const sample = Math.floor(time / this.track.features.sampleDuration);
-            return this.smoothedAvgLoudness[sample] / this.track.features.maxLoudness || 0;
+            return this.dynamics(sample);
         },
         directLoudnessTime(time) {
             const sample = Math.floor(time / this.track.features.directLoudnessSampleDuration);

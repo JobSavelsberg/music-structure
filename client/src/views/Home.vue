@@ -71,6 +71,7 @@
         </v-app-bar>
         <TrackSelector v-if="!synthesizing" :tracks="trackList" :album-size="120" />
         <div ref="mainContent" class="mainContent" :style="mainContentStyle">
+            <!--<v-btn v-for="(n, i) in 10" :key="'colordiv' + i" width="20" height="20" :color="color(i)"></v-btn>-->
             <Player v-if="!synthesizing" :width="mainContentWidth" />
             <Visualization :width="mainContentWidth" :showPrototype="showPrototype" />
         </div>
@@ -85,6 +86,7 @@ import * as app from "../app/app";
 import * as auth from "../app/authentication";
 import * as player from "../app/player";
 import * as testing from "../app/testing";
+import * as vis from "../app/vis";
 
 import * as log from "../dev/log";
 export default {
@@ -101,7 +103,7 @@ export default {
             synthesizing: false,
             selectedTestSet: null,
             showPrototype: false,
-            contentRatio: 0.97,
+            contentRatio: 0.97, //0.5
         };
     },
     computed: {
@@ -189,6 +191,9 @@ export default {
         document.removeEventListener("keydown", this._keyListener);
     },
     methods: {
+        color(i) {
+            return vis.goldenRatioCategoricalColor(i, 0, 1);
+        },
         search() {
             app.search(this.searchQuery);
         },

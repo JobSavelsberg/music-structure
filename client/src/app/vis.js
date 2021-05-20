@@ -6,25 +6,9 @@ import * as Track from "./Track";
 
 const PHI = (1 + Math.sqrt(5)) / 2;
 
-
-
-    export const colorWheel = d3
+export const colorWheel = d3
     .scaleLinear()
-    .domain([
-        0,
-        1 / 12,
-        2 / 12,
-        3 / 12,
-        4 / 12,
-        5 / 12,
-        6 / 12,
-        7 / 12,
-        8 / 12,
-        9 / 12,
-        10 / 12,
-        11 / 12,
-        1,
-    ])
+    .domain([0, 1 / 12, 2 / 12, 3 / 12, 4 / 12, 5 / 12, 6 / 12, 7 / 12, 8 / 12, 9 / 12, 10 / 12, 11 / 12, 1])
     .interpolate(d3.interpolateHcl)
     .range([
         d3.rgb("#da321f"),
@@ -81,10 +65,10 @@ export const divergingColor = d3
     .domain([-1, 0, 1])
     .interpolator(d3.interpolateRdBu);
 
-export function goldenRatioCategoricalColor(i, offset) {
+export function goldenRatioCategoricalColor(i, offset, opacity) {
     const angle = (offset - i * PHI) % 1;
-    const color = sinebowColorNormalized(angle);
-    return color;
+    const c = d3.rgb(sinebowColorNormalized(angle));
+    return `rgba(${c.r},${c.g},${c.b},${opacity})`;
 }
 
 export const categoryColor = d3.scaleOrdinal().range(d3.schemeCategory10);
@@ -249,9 +233,9 @@ export function renderWaveform(ctx, x, y, width, height, track, options = {}) {
         ctx.moveTo(0, height);
         segments.forEach((segment) => {
             const startTime = segment.start * scale;
-            const startVolume = audioUtil.loudness(segment.loudness_start) * height;
+            const startVolume = audioUtil.loudnessPerceived(segment.loudness_start) * height;
             const maxTime = (segment.start + segment.loudness_max_time) * scale;
-            const maxVolume = audioUtil.loudness(segment.loudness_max) * height;
+            const maxVolume = audioUtil.loudnessPerceived(segment.loudness_max) * height;
 
             ctx.lineTo(startTime, height - startVolume);
             ctx.lineTo(maxTime, height - maxVolume);
@@ -264,7 +248,7 @@ export function renderWaveform(ctx, x, y, width, height, track, options = {}) {
         segments.forEach((segment) => {
             ctx.fillRect(
                 segment.start * scale,
-                y + (1 - audioUtil.loudness(segment.loudness_max)) * height,
+                y + (1 - audioUtil.loudnessPerceived(segment.loudness_max)) * height,
                 segment.duration * scale,
                 y + height
             );

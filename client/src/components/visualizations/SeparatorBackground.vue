@@ -1,16 +1,17 @@
 <template>
     <g>
-        <g v-for="(separator, index) in track.separators" :key="separator.start">
+        <g v-for="(separator, index) in separators" :key="separator.start">
             <defs>
                 <linearGradient :id="`backgroundGradient${index}`" x1="0" x2="0" y1="0" y2="1">
                     <stop offset="0%" :style="`stop-color:${backgroundColor(separator)};stop-opacity:1`" />
-                    <stop offset="100%" :style="`stop-color:${backgroundColor(separator)};stop-opacity:0`" />
+                    <stop offset="100%" :style="`stop-color:${backgroundColor(separator)};stop-opacity:1`" />
                 </linearGradient>
             </defs>
             <rect
+                v-if="showBackground"
                 class="background"
                 :key="separator.start + 'bg'"
-                :x="separator.start * scale"
+                :x="separator.start * scale - 1"
                 :y="0"
                 :width="(separator.end - separator.start) * scale"
                 :height="height"
@@ -19,8 +20,9 @@
             >
             </rect>
             <rect
+                v-if="showSeparators"
                 class="separator"
-                :x="separator.start * scale"
+                :x="separator.start * scale - 1"
                 :y="0"
                 :width="3"
                 :height="height"
@@ -48,23 +50,18 @@ export default {
         track() {
             return this.$store.getters.selectedTrack;
         },
+        separators() {
+            return this.track.separatorGenerator();
+        },
     },
     watch: {},
     mounted() {},
     methods: {
         backgroundColor(separator) {
-            return vis.sinebowColorNormalizedRadius(
-                separator.colorAngle,
-                1,
-                this.backgroundOpacity * this.showBackground
-            );
+            return vis.goldenRatioCategoricalColor(separator.groupID, 0, 0.2);
         },
         separatorColor(separator) {
-            return vis.sinebowColorNormalizedRadius(
-                separator.colorAngle,
-                1,
-                (separator.confidence * 0.9 + 0.1) * this.showSeparators
-            );
+            return vis.goldenRatioCategoricalColor(separator.groupID, 0, 0.5);
         },
         click(event) {
             let xNormalized = 0;

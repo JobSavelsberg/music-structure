@@ -24,6 +24,7 @@ export default class Features {
         timbres: [],
         loudness: [],
         avgLoudness: [],
+        dynamics: [],
         tonalEnergy: [],
         tonalRadius: [],
         tonalAngle: [],
@@ -49,6 +50,8 @@ export default class Features {
 
     maxLoudness;
     averageLoudness;
+
+    dynamicsBase = 0.12;
 
     constructor(analysisData, options = {}) {
         this.duration = analysisData.track.duration;
@@ -104,11 +107,13 @@ export default class Features {
 
             this.processed.pitches.push(s.pitches);
             this.processed.noise.push(s.noise);
-            
+
             this.processed.loudness.push(s.getLoudnessFeatures());
             const nextSegmentStartLoudness =
                 i + 1 < this.segments.length ? this.segments[i + 1].getLoudnessFeatures()[0] : 0;
             this.processed.avgLoudness.push(s.getAverageLoudness(nextSegmentStartLoudness));
+            this.processed.dynamics.push(s.getAverageLoudness(nextSegmentStartLoudness));
+
             s.processTimbre(this.timbreMin, this.timbreMax, this.timbreBiggest, this.timbreTotalBiggest);
             const timbres = [];
             for (let t = 0; t < 12; t++) {
@@ -212,6 +217,19 @@ export default class Features {
                 this.maxLoudness = loudness;
             }
         });
+        log.debug("Maxloudness", this.maxLoudness);
+        log.debug(this.sampled.dynamics[0]);
+        log.debug(this.sampled.dynamics[0] / this.maxLoudness);
+        log.debug((this.sampled.dynamics[0] / this.maxLoudness) * (1 - this.dynamicsBase) + this.dynamicsBase);
+
+        this.processed.dynamics = this.processed.dynamics.map((dynamic) => {
+            return (dynamic / this.maxLoudness) * (1 - this.dynamicsBase) + this.dynamicsBase;
+        });
+        this.sampled.dynamics = this.sampled.dynamics.map((dynamic) => {
+            return (dynamic / this.maxLoudness) * (1 - this.dynamicsBase) + this.dynamicsBase;
+        });
+        log.debug(this.sampled.dynamics[0]);
+
         this.averageLoudness /= this.sampled.smoothedAvgLoudness.length;
     }
 

@@ -848,16 +848,50 @@ export function groupSimilarSegments(segments, pathSSM, maxDistance = 0.8) {
     return groupedSegments;
 }
 
-export function MDSColorSegments(segments, pathSSM) {
+export function MDSColorSegments(segments, pathSSM, strategy = "overlap", coloringStrategy) {
     if (segments.length === 0) return segments;
-    const distanceMatrix = pathExtraction.getDistanceMatrix(segments, pathSSM);
-    return MDSColorGivenDistanceMatrix(segments, distanceMatrix);
+
+    const distanceMatrix = pathExtraction.getDistanceMatrix(segments, pathSSM, strategy);
+    return MDSColorGivenDistanceMatrix(segments, distanceMatrix, coloringStrategy);
 }
 
-export function MDSColorGivenDistanceMatrix(segments, distanceMatrix) {
+export function MDSColorSegmentsPerGroup(segments, pathSSM, strategy = "overlap", coloringStrategy) {
+    if (segments.length === 0) return segments;
+
+    const segmentGroups = [];
+    segments.forEach((segment) => {
+        if (!segmentGroups[segment.groupID]) {
+            segmentGroups[segment.groupID] = [];
+        }
+        segmentGroups[segment.groupID].push(segment);
+    });
+
     const coloredSegments = [];
-    const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
-    const MdsFeature = mds.getMDSFeatureWithGradientDescent(distanceMatrix);
+    segmentGroups.forEach((segmentGroup) => {
+        const distanceMatrix = pathExtraction.getDistanceMatrix(segmentGroup, pathSSM, strategy);
+        const distanceMatrixPlus = new HalfMatrix({
+            size: segmentGroup.length + 1,
+            numberType: HalfMatrix.NumberType.FLOAT32,
+        });
+        distanceMatrixPlus.fill((x, y) => {
+            if (x >= segmentGroup.length || y >= segmentGroup.length) {
+                if (x === y) {
+                    return 0;
+                }
+                return 1;
+            }
+            return Math.pow(distanceMatrix.getValue(x, y), 4);
+        });
+        const groupSegmentsColored = MDSColorGivenDistanceMatrix(segmentGroup, distanceMatrix, coloringStrategy);
+        coloredSegments.push(...groupSegmentsColored);
+    });
+    return coloredSegments;
+}
+
+export function MDSColorGivenDistanceMatrix(segments, distanceMatrix, coloringStrategy) {
+    const coloredSegments = [];
+    const MdsCoordinates = mds.getMdsCoordinates(distanceMatrix, coloringStrategy);
+    const MdsFeature = mds.getMDSFeature(distanceMatrix);
 
     segments.forEach((segment, index) => {
         const [angle, radius] = mds.getAngleAndRadius(MdsCoordinates[index]);
@@ -1137,8 +1171,8 @@ export function MDSColorTimbreSamples(timbreFeatures) {
     distanceMatrix.fill((x, y) => {
         return similarity.cosine(timbreFeatures[x], timbreFeatures[y]);
     });
-    //const MdsCoordinates = mds.getMdsCoordinatesWithGradientDescent(distanceMatrix);
-    const MdsFeature = mds.getMDSFeatureWithGradientDescent(distanceMatrix);
+    //const MdsCoordinates = mds.getMdsCoordinates(distanceMatrix);
+    const MdsFeature = mds.getMDSFeature(distanceMatrix);
 
     const coloredSamples = [];
 

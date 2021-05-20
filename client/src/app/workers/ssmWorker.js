@@ -8,6 +8,8 @@ import * as pathExtraction from "../pathExtraction";
 import * as events from "../events";
 import * as uniqueness from "../uniqueness";
 import * as homogenous from "../homogenous";
+import * as audioUtil from "../audioUtil";
+
 import * as Features from "../Features";
 
 import Matrix from "../dataStructures/Matrix";
@@ -22,7 +24,12 @@ addEventListener("message", (event) => {
 
     const averageLoudness = new Float32Array(data.avgLoudness);
     const smoothedAverageLoudness = filter.gaussianBlur1D(averageLoudness, 3);
+    smoothedAverageLoudness[0] = 0;
     graphs.push({ name: "Average Loudness " + 3, buffer: smoothedAverageLoudness.buffer });
+    const perceivedAverageLoudness = smoothedAverageLoudness.map((val) => (val + 0.1) / (1 + 0.1));
+    perceivedAverageLoudness[0] = 0;
+
+    graphs.push({ name: "Perceived Loudness " + 3, buffer: perceivedAverageLoudness.buffer });
 
     const anomalyFeature = uniqueness.computeFromFeaturesGMM(data.timbreFeatures);
     graphs.push({ name: "Timbre Anomalies", buffer: new Float32Array(anomalyFeature).buffer });
@@ -54,10 +61,10 @@ addEventListener("message", (event) => {
     matrixes.push({ name: "PitchNothing", buffer: Matrix.fromHalfMatrix(ssmPitchOOG).getBuffer() });
 
     //createBeatGraph(data, graphs);
-    data.pitchFeatures = filter.gaussianBlurFeatures(data.pitchFeatures, 2); //3 6 12
+    data.pitchFeatures = filter.gaussianBlurFeatures(data.pitchFeatures, 1); //3 6 12
 
     const [ssmPitch, ssmTimbre] = calculateSSM(data, 0.35, "euclidean");
-    ssmPitch.changeDistribution(-0.4, 2.1);
+    //ssmPitch.changeDistribution(-0.4, 2.1);
     log.debug("Featureblur Mean, SD:", ssmPitch.getMeanAndStandardDeviation());
 
     matrixes.push({ name: "Pitch", buffer: Matrix.fromHalfMatrix(ssmPitch).getBuffer() });
@@ -88,8 +95,9 @@ addEventListener("message", (event) => {
     // Enhance pitch SSM, diagonal smoothing, still contains 12 pitches
 
     // data.enhanceBlurLength
-    data.enhanceBlurLength = 8;
-    //data.tempoRatios = [1.5];
+    //data.enhanceBlurLength = 14;
+    //data.tempoRatios = [.5, .66, .75, .81, 1, 1.25, 1.33, 1.5, 2];
+    //data.tempoRatios = [1]
     const strategy = "linmed";
     // data.tempoRatios
     // linmed
@@ -128,8 +136,14 @@ addEventListener("message", (event) => {
     const transpositionInvariantPre = SSM.makeTranspositionInvariant(enhancedSSM);
 
     // Threshold the ssm to only show important paths
-    const transpositionInvariant = SSM.rowColumnAutoThreshold(transpositionInvariantPre, data.thresholdPercentage);
+    //transpositionInvariant = SSM.multiply(transpositionInvariant, 1.1);
+    let transpositionInvariant = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.17);
+    //transpositionInvariant = SSM.threshold(transpositionInvariant, 0.15);
     matrixes.push({ name: "Transinv", buffer: transpositionInvariant.getBuffer() });
+
+    const colormatrix = SSM.rowColumnAutoThreshold(enhancedSSM, 0.3);
+    //transpositionInvariant = SSM.threshold(transpositionInvariant, 0.15);
+    matrixes.push({ name: "colormatrix", buffer: colormatrix.getBuffer() });
 
     const fullTranspositionInvariant = Matrix.fromHalfMatrix(transpositionInvariant);
 
@@ -141,8 +155,14 @@ addEventListener("message", (event) => {
     //showAllEnhancementMethods(ssmPitch, data, matrixes);
 
     // 15 15 for mazurka
+    //let normalThresholdPath = SSM.threshold(transpositionInvariantPre, 0.33);
 
-    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.4);
+    /*matrixes.push({
+        name: ".33",
+        buffer: normalThresholdPath.getBuffer(),
+    });*/
+    //let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.21);
+
     /*matrixes.push({
         name: "RowCol",
         buffer: Matrix.fromHalfMatrix(strictPathMatrixHalf).getBuffer(),
@@ -155,14 +175,15 @@ addEventListener("message", (event) => {
         buffer: Matrix.fromHalfMatrix(strictPathMatrixHalf).getBuffer(),
     });*/
 
-    strictPathMatrixHalf = SSM.threshold(strictPathMatrixHalf, 0.1);
-    strictPathMatrixHalf = SSM.multiply(strictPathMatrixHalf, 1.3);
+    //strictPathMatrixHalf = SSM.threshold(strictPathMatrixHalf, 0.1);
+    //strictPathMatrixHalf = SSM.multiply(strictPathMatrixHalf, 1.3);
 
-    log.debug("Mean, SD:", strictPathMatrixHalf.getMeanAndStandardDeviation());
-    const strictPathMatrix = Matrix.fromHalfMatrix(strictPathMatrixHalf);
+    //log.debug("Mean, SD:", transpositionInvariant.getMeanAndStandardDeviation());
+    const strictPathMatrix = fullTranspositionInvariant;
+    //visualizePathExtraction(strictPathMatrix, 231, 265, matrixes);
 
     matrixes.push({
-        name: "StrictPath",
+        name: "Rowcol",
         buffer: strictPathMatrix.getBuffer(),
     });
 
@@ -211,10 +232,10 @@ addEventListener("message", (event) => {
     //structures.push({ name: "Fine segments", data: fineSegments })
 
     if (!data.synthesized) {
-        const courseSegmentColored = structure.MDSColorSegments(courseSegments, strictPathMatrix);
+        const courseSegmentColored = structure.MDSColorSegments(courseSegments, strictPathMatrix, "overlap");
         structures.push({ name: "Course Segment MDS colored", data: courseSegmentColored });
 
-        const fineSegmentColored = structure.MDSColorSegments(fineSegments, strictPathMatrix);
+        const fineSegmentColored = structure.MDSColorSegments(fineSegments, strictPathMatrix, "overlap");
         structures.push({ name: "Fine Segment MDS colored", data: fineSegmentColored });
 
         message.separators = structure.createSeparators(courseSegmentColored, strictPathMatrix);
@@ -228,7 +249,15 @@ addEventListener("message", (event) => {
     );
 
     const fineSections = structure.findFittestSections(strictPathMatrix, fineSegments, "classic");
-    structures.push({ name: "Fine segments Classic", data: fineSections });
+    const harmonicStructureMDS = structure.MDSColorSegments(fineSections, strictPathMatrix, "overlap");
+    const sortedHarmonicStructureMDS = harmonicStructureMDS.sort((a, b) => {
+        if (a.groupID < b.groupID) return -1;
+        if (b.groupID < a.groupID) return 1;
+        if (a.groupID === b.groupID) {
+            return a.start - b.start;
+        }
+    });
+    structures.push({ name: "Fine segments Classic", data: sortedHarmonicStructureMDS });
 
     const squashedFineSections = structure.squash(
         "fill-gap",
@@ -238,7 +267,7 @@ addEventListener("message", (event) => {
 
     const sortedSquashedFineSections = structure.sortGroupByCoverage(squashedFineSections);
 
-    const squashedFineSectionsMDS = structure.MDSColorSegments(sortedSquashedFineSections, strictPathMatrix);
+    const squashedFineSectionsMDS = structure.MDSColorSegments(sortedSquashedFineSections, strictPathMatrix, "overlap");
     structures.push({
         name: "Squashed Fine SegmentsMDS color",
         data: squashedFineSectionsMDS,
@@ -661,7 +690,7 @@ export function visualizePathExtraction(pathSSM, startSample, endSample, matrixe
         startSample,
         endSample
     );
-    //matrixes.push({ name: "DTW", buffer: pathExtractVis.getBuffer() });
+    matrixes.push({ name: "DTW", buffer: pathExtractVis.getBuffer() });
 }
 
 export function createScapePlot(pathSSM, data, message) {

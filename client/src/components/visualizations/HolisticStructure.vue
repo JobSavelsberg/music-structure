@@ -52,6 +52,7 @@
             :height="sectionHeight * 3"
             type="image"
         ></v-skeleton-loader>
+        <MDS v-if="hasStructure" :size="width / 3" :sections="courseStructure"></MDS>
     </div>
 </template>
 
@@ -61,6 +62,7 @@ import * as vis from "../../app/vis";
 import Seeker from "./Seeker";
 import Section from "./Section";
 import Markers from "./Markers";
+import MDS from "./MDS";
 
 import SeparatorBackground from "./SeparatorBackground";
 
@@ -76,6 +78,7 @@ export default {
         SeparatorBackground,
         Section,
         Markers,
+        MDS,
     },
     data() {
         return {

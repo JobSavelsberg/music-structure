@@ -19,7 +19,7 @@ export function extractPathFamily(ssm, start, end) {
 // The ratio between the length of the knight move vs length of a diagonal move
 const knightMoveRatio = 1; //Math.sqrt(10) / 2 + .01 ; // plus slight offset to favour diagonal moves when going through penalties
 const knightMoveTweak = 1; //0.99; //Also favouring diagonal moves when accumulating score
-export function computeAccumulatedScoreMatrix(ssm, start, end, D, thresh = 0) {
+export function computeAccumulatedScoreMatrix(ssm, start, end, D) {
     const sampleAmount = ssm.getSampleAmount();
     if (start < 0) log.error("start below 0: ", start);
     if (end > sampleAmount) log.error("end above sampleAmount: ", sampleAmount, "end", end);
@@ -35,7 +35,7 @@ export function computeAccumulatedScoreMatrix(ssm, start, end, D, thresh = 0) {
 
     const penalty = -3;
     const penalize = (value) => {
-        return value <= thresh ? penalty : value; //(value-thresh)*(1/(1-thresh));
+        return value <= 0 ? penalty : value; //(value-thresh)*(1/(1-thresh));
         //return value < thresh ?  (thresh-value)*(1/thresh)*penalty : (value-thresh)*(1/thresh);
         /*if(value <= 0.5){
              return penalty;
@@ -285,14 +285,76 @@ export function getDistanceBetween(segmentA, segmentB, pathSSM) {
     const inducedSegmentsA = getInducedSegmentsFromSampleRange(startSampleA, endSampleA, pathSSM);
     const inducedSegmentsB = getInducedSegmentsFromSampleRange(startSampleB, endSampleB, pathSSM);
 
-    return segmentDistance(inducedSegmentsA, inducedSegmentsB);
+    return segmentDistanceOverlap(inducedSegmentsA, inducedSegmentsB);
+}
+
+export function segmentSimilarityDTW(segmentA, segmentB, ssm) {
+    const startSampleA = Math.floor(segmentA.start / ssm.getSampleDuration());
+    const endSampleA = Math.floor(segmentA.end / ssm.getSampleDuration());
+    const height = endSampleA - startSampleA + 1;
+
+    const startSampleB = Math.floor(segmentB.start / ssm.getSampleDuration());
+    const endSampleB = Math.floor(segmentB.end / ssm.getSampleDuration());
+    const width = endSampleB - startSampleB + 1;
+
+    const D = new Float32Array(height * width).fill(Number.NEGATIVE_INFINITY);
+
+    const penalty = 0;
+    const penalize = (value) => {
+        return value <= 0 ? penalty : value;
+    };
+
+    D[0] = penalize(ssm.getValueNormalized(startSampleA, startSampleB));
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            if (y === 0 && x === 0) continue;
+            let down = y - 2 >= 0 && x - 1 >= 0 ? D[(y - 2) * width + x - 1] : Number.NEGATIVE_INFINITY;
+            let right = y - 1 >= 0 && x - 2 >= 0 ? D[(y - 1) * width + x - 2] : Number.NEGATIVE_INFINITY;
+            let diag = y - 1 >= 0 && x - 1 >= 0 ? D[(y - 1) * width + x - 1] : Number.NEGATIVE_INFINITY;
+
+            D[y * width + x] =
+                penalize(ssm.getValueNormalized(startSampleB + x, startSampleA + y)) + Math.max(diag, right, down);
+        }
+    }
+
+    const score = D[D.length - 1];
+    if (score <= 0) return 0;
+
+    let x = width - 1;
+    let y = height - 1;
+    let pathLength = 1;
+    while (x > 0 || y > 0) {
+        let down = y - 2 >= 0 && x - 1 >= 0 ? D[(y - 2) * width + x - 1] : Number.NEGATIVE_INFINITY;
+        let right = y - 1 >= 0 && x - 2 >= 0 ? D[(y - 1) * width + x - 2] : Number.NEGATIVE_INFINITY;
+        let diag = y - 1 >= 0 && x - 1 >= 0 ? D[(y - 1) * width + x - 1] : Number.NEGATIVE_INFINITY;
+
+        if (x === 0) {
+            x--;
+        } else if (y === 0) {
+            y--;
+        } else if (down >= right && down >= diag) {
+            y -= 2;
+            x -= 1;
+        } else if (right >= down && right >= diag) {
+            y -= 1;
+            x -= 2;
+        } else if (diag >= down && diag >= right) {
+            y -= 1;
+            x -= 1;
+        }
+        pathLength++;
+    }
+    const similarity = score / pathLength;
+
+    return similarity;
 }
 
 /**
  * Similar if they are aproximately repetitions of each other (overlap)
  * @param inducedSegmentsA in the form of a flat Uint16Array with pairs of start and end position of segments
  */
-export function segmentDistance(inducedSegmentsA, inducedSegmentsB) {
+export function segmentDistanceOverlap(inducedSegmentsA, inducedSegmentsB) {
     let maxSimilarity = 0;
     for (let a = 0; a < inducedSegmentsA.length; a += 2) {
         for (let b = 0; b < inducedSegmentsB.length; b += 2) {
@@ -395,7 +457,7 @@ export function simplePathDetect(pathSSM, threshold = 0.1) {
     }
 }
 
-export function getDistanceMatrix(segments, pathSSM) {
+export function getDistanceMatrix(segments, pathSSM, strategy) {
     const amount = segments.length;
     const distanceMatrix = new HalfMatrix({ size: amount, numberType: HalfMatrix.NumberType.FLOAT32 });
 
@@ -407,9 +469,21 @@ export function getDistanceMatrix(segments, pathSSM) {
         const inducedSegments = getInducedSegmentsFromSampleRange(sampleStart, sampleEnd, pathSSM);
         segmentInducedSegments.push(inducedSegments);
     });
-
+    const kappa = 1;
     distanceMatrix.fill((x, y) => {
-        return segmentDistance(segmentInducedSegments[x], segmentInducedSegments[y]);
+        let dist = 0;
+        const sameGroup = segments[x].groupID === segments[y].groupID;
+        switch (strategy) {
+            case "DTW":
+                dist = (1 - segmentSimilarityDTW(segments[x], segments[y], pathSSM)) * (sameGroup ? kappa : 1);
+                //dist = Math.max(0, (1 - segmentSimilarityDTW(segments[x], segments[y], pathSSM) - 0.5) * 2);
+                //dist = 1 / (1 + segmentSimilarityDTW(segments[x], segments[y], pathSSM));
+                break;
+            case "overlap":
+                dist = segmentDistanceOverlap(segmentInducedSegments[x], segmentInducedSegments[y]);
+                break;
+        }
+        return dist;
     });
     return distanceMatrix;
 }
