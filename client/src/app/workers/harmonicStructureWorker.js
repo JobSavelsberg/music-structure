@@ -20,10 +20,10 @@ addEventListener("message", (event) => {
         { blurLength: data.enhanceBlurLength, tempoRatios: data.tempoRatios, strategy: "linmed" },
         data.allPitches
     );
-    const colormatrix = SSM.rowColumnAutoThreshold(enhancedSSM, 0.1);
     const transpositionInvariantPre = SSM.makeTranspositionInvariant(enhancedSSM);
-    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.17);
-    //strictPathMatrixHalf = SSM.multiply(strictPathMatrixHalf, 1.1);
+    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.15); // .22
+    //strictPathMatrixHalf = SSM.multiply(strictPathMatrixHalf, 1.3);
+    //strictPathMatrixHalf = SSM.threshold(strictPathMatrixHalf, 0.1);
     const strictPathMatrix = Matrix.fromHalfMatrix(strictPathMatrixHalf);
 
     const duration = 3; // samples
@@ -31,7 +31,7 @@ addEventListener("message", (event) => {
 
     const updateCallback = (harmonicStructure, state = "processing", strategy = "Classic") => {
         log.debug("HarmoniccStructure", harmonicStructure);
-        const sortedHarmonicStructureMDS = colorHarmonicStructure(harmonicStructure, colormatrix, strategy);
+        const sortedHarmonicStructureMDS = colorHarmonicStructure(harmonicStructure, strictPathMatrix, strategy);
 
         sortedHarmonicStructureMDS.forEach((section) => {
             const startInSamples = Math.floor(section.start / data.sampleDuration);

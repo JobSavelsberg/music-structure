@@ -17,6 +17,8 @@
 <script>
 import * as log from "../../dev/log";
 import * as vis from "../../app/vis";
+import * as filter from "../../app/filter";
+
 import Seeker from "./Seeker";
 import WebGLPitchTimbre from "../../app/webgl/WebGLPitchTimbre";
 
@@ -86,7 +88,7 @@ export default {
                     sampled: false,
                     featureAmount: 12,
                 },
-                /*{ name: "Pitch sampled", data: this.track.features.sampled.pitches, sampled: true, featureAmount: 12 },
+                { name: "Pitch sampled", data: this.track.features.sampled.pitches, sampled: true, featureAmount: 12 },
                 {
                     name: "Major / Minor",
                     data: this.track.features.sampled.majorminor,
@@ -121,7 +123,14 @@ export default {
                     sampled: true,
                     range: [-1, 1],
                     featureAmount: 12,
-                },*/
+                },
+                {
+                    name: "Timbre Sampled Averaged",
+                    data: filter.gaussianBlurFeatures(this.track.features.sampled.timbres, 5),
+                    sampled: true,
+                    range: [-1, 1],
+                    featureAmount: 12,
+                },
             ];
             this.webGLPitchTimbre.setHeight(this.height);
             this.webGLPitchTimbre.fillpitchTimbreBufferPool(this.track, this.selectedFeatures);

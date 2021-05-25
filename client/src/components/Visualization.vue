@@ -15,16 +15,41 @@
             <div v-if="!showPrototype">
                 <HolisticStructure :width="width" />
                 <!--div style="height: 200px"></div>-->
-
+                <svg
+                    v-if="!loadingTrack && tsneReady"
+                    class="tsneContainer"
+                    :style="`height: ${tsneSize + 8 * 20}px; width: ${width}px; left: ${10}`"
+                >
+                    <circle
+                        v-for="(coord, index) in tsneCoords"
+                        :key="index + 'clustercircle'"
+                        :r="isPlayingSample(index) ? 8 : 2"
+                        :cx="2 + ((coord[0] + 1) * tsneSize) / 2"
+                        :cy="2 + ((coord[1] + 1) * tsneSize) / 2"
+                        :class="isPlayingSample(index) ? 'segmentCirclePlaying' : 'segmentCircle'"
+                        :fill="isPlayingSample(index) ? 'white' : clusterColor(clusters[index])"
+                    />
+                    <rect
+                        v-for="(clusterSection, index) in clusterSections"
+                        :key="index + 'clustersection'"
+                        class="clusterRect"
+                        :fill="clusterColor(clusterSection.cluster)"
+                        :x="samplePosNormalized(clusterSection.start) * width"
+                        :y="tsneSize + 20 * clusterSection.cluster"
+                        :width="samplePosNormalized(clusterSection.end - clusterSection.start) * width"
+                        :height="20"
+                    ></rect>
+                </svg>
                 <TimbreSegmentedGraph :width="width" />
                 <Chords :width="width" />
-                                <Tonality :width="width" />
+                <Tonality :width="width" />
 
                 <div style="height: 600px"></div>
                 <TimbreStructure :width="width" />
                 <TimbreGraph :width="width" />
             </div>
         </div>
+
         <div class="floatingTime">
             {{ parseFloat(seekerTime).toFixed(2) }}
         </div>
@@ -72,6 +97,8 @@ export default {
     data() {
         return {
             readyForPrototypeVis: false,
+            tsneReady: false,
+            tsneSize: 500,
         };
     },
     watch: {
@@ -106,15 +133,39 @@ export default {
         playing() {
             return this.$store.getters.playing;
         },
+        tsneCoords() {
+            return this.track.tsneCoords;
+        },
+        clusters() {
+            return this.track.clusters;
+        },
+        clusterSections() {
+            return this.track.clusterSections;
+        },
     },
     mounted() {
         window.eventBus.$on("readyForPrototypeVis", () => {
             this.readyForPrototypeVis = true;
         });
+        window.eventBus.$on("tsneReady", () => {
+            this.tsneReady = true;
+        });
     },
 
     methods: {
         visChanged(newVis, oldVis) {},
+        clusterColor(index) {
+            return vis.goldenRatioCategoricalColor(index, 0, 1);
+        },
+        isPlayingSample(index) {
+            return (
+                index <= this.seekerTime / this.track.features.sampleDuration &&
+                index + 1 > this.seekerTime / this.track.features.sampleDuration
+            );
+        },
+        samplePosNormalized(sample) {
+            return (sample * this.track.features.sampleDuration) / this.track.getAnalysisDuration();
+        },
     },
 };
 </script>
@@ -132,5 +183,11 @@ export default {
     z-index: 1000;
     right: 5px;
     bottom: 0%;
+}
+.segmentCircle {
+    transition: r 1.5s ease-out, fill 1.5s ease-out; /*, cx 1s ease, cy 1s ease;*/
+}
+.segmentCirclePlaying {
+    transition: r 0.1s ease-in, fill 0.1s ease-in;
 }
 </style>

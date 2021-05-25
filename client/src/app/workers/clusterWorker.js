@@ -1,6 +1,14 @@
 import * as log from "../../dev/log";
+import * as clustering from "../clustering";
+
 addEventListener("message", (event) => {
-    log.debug(event.data);
+    log.debug("ClusterWorker", event);
+    const features = event.data.features;
+    const minK = event.data.minK;
+    const maxK = event.data.maxK;
+    const tries = event.data.tries;
+    const result = clustering.kMeansSearch(features, minK, maxK, tries);
+    postMessage(result.idxs);
 });
 
 /**

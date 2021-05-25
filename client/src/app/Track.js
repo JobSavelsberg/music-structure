@@ -5,6 +5,7 @@ import * as workers from "./workers/workers";
 import * as log from "../dev/log";
 import * as audioUtil from "./audioUtil";
 import * as vis from "./vis";
+import * as filter from "./filter";
 
 import * as pathExtraction from "./pathExtraction";
 import * as d3 from "d3";
@@ -15,7 +16,7 @@ export const samples = 600;
 export const sampleDuration = 0.33;
 export const sampleBlur = 1; // smaller than 1 => no blur, e.g. when 2 every sample is blurred over duration of 2 samples
 
-export const enhanceBlurLength = 8;
+export const enhanceBlurLength = 6;
 export const threshold = 0.65;
 export const thresholdPercentage = 0.5;
 export const tempoRatios = [0.66, 0.81, 1, 1.22, 1.5];
@@ -70,7 +71,10 @@ export default class Track {
     processed = false;
     processing = false;
 
-    clusters = new Array(CLUSTERAMOUNT).fill([]);
+    smoothedTimbre = [];
+    tsneCoords = [];
+    clusters = [];
+    clusterSections = [];
 
     constructor(trackData) {
         this.trackData = trackData;
@@ -107,12 +111,13 @@ export default class Track {
             sampleBlur: sampleBlur,
             downsampleAmount: maxTimbreDownSamples,
         });
+        this.smoothedTimbre = filter.gaussianBlurFeatures(this.features.sampled.timbres, 5);
         log.debug("Emit features processed");
 
         window.eventBus.$emit("featuresProcessed");
 
-        //this.tsne();
-        //this.cluster();
+        this.tsne();
+        this.cluster();
         this.calculateSSM();
         this.computeChords();
         this.computeHarmonicStructure();
@@ -171,6 +176,8 @@ export default class Track {
     deselect() {
         if (this.eventListenerSet) {
             window.eventBus.$off("harmonicStructure", this.harmonicStructureListener);
+            window.eventBus.$off("tsneReady", this.harmonicStructureListener);
+
             this.eventListenerSet = false;
         }
     }
@@ -272,37 +279,36 @@ export default class Track {
     }
 
     cluster() {
-        /*clusterWorker.send({ features: this.features.clusterSelection, minK: 2, maxK: 10, tries: 4 }).then((result) => {
-            this.updateClusters(result);
-            log.debug("clustering done");
-        });*/
-    }
-    updateClusters(clusterIndexes) {
-        store.commit("clusterReady", false);
-        clusterIndexes.forEach((cluster, index) => {
-            this.features.segments[index].setCluster(cluster);
-            this.clusters[cluster].push(this.features.segments[index]);
+        workers.cluster({ features: this.smoothedTimbre, minK: 2, maxK: 10, tries: 10 }).then((result) => {
+            log.debug("Clustering Result", result);
+
+            this.clusters = result;
+            let prevCluster = result[0];
+
+            this.clusterSections.push({ cluster: prevCluster, start: 0 });
+            for (let i = 1; i < result.length; i++) {
+                const cluster = result[i];
+                if (cluster !== prevCluster) {
+                    this.clusterSections[this.clusterSections.length - 1].end = i;
+                    this.clusterSections.push({ cluster: cluster, start: i });
+                    prevCluster = cluster;
+                }
+            }
+            this.clusterSections[this.clusterSections.length - 1].end = result.length;
+            log.debug(this.clusterSections);
         });
-        window.setTimeout(store.commit("clusterReady", true), 1);
     }
 
     tsne() {
-        /*tsneWorker.send({ features: this.features.tsneSelection }).then((result) => {
-            this.updateTSNECoords(result);
+        workers.tsne({ features: this.smoothedTimbre }).then((result) => {
+            this.tsneListener(result);
         });
-
-        tsneWorker.receive((result) => {
-            this.updateTSNECoords(result);
-        });*/
+        window.eventBus.$on("tsneReady", this.tsneListener);
+        this.eventListenerSet = true;
     }
-    //updateAmountPer100ms = 100;
-    updateTSNECoords(coords) {
-        store.commit("tsneReady", false);
-        for (let i = 0; i < this.features.segments.length; i++) {
-            this.features.segments[i].setTSNECoord(coords[i]);
-        }
-        window.setTimeout(store.commit("tsneReady", true), 1);
-    }
+    tsneListener = (result) => {
+        this.tsneCoords = result;
+    };
 
     getClosestSegment(coord) {
         let minDist = Infinity;

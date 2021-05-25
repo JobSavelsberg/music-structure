@@ -33,7 +33,7 @@ export function computeAccumulatedScoreMatrix(ssm, start, end, D) {
         D = new Float32Array(height * width).fill(Number.NEGATIVE_INFINITY);
     }
 
-    const penalty = -3;
+    const penalty = -2;
     const penalize = (value) => {
         return value <= 0 ? penalty : value; //(value-thresh)*(1/(1-thresh));
         //return value < thresh ?  (thresh-value)*(1/thresh)*penalty : (value-thresh)*(1/thresh);
@@ -469,7 +469,7 @@ export function getDistanceMatrix(segments, pathSSM, strategy) {
         const inducedSegments = getInducedSegmentsFromSampleRange(sampleStart, sampleEnd, pathSSM);
         segmentInducedSegments.push(inducedSegments);
     });
-    const kappa = 1;
+    const kappa = 0.75;
     distanceMatrix.fill((x, y) => {
         let dist = 0;
         const sameGroup = segments[x].groupID === segments[y].groupID;

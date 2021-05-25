@@ -56,16 +56,28 @@ export function getMdsCoordinates(
 
     //const coordsOld = classicalMDS(distanceMatrix.getNestedArray(), 2);
     //log.debug("oldcoords", coordsOld);
+    const learnRates = [13];
+    let best = null;
+    let bestLoss = 1;
     let coords;
     switch (strategy) {
-        case "Classic": // fastest
+        case "Classic":
             coords = classicalMDS(distanceMatrix.getNestedArray(), 2);
             break;
-        case "GD": //best
-            coords = getMdsCoordinatesWithGradientDescentMatrix(new Matrix(distanceMatrix.getNestedArray())).coordinates
-                .data;
+        case "GD":
+            learnRates.forEach((rate) => {
+                coords = getMdsCoordinatesWithGradientDescentMatrix(new Matrix(distanceMatrix.getNestedArray()), {
+                    lr: rate,
+                });
+                if (coords.lossPerStep[coords.lossPerStep.length - 1] < bestLoss) {
+                    best = coords;
+                    log.debug("Best is", rate);
+                    bestLoss = coords.lossPerStep[coords.lossPerStep.length - 1];
+                }
+            });
+            coords = best.coordinates.data;
             break;
-        case "GN": //slowest
+        case "GN":
             coords = getMdsCoordinatesWithGaussNewton(new Matrix(distanceMatrix.getNestedArray())).coordinates.data;
             break;
     }
@@ -141,7 +153,7 @@ export function getMdsCoordinates(
  */
 function getMdsCoordinatesWithGradientDescentMatrix(
     distances,
-    { lr = 4, maxSteps = 1000, minLossDifference = 1e-7, momentum = 0, logEvery = 10 } = {}
+    { lr = 7, maxSteps = 1000, minLossDifference = 1e-9, momentum = 0, logEvery = 50 } = {}
 ) {
     const numCoordinates = distances.rows;
     let coordinates = getInitialMdsCoordinates(numCoordinates);
@@ -253,7 +265,7 @@ function getMdsCoordinatesWithGaussNewton(
  * @param {!number} seed - seed for the random number generator.
  * @returns {Matrix}
  */
-function getInitialMdsCoordinates(numCoordinates, dimensions = 2, seed = 0) {
+function getInitialMdsCoordinates(numCoordinates, dimensions = 2, seed = 1) {
     const randomUniform = Matrix.rand(numCoordinates, dimensions, { random: new seedrandom(seed) });
     return Matrix.div(randomUniform, Math.sqrt(dimensions));
 }

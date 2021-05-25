@@ -9,8 +9,8 @@ export async function init() {
     harmonicStructureWorker = new Worker("./harmonicStructureWorker.js", { type: "module" });
     chordWorker = new Worker("./chordWorker.js", { type: "module" });
 
-    //tsne = new Worker("./tsneWorker.js", { type: "module" });
-    //cluster = new Worker("./clusterWorker.js", { type: "module" });
+    tsneWorker = new Worker("./tsneWorker.js", { type: "module" });
+    clusterWorker = new Worker("./clusterWorker.js", { type: "module" });
 }
 
 let isCalculating = false;
@@ -74,8 +74,9 @@ export async function computeHarmonicStructure(options) {
         harmonicStructureWorkerBusy = true;
 
         harmonicStructureWorker.onmessage = (event) => {
-            harmonicStructureWorkerBusy = false;
             if (event.data.state === "done") {
+                harmonicStructureWorkerBusy = false;
+
                 resolve(event.data);
             }
             if (event.data.state === "processing") {
@@ -201,6 +202,50 @@ export async function startSSM(
                     resolve(result);
                 }
             }
+        };
+    });
+}
+
+let tsneWorker;
+let tsneWorkerBusy = false;
+export async function tsne(features) {
+    log.debug(features);
+    return new Promise((resolve) => {
+        if (tsneWorkerBusy) {
+            tsneWorker.terminate();
+            tsneWorker = new Worker("./tsneWorker.js", { type: "module" });
+        }
+        tsneWorker.postMessage(features);
+        tsneWorkerBusy = true;
+
+        tsneWorker.onmessage = (event) => {
+            if (event.data.state === "done") {
+                tsneWorkerBusy = false;
+                window.eventBus.$emit("tsneReady", event.data.result);
+                resolve(event.data.result);
+            }
+            if (event.data.state === "processing") {
+                window.eventBus.$emit("tsneReady", event.data.result);
+            }
+        };
+    });
+}
+
+let clusterWorker;
+let clusterWorkerBusy = false;
+export async function cluster(features) {
+    return new Promise((resolve) => {
+        if (clusterWorkerBusy) {
+            clusterWorker.terminate();
+            clusterWorker = new Worker("./clusterWorker.js", { type: "module" });
+        }
+        clusterWorker.postMessage(features);
+        clusterWorkerBusy = true;
+
+        clusterWorker.onmessage = (event) => {
+            clusterWorkerBusy = false;
+            log.debug("Got back from clusterWorker", event.data);
+            resolve(event.data);
         };
     });
 }

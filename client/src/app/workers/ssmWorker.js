@@ -137,7 +137,7 @@ addEventListener("message", (event) => {
 
     // Threshold the ssm to only show important paths
     //transpositionInvariant = SSM.multiply(transpositionInvariant, 1.1);
-    let transpositionInvariant = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.17);
+    let transpositionInvariant = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.22);
     //transpositionInvariant = SSM.threshold(transpositionInvariant, 0.15);
     matrixes.push({ name: "Transinv", buffer: transpositionInvariant.getBuffer() });
 
