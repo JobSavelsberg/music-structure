@@ -30,7 +30,18 @@ export const zeroOneColor = d3
     .scaleSequential()
     .domain([0, 1])
     .interpolator(d3.interpolateViridis);
-
+export const zeroOneColorGreys = d3
+    .scaleSequential()
+    .domain([0, 1])
+    .interpolator(d3.interpolateGreys);
+export const zeroOneColorGreysDark = d3
+    .scaleLinear()
+    .domain([0, 1])
+    .range([d3.rgb("#444444"), d3.rgb("#ffffff")]);
+export const zeroOneColorGreysLight = d3
+    .scaleLinear()
+    .domain([0, 1])
+    .range([d3.rgb("#000000"), d3.rgb("#cccccc")]);
 export const zeroOneColorWarm = d3
     .scaleSequential()
     .domain([0, 1])

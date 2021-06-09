@@ -29,6 +29,17 @@
                         :class="isPlayingSample(index) ? 'segmentCirclePlaying' : 'segmentCircle'"
                         :fill="isPlayingSample(index) ? 'white' : clusterColor(clusters[index])"
                     />
+
+                    <circle
+                        :r="8"
+                        :cx="2 + ((tsneCoords[playingSample][0] + 1) * tsneSize) / 2"
+                        :cy="2 + ((tsneCoords[playingSample][1] + 1) * tsneSize) / 2"
+                        :class="'playingSegmentCircle'"
+                        :style="
+                            `transition:  cx ${track.features.sampleDuration}s linear, cy ${track.features.sampleDuration}s linear;`
+                        "
+                        :fill="'white'"
+                    />
                     <rect
                         v-for="(clusterSection, index) in clusterSections"
                         :key="index + 'clustersection'"
@@ -142,6 +153,9 @@ export default {
         clusterSections() {
             return this.track.clusterSections;
         },
+        playingSample() {
+            return Math.ceil(this.seekerTime / this.track.features.sampleDuration);
+        },
     },
     mounted() {
         window.eventBus.$on("readyForPrototypeVis", () => {
@@ -185,7 +199,9 @@ export default {
     bottom: 0%;
 }
 .segmentCircle {
-    transition: r 1.5s ease-out, fill 1.5s ease-out; /*, cx 1s ease, cy 1s ease;*/
+    transition: r 1.5s ease-out, fill 1.5s ease-out, cx 0.5s, cy 0.5s; /*, cx 1s ease, cy 1s ease;*/
+}
+.playingSegmentCircle {
 }
 .segmentCirclePlaying {
     transition: r 0.1s ease-in, fill 0.1s ease-in;

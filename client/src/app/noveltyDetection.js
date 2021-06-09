@@ -1,6 +1,8 @@
 import * as filter from "./filter";
 import Matrix from "./dataStructures/Matrix";
 import assert from "assert";
+import * as similarity from "./similarity";
+import * as log from "../dev/log";
 
 /**
  * Convolve checkerboard kernel along main diagonal
@@ -87,6 +89,16 @@ export function absoluteEuclideanColumnDerivative(ssm) {
         novelty[x] = Math.sqrt(differenceSum);
     }
     return novelty;
+}
+
+export function featureDerivative(features) {
+    const derivative = new Float32Array(features.length);
+    const zeroFeature = Array(features[0].length).fill(0);
+    derivative[0] = 1 - similarity.euclidianTimbre(features[0], features[1]);
+    for (let i = 1; i < features.length; i++) {
+        derivative[i] = 1 - similarity.euclidianTimbre(features[i - 1], features[i]);
+    }
+    return derivative;
 }
 
 // Basically sums / averages in the direction of paths

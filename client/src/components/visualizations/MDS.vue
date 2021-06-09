@@ -1,10 +1,18 @@
 <template>
-    <svg class="mdsSVG" :width="size" :height="size" style="background: #222222">
+    <svg class="mdsSVG" :width="size * 2" :height="size" style="background: #222222">
         <circle
             v-for="(section, index) in sections"
-            :key="index + 'mdsCourse'"
+            :key="index + 'mdsCourse' + section.length"
             :cx="size / 2 + (size / 2) * section.colorRadius * Math.cos(section.colorAngle * 2 * Math.PI)"
             :cy="size / 2 + (size / 2) * section.colorRadius * Math.sin(section.colorAngle * 2 * Math.PI)"
+            r="4"
+            :fill="sectionColor(section)"
+        ></circle>
+        <circle
+            v-for="(section, index) in sections"
+            :key="index + 'mdsCourseLin' + section.length"
+            :cx="size + size / 2 + (size / 2) * section.mdsFeature"
+            :cy="size / 2"
             r="4"
             :fill="sectionColor(section)"
         ></circle>

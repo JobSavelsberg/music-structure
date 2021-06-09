@@ -165,7 +165,7 @@ export function mapColors(fullSSM, sampleAmount, minSize, step, anchorPoints, an
 
     const distanceMatrix = pathExtraction.getDistanceMatrix(segments, fullSSM);
 
-    const MdsCoordinates = mds.getMdsCoordinates(distanceMatrix);
+    const MdsCoordinates = mds.getMDSCoordinates(distanceMatrix);
 
     const anchorPointColor = new Float32Array(anchorPointAmount * 5);
     const thumbnailColor = 0.1;

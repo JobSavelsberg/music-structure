@@ -1,6 +1,7 @@
 import * as log from "../dev/log";
 
 import * as audioUtil from "./audioUtil";
+import * as similarity from "./similarity";
 
 // The Krumhansl-Kessler key profiles
 // Non normalized:
@@ -109,6 +110,30 @@ export function detect(pitchFeatures, start, end) {
 
     return detectSingle(averagePitches);
 }
+let w = 0;
+export function detect2D(pitches) {
+    const correlation = correlate(pitches);
+    w++;
+    if (w % 200 === 0) {
+        log.debug(correlation);
+    }
+
+    let x = 0;
+    let y = 0;
+    let energy = 0;
+    for (let i = 0; i < 24; i++) {
+        const index = i < 12 ? i : (i + 3) % 12;
+        const vangle = (audioUtil.circleOfFifths[index] / 12.0) * audioUtil.TWO_PI;
+        const vradius = Math.max(0, correlation[i]); // Between -1 and 1
+        energy += Math.abs(vradius) / 12;
+        x += vradius * Math.cos(vangle);
+        y += vradius * Math.sin(vangle);
+    }
+    const angle = (1 + Math.atan2(y, x) / audioUtil.TWO_PI) % 1;
+    const radius = Math.sqrt(x * x + y * y) / (energy * 12);
+    //return tonalityThirds(pitches);
+    return [angle, radius, energy];
+}
 
 export function detectSingle(pitches) {
     const correlation = correlate(pitches);
@@ -125,6 +150,20 @@ export function detectSingle(pitches) {
 
 export function getName(keyIndex) {
     return audioUtil.keyNames[keyIndex];
+}
+
+export function profileSimilarity(pitches) {
+    const majorProfile = majorProfileTemperleyNorm;
+    const minorProfile = minorProfileTemperleyNorm;
+
+    const majorSimilarity = [];
+    const minorSimilarity = [];
+
+    for (let p = 0; p < 12; p++) {
+        majorSimilarity.push(similarity.cosineTransposed(pitches, majorProfile, p));
+        minorSimilarity.push(similarity.cosineTransposed(pitches, minorProfile, p));
+    }
+    return [...majorSimilarity, ...minorSimilarity];
 }
 
 export function correlate(pitches) {
@@ -162,6 +201,6 @@ export function circleOfFifthsAngle(keyIndex) {
         return audioUtil.circleOfFifths[keyIndex] / 12;
     } else {
         // minor
-        return ((audioUtil.circleOfFifths[keyIndex % 12] - 3 + 12) % 12) / 12;
+        return audioUtil.circleOfFifths[(keyIndex + 3) % 12] / 12;
     }
 }

@@ -6,6 +6,7 @@ export const measures = {
 };
 
 const maxEuclidianPitchDistance = Math.sqrt(12);
+const maxEuclidianTimbreDistance = Math.sqrt(Math.pow(2, 2) * 12);
 
 export function cosine(a, b) {
     var adotv = 0;
@@ -60,6 +61,10 @@ export function maxEuclidianDistance(length, range) {
 }
 export function euclidian(a, b, maxDist) {
     return 1 - euclidianDistance(a, b) / maxDist;
+}
+
+export function euclidianTimbre(a, b) {
+    return 1 - euclidianDistance(a, b) / maxEuclidianTimbreDistance;
 }
 
 export function euclidianPitch(a, b) {

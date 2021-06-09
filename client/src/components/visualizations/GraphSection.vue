@@ -10,8 +10,8 @@
                 :id="`sectionGradient${section.start}`"
                 x1="0"
                 x2="0"
-                :y1="max / (max - min)"
-                :y2="-(1 - max) / (max - min)"
+                :y1="max / (max - min + 0.01)"
+                :y2="-(1 - max) / (max - min + 0.01)"
             >
                 <stop
                     v-for="gradientStep in gradientSteps"
@@ -71,6 +71,7 @@ export default {
             gradientColoring: true,
             gradientStepAmount: 16,
             strokeWidth: 0.5,
+            defaultLoudness: 0.7,
         };
     },
     computed: {
@@ -165,7 +166,7 @@ export default {
                     const w =
                         (this.showLoudness
                             ? this.dynamics(Math.round(xTime / this.track.features.sampleDuration))
-                            : 1) *
+                            : this.defaultLoudness) *
                         this.height *
                         this.strokeWidth;
                     points.push({ x: xPos, y, w });
@@ -230,7 +231,7 @@ export default {
             );
         },
         colorGradient(mdsFeature) {
-            return vis.sinebowColorNormalizedRadius(mdsFeature, 1, 1);
+            return vis.sinebowColorNormalizedRadius((0.8 - mdsFeature * 0.9) % 1, 0.85, 0.95);
         },
     },
 };

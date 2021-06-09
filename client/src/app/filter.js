@@ -122,20 +122,108 @@ export function gaussianBlurFeatures(features, size) {
     const featureAmount = features[0].length;
 
     for (let i = 0; i < features.length; i++) {
-        const newTimbre = new Float32Array(featureAmount);
+        const newVector = new Float32Array(featureAmount);
         for (let f = 0; f < featureAmount; f++) {
             let sum = 0;
+            let kernelSum = 0;
             for (let k = -size; k <= size; k++) {
                 if (i + k >= 0 && i + k < features.length) {
                     sum += features[i + k][f] * kernel[k + size];
+                    kernelSum += kernel[k + size];
                 }
             }
-            newTimbre[f] = sum;
+            newVector[f] = sum / kernelSum;
         }
-        blurredFeatures.push(newTimbre);
+        blurredFeatures.push(newVector);
     }
 
     return blurredFeatures;
+}
+
+export function medianFilterFeatures(features, size) {
+    const resolution = 256;
+    const buckets = new Float32Array(resolution);
+
+    const filteredFeatures = [];
+    const featureAmount = features[0].length;
+
+    for (let i = 0; i < features.length; i++) {
+        const newVector = new Float32Array(featureAmount);
+        for (let f = 0; f < featureAmount; f++) {
+            let totalValues = 0;
+            for (let k = -size; k <= size; k++) {
+                if (i + k >= 0 && i + k < features.length) {
+                    const val = features[i + k][f];
+                    const valNormalized = val * 0.5 + 0.5;
+                    buckets[Math.floor(valNormalized * (resolution - 1))]++;
+                    totalValues++;
+                }
+            }
+            let middle = totalValues / 2;
+            //Both check middle and clear buckets
+            let median = -1;
+            for (let i = 0; i < resolution; i++) {
+                middle -= buckets[i];
+                if (middle < 0 && median === -1) {
+                    median = i / (resolution - 1);
+                }
+                buckets[i] = 0;
+            }
+            newVector[f] = 2 * (median - 0.5);
+        }
+        filteredFeatures.push(newVector);
+    }
+    log.error("FilteredFeatures", filteredFeatures);
+    return filteredFeatures;
+}
+
+export function splitGaussianBlurFeatures(features, size, offset = 0) {
+    const leftBlur = [];
+    const rightBlur = [];
+
+    const fullKernelSize = size * 2 + 1;
+    const kernel = generate1DgaussianKernel(fullKernelSize, size / 2);
+    const featureAmount = features[0].length;
+
+    for (let i = 0; i < features.length; i++) {
+        const newTimbreLeft = new Float32Array(featureAmount);
+        const newTimbreRight = new Float32Array(featureAmount);
+
+        for (let f = 0; f < featureAmount; f++) {
+            let leftSum = 0;
+            let leftKernelSum = 0;
+            let rightSum = 0;
+            let rightKernelSum = 0;
+
+            // Left
+            for (let k = -size - offset; k <= -1 - offset; k++) {
+                if (i + k >= 0 && i + k < features.length) {
+                    leftSum += features[i + k][f] * kernel[k + size + offset];
+                    leftKernelSum += kernel[k + size + offset];
+                }
+            }
+            // Right
+            for (let k = 1 + offset; k <= size + offset; k++) {
+                if (i + k >= 0 && i + k < features.length) {
+                    rightSum += features[i + k][f] * kernel[k + size - offset];
+                    rightKernelSum += kernel[k + size - offset];
+                }
+            }
+            newTimbreLeft[f] = leftSum / leftKernelSum;
+            newTimbreRight[f] = rightSum / rightKernelSum;
+        }
+        if (i <= offset) {
+            leftBlur.push(features[i]);
+        } else {
+            leftBlur.push(newTimbreLeft);
+        }
+        if (i >= features.length - 1 - offset) {
+            rightBlur.push(features[i]);
+        } else {
+            rightBlur.push(newTimbreRight);
+        }
+    }
+    return [leftBlur, rightBlur];
 }
 
 export function gaussianBlur1D(array, size, edgeStrategy = "zeropad") {

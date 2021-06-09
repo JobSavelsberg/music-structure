@@ -44,10 +44,22 @@
                     stroke-width=".5"
                     rx="5"
                     :x="index * sampleWidth - sampleWidth / 2"
-                    :y="height - sampleWidth * 2 - sample * (height - sampleWidth * 2)"
+                    :y="height - sampleWidth * 2 - sample.mdsFeature * (height - sampleWidth * 2)"
                     :width="sampleWidth"
                     :height="sampleWidth * 2"
-                    :fill="color(sample)"
+                    :fill="color(sample.mdsFeature)"
+                ></rect>
+                <rect
+                    v-for="(sample, index) in timbreFeatureGraph"
+                    :key="index"
+                    class="sample"
+                    stroke="black"
+                    stroke-width=".5"
+                    rx="5"
+                    :x="index * sampleWidth - sampleWidth / 2"
+                    :width="sampleWidth"
+                    :height="sampleWidth * 2"
+                    :fill="color(sample.mdsFeature)"
                 ></rect>
             </g>
         </svg>
@@ -155,10 +167,10 @@ export default {
             return this.width / this.sampleAmount;
         },
         timbreFeatureGraphPath() {
-            let path = `M 0 ${this.timbreFeatureGraph[0] * this.height}`;
+            let path = `M 0 ${this.timbreFeatureGraph[0].mdsFeature * this.height}`;
             for (let i = 1; i < this.sampleAmount; i++) {
                 path = path.concat(
-                    ` L ${i * this.sampleWidth} ${this.height - this.timbreFeatureGraph[i] * this.height}`
+                    ` L ${i * this.sampleWidth} ${this.height - this.timbreFeatureGraph[i].mdsFeature * this.height}`
                 );
             }
 
@@ -255,6 +267,7 @@ export default {
         color(mdsFeature) {
             return vis.sinebowColorNormalizedRadius(mdsFeature, 1, 1);
         },
+        color2D(coord) {},
     },
 };
 </script>

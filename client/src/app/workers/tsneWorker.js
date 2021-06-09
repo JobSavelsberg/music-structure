@@ -10,6 +10,7 @@ addEventListener("message", (event) => {
     let opt = {};
     opt.theta = 0.15; // theta
     opt.perplexity = 30; // perplexity
+    opt.dims = 2; // dimensions
     const GRADIENT_STEPS = 500;
 
     var model = new tsneez.TSNEEZ(opt); // create a tsneez instance]
@@ -25,7 +26,7 @@ addEventListener("message", (event) => {
         //check time passed
         let currTime = new Date();
         var timeDiff = currTime - prevTime; //in ms
-        if (timeDiff > 100) {
+        if (timeDiff > 500) {
             postMessage({ state: "processing", result: getResult(model, features) });
             prevTime = currTime;
         }
@@ -41,10 +42,10 @@ function tsneMDS(features) {
     log.debug("MDS");
     const distanceMatrix = new HalfMatrix({ size: features.length, numberType: HalfMatrix.NumberType.FLOAT32 });
     distanceMatrix.fill((x, y) => {
-        return sim.cosine(features[x], features[y]);
+        return sim.euclidianTimbre(features[x], features[y]);
     });
     log.debug("DISTANCE MATRIX CREEATED", distanceMatrix);
-    const coords = mds.getMdsCoordinates(distanceMatrix, "Classic");
+    const coords = mds.getMDSCoordinates(distanceMatrix, "Classic");
     log.debug("MDS DONE", coords);
     return coords;
 }
@@ -62,10 +63,15 @@ function getResult(model, features) {
         max = Math.max(max, Math.abs(x), Math.abs(y));
     }
 
-    // Scale to [-1,1]
+    let maxRadius = 0;
     for (let i = 0; i < features.length; i++) {
-        result[i][0] /= max;
-        result[i][1] /= max;
+        const coord = result[i];
+        const radius = Math.sqrt(coord[0] * coord[0] + coord[1] + coord[1]);
+        if (radius > maxRadius) maxRadius = radius;
+    }
+
+    for (let i = 0; i < features.length; i++) {
+        result[i] = [result[i][0] / maxRadius, result[i][1] / maxRadius];
     }
 
     return result;

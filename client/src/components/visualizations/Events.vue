@@ -9,7 +9,7 @@
                 :color="'rgb(255,255,255,0.3)'"
             />
 
-            <svg :class="`eventSVG`" :style="`margin-left: -${eventSize}`" :width="width" :height="eventHeight">
+            <svg :class="`eventSVG`" :style="`margin-left: -${eventSize}`" :width="width" :height="eventHeight * 2">
                 <rect
                     class="timbreGraphBackground"
                     :width="width"
@@ -28,6 +28,19 @@
                     :fill="seekerInEvent(event) ? 'white' : color(event, event.confidence + 0.5)"
                     @click="clickEvent(event)"
                 ></circle>
+                <rect
+                    v-for="event in events"
+                    :key="event.time"
+                    class="rectevent"
+                    :ref="`rectevent${event.time}`"
+                    :x="eventSize + event.time * scale + eventSize / 2"
+                    :y="eventHeight + 3"
+                    :height="eventSize * 4"
+                    :width="3"
+                    rx="1"
+                    :fill="seekerInEvent(event) ? 'white' : color(event, event.confidence + 0.5)"
+                    @click="clickEvent(event)"
+                ></rect>
             </svg>
         </div>
     </div>

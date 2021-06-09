@@ -90,8 +90,8 @@ export function getNoteName(i) {
 
 var DEGREES_PER_RADIAN = 180 / Math.PI;
 var RADIANS_PER_DEGREE = Math.PI / 180;
-const TWO_PI = 2 * Math.PI;
-const OFFSET = Math.PI / 2; // (3 * Math.PI) / 2; // full cycle is 2pi
+export const TWO_PI = 2 * Math.PI;
+export const OFFSET = Math.PI / 2; // (3 * Math.PI) / 2; // full cycle is 2pi
 
 function sortWithIndeces(toSort) {
     const toSortValIndex = [];
@@ -113,13 +113,13 @@ export function tonality(pitches) {
     let y = 0;
     let energy = 0;
     for (let i = 0; i < 12; i++) {
-        const vangle = -(circleOfFifths[i] / 12.0) * TWO_PI + OFFSET;
+        const vangle = (circleOfFifths[i] / 12.0) * TWO_PI;
         const vradius = pitches[i]; // Between 0 and 1
         energy += vradius / 12;
         x += vradius * Math.cos(vangle);
         y += vradius * Math.sin(vangle);
     }
-    const angle = (1 - Math.atan2(x, y) / TWO_PI + 0.25) % 1;
+    const angle = (1 + Math.atan2(y, x) / TWO_PI) % 1;
     const radius = Math.sqrt(x * x + y * y) / (energy * 12);
     //return tonalityThirds(pitches);
     return [angle, radius, energy];

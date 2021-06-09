@@ -24,6 +24,7 @@
         "fs": "0.0.1-security",
         "gaussian-mixture-model": "^1.0.0",
         "lodash": "^4.17.20",
+        "lof": "^0.1.2",
         "ml-matrix": "^6.8.0",
         "numeric": "^1.2.6",
         "promise-worker-bi": "^4.0.2",

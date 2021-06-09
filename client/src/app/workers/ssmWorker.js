@@ -9,12 +9,16 @@ import * as events from "../events";
 import * as uniqueness from "../uniqueness";
 import * as homogenous from "../homogenous";
 import * as audioUtil from "../audioUtil";
+import * as mds from "../mds";
 
 import * as Features from "../Features";
 
 import Matrix from "../dataStructures/Matrix";
 import HalfMatrix from "../dataStructures/HalfMatrix";
 import Section from "../Section";
+
+import tsneez from "tsneez";
+
 addEventListener("message", (event) => {
     const data = event.data;
     const message = {};
@@ -30,15 +34,6 @@ addEventListener("message", (event) => {
     perceivedAverageLoudness[0] = 0;
 
     graphs.push({ name: "Perceived Loudness " + 3, buffer: perceivedAverageLoudness.buffer });
-
-    const anomalyFeature = uniqueness.computeFromFeaturesGMM(data.timbreFeatures);
-    graphs.push({ name: "Timbre Anomalies", buffer: new Float32Array(anomalyFeature).buffer });
-
-    const uniquenessF = uniqueness.computeFromFeatures(data.timbreFeatures, data.sampleDuration, 20);
-    graphs.push({ name: "Timbre Uniqueness", buffer: new Float32Array(uniquenessF).buffer });
-
-    const uniquenessSmooth = filter.gaussianBlur1D(uniquenessF, 2);
-    graphs.push({ name: "Timbre Uniqueness Smooth", buffer: new Float32Array(uniquenessSmooth).buffer });
 
     const eventArray = events.detectAverageWindow(data.timbreFeatures, data.sampleDuration, 20, 0.2);
     const eventSections = [];
@@ -59,6 +54,7 @@ addEventListener("message", (event) => {
     let [ssmPitchOOG, ssmTimbreOOG] = calculateSSM(data, 0.35, "euclidean");
     ssmPitchOOG.changeDistribution(-0.4, 2.1);
     matrixes.push({ name: "PitchNothing", buffer: Matrix.fromHalfMatrix(ssmPitchOOG).getBuffer() });
+    matrixes.push({ name: "Timbre", buffer: Matrix.fromHalfMatrix(ssmTimbreOOG).getBuffer() });
 
     //createBeatGraph(data, graphs);
     data.pitchFeatures = filter.gaussianBlurFeatures(data.pitchFeatures, 1); //3 6 12
@@ -74,9 +70,6 @@ addEventListener("message", (event) => {
         name: "Raw",
         buffer: ssmTimbrePitch.getBuffer(),
     });
-
-    const uniquenessSSM = uniqueness.computeLocalUniqueness(ssmTimbre, 1, 20);
-    graphs.push({ name: "Timbre SSM Subract Uniqueness", buffer: new Float32Array(uniquenessSSM).buffer });
 
     const small = filter.gaussianBlur2DOptimized(ssmTimbre, 1);
     const large = filter.gaussianBlur2DOptimized(ssmTimbre, 20);
@@ -110,7 +103,7 @@ addEventListener("message", (event) => {
     //enhancedSSMOOG.changeDistribution(-0.3, 1.7);
     matrixes.push({ name: "EnhancedNothing", buffer: enhancedSSMOOG.getBuffer() });
 */
-    let startTime = performance.now();
+    /*let startTime = performance.now();
 
     const enhancedSSM = SSM.enhanceSSM(
         ssmPitch,
@@ -146,7 +139,7 @@ addEventListener("message", (event) => {
     matrixes.push({ name: "colormatrix", buffer: colormatrix.getBuffer() });
 
     const fullTranspositionInvariant = Matrix.fromHalfMatrix(transpositionInvariant);
-
+*/
     /*const binaryTranspositionInvariant = SSM.binarize(transpositionInvariant, 0.2);
     matrixes.push({
         name: "Bin Transinv",
@@ -179,10 +172,10 @@ addEventListener("message", (event) => {
     //strictPathMatrixHalf = SSM.multiply(strictPathMatrixHalf, 1.3);
 
     //log.debug("Mean, SD:", transpositionInvariant.getMeanAndStandardDeviation());
-    const strictPathMatrix = fullTranspositionInvariant;
+    //const strictPathMatrix = fullTranspositionInvariant;
     //visualizePathExtraction(strictPathMatrix, 231, 265, matrixes);
 
-    matrixes.push({
+    /*matrixes.push({
         name: "Rowcol",
         buffer: strictPathMatrix.getBuffer(),
     });
@@ -223,7 +216,7 @@ addEventListener("message", (event) => {
         buffer: smoothedCombined.buffer,
     });*/
 
-    const courseStructureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs, 8, [10, 2]);
+    /*const courseStructureFeature = computeStructureFeature(fullTranspositionInvariant, matrixes, graphs, 8, [10, 2]);
     let courseSegments = structure.createSegmentsFromNovelty(courseStructureFeature, data.sampleDuration, 0.25);
     //structures.push({ name: "Course segments", data: courseSegments })
 
@@ -396,31 +389,31 @@ addEventListener("message", (event) => {
     const squashedStructureFillGap2MDS = structure.MDSColorSegments(squashedStructureFillGap2, strictPathMatrix);
     structures.push({ name: "Custom2 Squashed structure fill-gap MDS color", data: squashedStructureFillGap2MDS})*/
 
-    visualizePathExtraction(strictPathMatrix, 20, 40, matrixes);
+    //visualizePathExtraction(strictPathMatrix, 20, 40, matrixes);
 
     const blurredTimbreSmall = filter.gaussianBlur2DOptimized(ssmTimbre, 2);
-    /*matrixes.push({
+    matrixes.push({
         name: "BlurTimbre Small",
         buffer: blurredTimbreSmall.getBuffer(),
-    });*/
+    });
 
     const blurredTimbreLarge = filter.gaussianBlur2DOptimized(ssmTimbre, 8);
-    /*matrixes.push({
+    matrixes.push({
         name: "BlurTimbre Large",
         buffer: blurredTimbreLarge.getBuffer(),
-    });*/
+    });
 
-    //const timbreNovelty = noveltyDetection.detect(blurredTimbre, 10);
-    /*graphs.push({
-        name: "Timbre Novelty",
-        buffer: timbreNovelty.buffer,
-    });*/
+    const timbreNoveltyLarge = noveltyDetection.detect(blurredTimbreLarge, 10);
+    graphs.push({
+        name: "Timbre Novelty Large",
+        buffer: timbreNoveltyLarge.buffer,
+    });
 
-    const ssmUniqueness = uniqueness.computeFromSSM(ssmTimbre);
-    graphs.push({ name: "Timbre SSM Uniqueness", buffer: new Float32Array(ssmUniqueness).buffer });
-
-    const ssmUniquenessSmall = uniqueness.computeFromSSM(blurredTimbreSmall);
-    graphs.push({ name: "Timbre SSM Uniqueness Blur Small", buffer: new Float32Array(ssmUniquenessSmall).buffer });
+    const timbreNoveltySmall = noveltyDetection.detect(blurredTimbreSmall, 10);
+    graphs.push({
+        name: "Timbre Novelty Small",
+        buffer: timbreNoveltySmall.buffer,
+    });
 
     const timbreNoveltyColumnLarge = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbreLarge);
     graphs.push({ name: "Timbre Column Novelty Large", buffer: timbreNoveltyColumnLarge.buffer });
@@ -431,6 +424,183 @@ addEventListener("message", (event) => {
     graphs.push({ name: "Timbre Column Novelty Small", buffer: timbreNoveltyColumnSmall.buffer });
     const smoothTimbreNoveltyColumnSmall = filter.gaussianBlur1D(timbreNoveltyColumnSmall, 3);
     graphs.push({ name: "Timbre Column Novelty Smooth Small", buffer: smoothTimbreNoveltyColumnSmall.buffer });
+
+    const timbreSmall = filter.gaussianBlurFeatures(data.timbreFeatures, 5);
+    const dTimbreSmall = noveltyDetection.featureDerivative(timbreSmall);
+    log.debug("dTimbre Small", dTimbreSmall);
+    const timbreLarge = filter.gaussianBlurFeatures(data.timbreFeatures, 20);
+    const dTimbreLarge = noveltyDetection.featureDerivative(timbreLarge);
+
+    graphs.push({ name: "dTimbre Small", buffer: dTimbreSmall.buffer });
+    graphs.push({ name: "dTimbre Large", buffer: dTimbreLarge.buffer });
+
+    const smoothdTimbreSmall = filter.gaussianBlur1D(dTimbreSmall, 3);
+    graphs.push({ name: "dTimbreSmall Smooth", buffer: smoothdTimbreSmall.buffer });
+
+    const smoothdTimbreLarge = filter.gaussianBlur1D(dTimbreLarge, 3);
+    log.debug("smoothdTImbre", smoothdTimbreLarge);
+    graphs.push({ name: "dTimbreLarge Smooth", buffer: smoothdTimbreLarge.buffer });
+
+    const features = data.timbreFeatures;
+    const segmentationSmoothingLength = Math.round(5);
+    const continuousSmoothingLength = Math.round(10);
+
+    const segmentationSmoothedFeatures = filter.gaussianBlurFeatures(features, segmentationSmoothingLength);
+    const segmentationDerivative = noveltyDetection.featureDerivative(segmentationSmoothedFeatures);
+    const smoothedSegmentationDerivative = filter.gaussianBlur1D(segmentationDerivative, 5);
+    const segments = structure.createSegmentsFromNovelty(smoothedSegmentationDerivative, data.sampleDuration, 0.2);
+
+    const segmentedFeatures = [];
+    segments.forEach((segment) => {
+        const featureSegment = features.slice(segment.startSample, segment.endSample);
+        const smoothedFeatureSegment = filter.gaussianBlurFeatures(featureSegment, continuousSmoothingLength);
+        segmentedFeatures.push(smoothedFeatureSegment);
+    });
+
+    log.debug("segmentedFeatures", segmentedFeatures);
+
+    const frankenFeatures = [];
+    segmentedFeatures.forEach((featureSegment) => {
+        frankenFeatures.push(...featureSegment);
+    });
+    log.debug("Frankenfeatures", frankenFeatures);
+    const downSampleAmount = 200;
+    const downSampledFeatures = Features.downSample(frankenFeatures, downSampleAmount);
+    log.debug("Downsampled", downSampledFeatures);
+
+    const mdsFeature = mds.getMDSCoordinatesSamples(downSampledFeatures, "Classic");
+    log.debug(mdsFeature);
+    graphs.push({ name: "MDSFeature Smooth", buffer: new Float32Array(mdsFeature).buffer });
+
+    const ssmUniqueness = uniqueness.computeFromSSM(ssmTimbre);
+    graphs.push({ name: "Timbre SSM Uniqueness", buffer: new Float32Array(ssmUniqueness).buffer });
+
+    const ssmUniquenessSmall = uniqueness.computeFromSSM(blurredTimbreSmall);
+    graphs.push({ name: "Timbre SSM Uniqueness Blur Small", buffer: new Float32Array(ssmUniquenessSmall).buffer });
+
+    const anomalyFeature = uniqueness.computeFromFeaturesGMM(data.timbreFeatures);
+    graphs.push({ name: "Timbre Anomalies", buffer: new Float32Array(anomalyFeature).buffer });
+
+    const uniquenessF = uniqueness.computeFromFeatures(data.timbreFeatures, data.sampleDuration, 20);
+    graphs.push({ name: "Timbre Uniqueness", buffer: new Float32Array(uniquenessF).buffer });
+
+    const uniquenessSmooth = filter.gaussianBlur1D(uniquenessF, 2);
+    graphs.push({ name: "Timbre Uniqueness Smooth", buffer: new Float32Array(uniquenessSmooth).buffer });
+
+    const uniquenessSSM = uniqueness.computeLocalUniqueness(ssmTimbre, 1, 20);
+    graphs.push({ name: "Timbre SSM Subract Uniqueness", buffer: new Float32Array(uniquenessSSM).buffer });
+
+    const colSumRawFeature = events.colSumFeature(data.timbreFeatures, data.sampleDuration);
+    graphs.push({ name: "colsumRaw", buffer: new Float32Array(colSumRawFeature).buffer });
+
+    const smallBlurTimbre = filter.gaussianBlurFeatures(data.timbreFeatures, 3);
+    const medianTimbre = filter.medianFilterFeatures(data.timbreFeatures, 1);
+
+    const ssmTimbreFeatureBlurEuc = SSM.calculateSSM(
+        data.timbreFeatures,
+        data.sampleDuration,
+        false,
+        0,
+        "euclideanTimbre"
+    );
+    matrixes.push({
+        name: "ssmTimbreFeatureBlurEuc",
+        buffer: ssmTimbreFeatureBlurEuc.getBuffer(),
+    });
+
+    const ssmTimbreFeatureBlurCos = SSM.calculateSSM(data.timbreFeatures, data.sampleDuration, false, 0, "cosine");
+    matrixes.push({
+        name: "ssmTimbreFeatureBlurCos",
+        buffer: ssmTimbreFeatureBlurCos.getBuffer(),
+    });
+    const colSumFeature = events.colSumFeature(medianTimbre, data.sampleDuration);
+    graphs.push({ name: "colsum", buffer: new Float32Array(colSumFeature).buffer });
+
+    const difFeatureRaw = events.splitAverageDifferenceFeature(medianTimbre, 6);
+    graphs.push({ name: "difFeatureRaw", buffer: new Float32Array(difFeatureRaw).buffer });
+
+    const difFeatureBlur = events.splitAverageDifferenceFeature(smallBlurTimbre, 6);
+    graphs.push({ name: "difFeatureBlul", buffer: new Float32Array(difFeatureBlur).buffer });
+
+    const difFeatureRawLong = events.splitAverageDifferenceFeature(medianTimbre, 15);
+    graphs.push({ name: "difFeatureRawLong", buffer: new Float32Array(difFeatureRawLong).buffer });
+
+    const difFeatureBlurLong = events.splitAverageDifferenceFeature(smallBlurTimbre, 15);
+    graphs.push({ name: "difFeatureBlulLong", buffer: new Float32Array(difFeatureBlurLong).buffer });
+
+    const colsumDiff = colSumFeature.map((colsumVal, index) => colsumVal * difFeatureRaw[index]);
+    colsumDiff[0] = 0.02;
+    graphs.push({ name: "colsumDiff", buffer: new Float32Array(colsumDiff).buffer });
+    const eventPeaks = noveltyDetection.findPeaks(colsumDiff);
+    const empty = colSumFeature.map((colsumVal, index) => 0);
+    const eventThreshold = 0.005;
+
+    let mean =
+        colsumDiff.reduce((acc, curr) => {
+            return acc + curr;
+        }, 0) / colsumDiff.length;
+
+    const squares = colsumDiff.map((k) => {
+        return (k - mean) ** 2;
+    });
+    let squareSum = squares.reduce((acc, curr) => acc + curr, 0);
+
+    // Returning the Standered deviation
+    let sd = Math.sqrt(squareSum / squares.length);
+
+    log.debug("meansd", mean, sd);
+    eventPeaks.forEach((peak) => {
+        if (colsumDiff[peak.sample] >= mean + sd * 1.5) {
+            empty[peak.sample] = colsumDiff[peak.sample];
+        }
+    });
+    empty[0] = mean;
+    empty[1] = mean;
+    empty[2] = mean;
+    empty[3] = mean + sd;
+    empty[4] = mean + sd;
+    empty[5] = mean + sd;
+    empty[6] = mean + sd * 1.5;
+    empty[7] = mean + sd * 1.5;
+    empty[8] = mean + sd * 1.5;
+    graphs.push({ name: "peaks", buffer: new Float32Array(empty).buffer });
+
+    // peak 0.003
+    const smallT = filter.gaussianBlur2DOptimized(ssmTimbre, 1);
+    matrixes.push({
+        name: "smallT",
+        buffer: smallT.getBuffer(),
+    });
+    const largeT = filter.gaussianBlur2DOptimized(ssmTimbre, 20);
+    matrixes.push({
+        name: "largeT",
+        buffer: largeT.getBuffer(),
+    });
+
+    const uniquenessTimbreSSM = SSM.subtract(largeT, smallT);
+    matrixes.push({
+        name: "uniquenessTimbreSSM",
+        buffer: uniquenessTimbreSSM.getBuffer(),
+    });
+    //graphs.push({ name: "LOF", buffer: new Float32Array(events.detectLOF(features)).buffer });
+    /*
+    const dtimbreSegmentsSmall = structure.createSegmentsFromNovelty(smoothdTimbreSmall, data.sampleDuration, 0.15);
+    const processeddTimbreSegmentsSmall = structure.processTimbreSegments(
+        data.timbreFeatures,
+        dtimbreSegmentsSmall,
+        data.sampleDuration,
+        "GDTries"
+    );
+    structures.push({ name: "Derivative Timbre Small", data: processeddTimbreSegmentsSmall, verticalPosition: true });
+
+    const dtimbreSegmentsLarge = structure.createSegmentsFromNovelty(smoothdTimbreLarge, data.sampleDuration, 0.15);
+    const processeddTimbreSegmentsLarge = structure.processTimbreSegments(
+        data.timbreFeatures,
+        dtimbreSegmentsLarge,
+        data.sampleDuration,
+        "GDTries"
+    );
+    structures.push({ name: "Derivative Timbre Large", data: processeddTimbreSegmentsLarge, verticalPosition: true });
 
     if (!data.synthesized) {
         const timbreSegmentsLarge = structure.createSegmentsFromNovelty(
@@ -462,6 +632,89 @@ addEventListener("message", (event) => {
         );
         structures.push({ name: "Timbre Sampled", data: processedTimbreSegmentsSampled, verticalPosition: true });
 
+        const timbreBlur5 = filter.gaussianBlurFeatures(data.timbreFeatures, 8);
+        const duration1 = 2; // samples
+        const sampledSegments1 = structure.createFixedDurationStructureSegments(
+            data.sampleAmount,
+            data.sampleDuration,
+            duration1
+        );
+        const processedTimbreBlur5 = structure.processTimbreSegments(
+            timbreBlur5,
+            sampledSegments1,
+            data.sampleDuration,
+            "GD"
+        );
+        structures.push({ name: "Timbre Sampled 5 Blur Lowest", data: processedTimbreBlur5, verticalPosition: true });
+
+        let opt = {};
+        opt.theta = 0.15; // theta
+        opt.perplexity = 30; // perplexity
+        opt.dims = 2; // dimensions
+        const GRADIENT_STEPS = 500;
+
+        var model = new tsneez.TSNEEZ(opt); // create a tsneez instance]
+        var model1d = new tsneez.TSNEEZ({ theta: 0.15, perplexity: 30, dims: 1 }); // create a tsneez instance]
+
+        const features = timbreBlur5;
+        model.initData(features);
+        model1d.initData(features);
+
+        let prevTime = new Date();
+
+        for (var k = 0; k < GRADIENT_STEPS; k++) {
+            model.step(); // gradient update
+            model1d.step();
+            //console.log(`Step : ${k}`)
+            //check time passed
+            let currTime = new Date();
+            var timeDiff = currTime - prevTime; //in ms
+            if (timeDiff > 500) {
+                log.debug("TSNE step ", k);
+                prevTime = currTime;
+            }
+        }
+
+        var Y = model.Y;
+        var Y1d = model1d.Y;
+
+        let result = [];
+        let result1d = [];
+        let max = 0;
+        for (let i = 0; i < features.length; i++) {
+            const x = Y.data[i * 2];
+            const y = Y.data[i * 2 + 1];
+            result.push([x, y]);
+            result1d.push(Y1d.data[i]);
+            max = Math.max(max, Math.abs(x), Math.abs(y));
+        }
+
+        const min1d = Math.min(...result1d);
+        const max1d = Math.max(...result1d);
+
+        let maxRadius = 0;
+        for (let i = 0; i < features.length; i++) {
+            const coord = result[i];
+            const radius = Math.sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
+            if (radius > maxRadius) maxRadius = radius;
+        }
+
+        for (let i = 0; i < features.length; i++) {
+            result[i] = [result[i][0] / maxRadius, result[i][1] / maxRadius];
+            result1d[i] = (result1d[i] - min1d) / (max1d - min1d);
+        }
+
+        const tsneSegments = [];
+        for (let i = 0; i < features.length; i++) {
+            const [angle, radius] = mds.getAngleAndRadius(result[i]);
+            const newSegment = { start: i * data.sampleDuration, end: (i + 1) * data.sampleDuration };
+            newSegment.colorAngle = angle;
+            newSegment.colorRadius = radius;
+            newSegment.mdsFeature = result1d[i];
+            tsneSegments.push(newSegment);
+        }
+        structures.push({ name: "TSNE", data: tsneSegments, verticalPosition: true });
+
         const startTime = performance.now();
         const duration2 = 2; // samples
         const sampledSegments2 = structure.createFixedDurationStructureSegments(
@@ -480,7 +733,7 @@ addEventListener("message", (event) => {
 
     //message.courseStructure = structure.MDSColorSegments(mutorStructure, strictPathMatrix);
     //message.fineStructure = structure.MDSColorSegments(mutorSubStructure, strictPathMatrix);
-
+*/
     message.matrixes = matrixes;
     message.graphs = graphs;
     message.structures = structures;

@@ -74,7 +74,7 @@ export default class Track {
     smoothedTimbre = [];
     tsneCoords = [];
     clusters = [];
-    clusterSections = [];
+    clusterSections;
 
     constructor(trackData) {
         this.trackData = trackData;
@@ -116,9 +116,9 @@ export default class Track {
 
         window.eventBus.$emit("featuresProcessed");
 
-        this.tsne();
-        this.cluster();
-        this.calculateSSM();
+        //this.tsne();
+        //this.cluster();
+        //this.calculateSSM();
         this.computeChords();
         this.computeHarmonicStructure();
         this.computeTimbreStructure();
@@ -285,6 +285,7 @@ export default class Track {
             this.clusters = result;
             let prevCluster = result[0];
 
+            this.clusterSections = [];
             this.clusterSections.push({ cluster: prevCluster, start: 0 });
             for (let i = 1; i < result.length; i++) {
                 const cluster = result[i];

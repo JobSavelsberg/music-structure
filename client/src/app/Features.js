@@ -3,6 +3,9 @@ import SpotifySegment from "./SpotifySegment";
 import * as chordDetection from "./chordDetection";
 import * as filter from "./filter";
 import { lowerFirst } from "lodash";
+import * as structure from "./structure";
+import * as SSM from "./SSM";
+import * as noveltyDetection from "./noveltyDetection";
 
 const timbreNormalizationAmount = 0.2;
 
@@ -74,6 +77,38 @@ export default class Features {
         this.processSamples();
         this.downSampledTimbre = this.downSampleTimbre(options.downsampleAmount);
         this.fastSampledPitch = this.sample("pitches", { sampleDuration: this.fastSampleDuration });
+
+        const features = this.sampled.timbres;
+        const segmentationSmoothingLength = Math.round(5);
+        const continuousSmoothingLength = Math.round(10);
+
+        const ssmTimbre = SSM.calculateSSM(features, this.sampleDuration);
+        const blurredTimbreLarge = filter.gaussianBlur2DOptimized(ssmTimbre, 5);
+        const timbreNoveltyColumn = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbreLarge);
+
+        const segmentationSmoothedFeatures = filter.gaussianBlurFeatures(features, segmentationSmoothingLength);
+        const segmentationDerivative = noveltyDetection.featureDerivative(segmentationSmoothedFeatures);
+        const smoothedSegmentationDerivative = filter.gaussianBlur1D(segmentationDerivative, 5);
+        const segments = structure.createSegmentsFromNovelty(smoothedSegmentationDerivative, this.sampleDuration, 0.2);
+        const averagedColouredSegments = structure.processTimbreSegments(features, segments, this.sampleDuration);
+
+        const segmentedFeatures = [];
+        segments.forEach((segment) => {
+            const featureSegment = features.slice(segment.startSample, segment.endSample);
+            const smoothedFeatureSegment = filter.gaussianBlurFeatures(featureSegment, continuousSmoothingLength);
+            segmentedFeatures.push(smoothedFeatureSegment);
+        });
+
+        log.debug("segmentedFeatures", segmentedFeatures);
+
+        const frankenFeatures = [];
+        segmentedFeatures.forEach((featureSegment) => {
+            frankenFeatures.push(...featureSegment);
+        });
+        this.sampled.smoothedTimbre = segmentationSmoothedFeatures;
+        const medianFeatures = filter.medianFilterFeatures(this.sampled.timbres, 1);
+
+        this.sampled.frankenFeatures = medianFeatures;
     }
 
     /**

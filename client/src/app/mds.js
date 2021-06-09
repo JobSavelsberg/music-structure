@@ -1,5 +1,7 @@
 //import Matrix from "ml-matrix";
-//import HalfMatrix from "./dataStructures/Matrix";
+import HalfMatrix from "./dataStructures/HalfMatrix";
+import * as similarity from "./similarity";
+
 import * as log from "../dev/log";
 import seedrandom from "seedrandom";
 import numeric from "numeric";
@@ -32,11 +34,35 @@ export function getMDSFeature(
     return feature;
 }
 
-export function getMdsCoordinates(
+export function getMDSCoordinatesSamples(features, strategy) {
+    log.debug("CalculatingMDSSamples");
+    const amount = features.length;
+    const distanceMatrix = new HalfMatrix({ size: amount, numberType: HalfMatrix.NumberType.FLOAT32 });
+    distanceMatrix.fill((x, y) => {
+        return 1 - similarity.euclidianTimbre(features[x], features[y]);
+    });
+    let coords = [];
+    switch (strategy) {
+        case "Classic":
+            coords = classicalMDS(distanceMatrix.getNestedArray(), 1);
+            break;
+        case "GD":
+            coords = getMdsCoordinatesWithGradientDescentMatrix(new Matrix(distanceMatrix.getNestedArray()), {
+                lr: 5,
+            }).coordinates.data;
+            break;
+    }
+
+    return normalize1DCoordinates(coords);
+}
+
+export function getMDSCoordinates(
     distanceMatrix,
     strategy = "Classic",
     { lr = 40, maxSteps = 20, minLossDifference = 1e-6, momentum = 0, logEvery = 5 } = {}
 ) {
+    log.debug("CalculatingMDS");
+
     // transform matrix to Matrix
     const mlDistanceMatrix = new Matrix(distanceMatrix.getNestedArray());
     /*const mlCoordinates = getMdsCoordinatesWithGradientDescentMatrix(mlDistanceMatrix, {
@@ -64,8 +90,10 @@ export function getMdsCoordinates(
         case "Classic":
             coords = classicalMDS(distanceMatrix.getNestedArray(), 2);
             break;
-        case "GD":
-            learnRates.forEach((rate) => {
+        case "GDTries":
+            learnRates.push(0.5, 1, 2, 4, 8);
+            for (let r = 0; r < learnRates.length; r++) {
+                const rate = learnRates[r];
                 coords = getMdsCoordinatesWithGradientDescentMatrix(new Matrix(distanceMatrix.getNestedArray()), {
                     lr: rate,
                 });
@@ -74,40 +102,32 @@ export function getMdsCoordinates(
                     log.debug("Best is", rate);
                     bestLoss = coords.lossPerStep[coords.lossPerStep.length - 1];
                 }
-            });
+            }
+            coords = best.coordinates.data;
+            break;
+        case "GD":
+            for (let r = 0; r < learnRates.length; r++) {
+                const rate = learnRates[r];
+                coords = getMdsCoordinatesWithGradientDescentMatrix(new Matrix(distanceMatrix.getNestedArray()), {
+                    lr: rate,
+                });
+                if (isNaN(coords.lossPerStep[coords.lossPerStep.length - 1])) {
+                    learnRates.push(learnRates[learnRates.length - 1] / 2);
+                    log.debug("Changing rate to", learnRates[learnRates.length - 1]);
+                } else if (coords.lossPerStep[coords.lossPerStep.length - 1] < bestLoss) {
+                    best = coords;
+                    log.debug("Best is", rate);
+                    bestLoss = coords.lossPerStep[coords.lossPerStep.length - 1];
+                }
+            }
             coords = best.coordinates.data;
             break;
         case "GN":
             coords = getMdsCoordinatesWithGaussNewton(new Matrix(distanceMatrix.getNestedArray())).coordinates.data;
             break;
     }
-    let centerX = 0;
-    let centerY = 0;
 
-    for (let i = 0; i < coords.length; i++) {
-        centerX += coords[i][0];
-        centerY += coords[i][1];
-    }
-    centerX /= coords.length;
-    centerY /= coords.length;
-    for (let i = 0; i < coords.length; i++) {
-        coords[i][0] -= centerX;
-        coords[i][1] -= centerY;
-    }
-
-    // scale by largest
-    let maxRadius = 0;
-    for (let i = 0; i < coords.length; i++) {
-        const coord = coords[i];
-        const radius = Math.sqrt(coord[0] * coord[0] + coord[1] + coord[1]);
-        if (radius > maxRadius) maxRadius = radius;
-    }
-
-    for (let i = 0; i < coords.length; i++) {
-        coords[i] = [coords[i][0] / maxRadius, coords[i][1] / maxRadius];
-    }
-
-    return coords;
+    return normalize2DCoordinates(coords);
 }
 
 /**
@@ -153,7 +173,7 @@ export function getMdsCoordinates(
  */
 function getMdsCoordinatesWithGradientDescentMatrix(
     distances,
-    { lr = 7, maxSteps = 1000, minLossDifference = 1e-9, momentum = 0, logEvery = 50 } = {}
+    { lr = 7, maxSteps = 500, minLossDifference = 1e-9, momentum = 0, logEvery = 50 } = {}
 ) {
     const numCoordinates = distances.rows;
     let coordinates = getInitialMdsCoordinates(numCoordinates);
@@ -168,7 +188,7 @@ function getMdsCoordinatesWithGradientDescentMatrix(
         // Check if we should early stop.
         if (lossPerStep.length > 1) {
             const lossPrev = lossPerStep[lossPerStep.length - 2];
-            if (Math.abs(lossPrev - loss) < minLossDifference) {
+            if (Math.abs(lossPrev - loss) < minLossDifference || isNaN(loss) || loss > 10) {
                 return { coordinates: coordinates, lossPerStep: lossPerStep };
             }
         }
@@ -456,4 +476,46 @@ export function getAngleAndRadius(mdsCoordinate) {
     angle = angle < 0 ? 1 + angle : angle;
     const radius = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
     return [angle, radius];
+}
+export function normalize1DCoordinates(coords) {
+    coords = coords.map((coord) => coord[0]);
+    let min = Number.POSITIVE_INFINITY;
+    let max = Number.NEGATIVE_INFINITY;
+    for (let i = 0; i < coords.length; i++) {
+        if (coords[i] < min) min = coords[i];
+        if (coords[i] > max) max = coords[i];
+    }
+    for (let i = 0; i < coords.length; i++) {
+        coords[i] = (coords[i] - min) / (max - min);
+    }
+    log.debug("minmax", min, max, coords);
+    return coords;
+}
+export function normalize2DCoordinates(coords) {
+    let centerX = 0;
+    let centerY = 0;
+
+    for (let i = 0; i < coords.length; i++) {
+        centerX += coords[i][0];
+        centerY += coords[i][1];
+    }
+    centerX /= coords.length;
+    centerY /= coords.length;
+    for (let i = 0; i < coords.length; i++) {
+        coords[i][0] -= centerX;
+        coords[i][1] -= centerY;
+    }
+
+    // scale by largest
+    let maxRadius = 0;
+    for (let i = 0; i < coords.length; i++) {
+        const coord = coords[i];
+        const radius = Math.sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
+        if (radius > maxRadius) maxRadius = radius;
+    }
+
+    for (let i = 0; i < coords.length; i++) {
+        coords[i] = [coords[i][0] / maxRadius, coords[i][1] / maxRadius];
+    }
+    return coords;
 }

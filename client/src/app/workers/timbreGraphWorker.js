@@ -1,5 +1,6 @@
 import * as log from "../../dev/log";
 import * as structure from "../structure";
+import * as filter from "../filter";
 
 addEventListener("message", (event) => {
     const data = event.data;
@@ -38,12 +39,31 @@ addEventListener("message", (event) => {
         });
 
         const mdsStart = new Date();
-        let coloredSamples = structure.MDSColorTimbreSamples(data.timbreFeatures);
+        const timbreBlur5 = filter.gaussianBlurFeatures(data.timbreFeatures, 1);
+        let coloredSamples = structure.MDSColorTimbreSamples(timbreBlur5);
         const mdsDuration = new Date() - mdsStart;
         log.debug("MDS duration samples", mdsDuration);
         ///coloredSamples = coloredSamples.map((value) => (value + 1) / 2);
 
-        result = coloredSamples;
+        const duration1 = 1; // samples
+        log.debug(sampleAmount, data.sampleDuration);
+        const sampledSegments1 = structure.createFixedDurationStructureSegments(
+            sampleAmount,
+            data.sampleDuration,
+            duration1
+        );
+        /*const processedTimbreBlur5 = structure.processTimbreSegments(
+            timbreBlur5,
+            sampledSegments1,
+            data.sampleDuration,
+            "Classic"
+        );*/
+
+        sampledSegments1.forEach((segment, index) => {
+            segment.mdsFeature = coloredSamples[index];
+        });
+
+        result = sampledSegments1;
         postMessage({ result, timestamp: new Date() });
         return;
     } else {

@@ -42,8 +42,9 @@ addEventListener("message", (event) => {
 
     // tonality feature
     const smallBlurredPitch = filter.gaussianBlurFeatures(data.fastSampledPitch, 2);
-    const largeBlurredPitch = filter.gaussianBlurFeatures(data.fastSampledPitch, 40);
+    const largeBlurredPitch = filter.gaussianBlurFeatures(data.fastSampledPitch, 75);
     const hugeBlurredPitch = filter.gaussianBlurFeatures(data.fastSampledPitch, 70);
+    const windowSize = 150;
 
     const tonalityFeatureSmall = [];
     const tonalityFeatureLarge = [];
@@ -51,10 +52,16 @@ addEventListener("message", (event) => {
     const keyFeature = [];
     const chordFeature = [];
     for (let i = 0; i < smallBlurredPitch.length; i++) {
-        tonalityFeatureSmall.push(audioUtil.tonality(smallBlurredPitch[i]));
+        tonalityFeatureSmall.push(keyDetection.detect2D(largeBlurredPitch[i]));
         tonalityFeatureLarge.push(audioUtil.tonality(largeBlurredPitch[i]));
 
-        keyFeature.push(keyDetection.detectSingle(hugeBlurredPitch[i]));
+        keyFeature.push(
+            keyDetection.detect(
+                data.fastSampledPitch,
+                Math.max(0, i - windowSize / 2),
+                Math.min(data.fastSampledPitch.length - 1, i + windowSize / 2)
+            )
+        );
     }
 
     postMessage({

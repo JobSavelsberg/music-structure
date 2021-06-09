@@ -226,9 +226,9 @@ export default {
 
             for (let i = 0; i < this.tonality.length; i++) {
                 const x = i * this.fastSampleDuration * this.scale;
-                this.ctx.fillStyle = this.color(1 - this.tonality[i][0], Math.tanh(this.tonality[i][1] * 3), 1);
+                this.ctx.fillStyle = this.color(this.tonality[i][0], this.tonality[i][1] * 1.5, 1);
                 this.ctx.fillRect(x, 0, this.fastSampleDuration * this.scale + 2, this.sectionHeight);
-                this.ctx.fillStyle = this.color(1 - this.tonalitySlow[i][0], Math.tanh(this.tonalitySlow[i][1] * 3), 1);
+                this.ctx.fillStyle = this.color(this.tonalitySlow[i][0], Math.sqrt(this.tonalitySlow[i][1] * 2), 1);
                 this.ctx.fillRect(
                     x,
                     this.sectionHeight + 2,
@@ -236,12 +236,21 @@ export default {
                     this.sectionHeight
                 );
                 this.ctx.fillStyle = this.color(keyDetection.circleOfFifthsAngle(this.keyFeature[i]), 1, 1);
-                /*this.ctx.fillRect(
+                this.ctx.fillRect(
                     x,
                     (this.sectionHeight + 2) * 2,
                     this.fastSampleDuration * this.scale + 2,
                     this.sectionHeight
-                );*/
+                );
+                /*if (i === 0 || i === 200) {
+                    this.ctx.fillStyle = "white";
+                    this.ctx.fillRect(
+                        x,
+                        (this.sectionHeight + 2) * 2 - 4,
+                        this.fastSampleDuration * this.scale + 6,
+                        this.sectionHeight * 2
+                    );
+                }*/
             }
         },
         computeAccumulativeAngle(tonality) {

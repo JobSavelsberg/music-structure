@@ -131,6 +131,20 @@ export default {
                     range: [-1, 1],
                     featureAmount: 12,
                 },
+                {
+                    name: "Frankenfeatures Sampled",
+                    data: this.track.features.sampled.frankenFeatures,
+                    sampled: true,
+                    range: [-1, 1],
+                    featureAmount: 12,
+                },
+                {
+                    name: "smoothed Sampled",
+                    data: this.track.features.sampled.smoothedTimbre,
+                    sampled: true,
+                    range: [-1, 1],
+                    featureAmount: 12,
+                },
             ];
             this.webGLPitchTimbre.setHeight(this.height);
             this.webGLPitchTimbre.fillpitchTimbreBufferPool(this.track, this.selectedFeatures);

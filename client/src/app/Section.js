@@ -9,6 +9,8 @@ import * as _ from "lodash";
 export default class Section {
     start;
     end;
+    startSample;
+    endSample;
 
     confidence = 1;
     groupID = 0;
@@ -30,6 +32,8 @@ export default class Section {
     constructor(args) {
         this.start = args.start;
         this.end = args.end;
+        this.startSample = args.startSample;
+        this.endSample = args.endSample;
         if (args.groupID !== undefined) {
             this.groupID = args.groupID;
         }

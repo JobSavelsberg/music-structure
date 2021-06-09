@@ -103,7 +103,7 @@ export default {
             synthesizing: false,
             selectedTestSet: null,
             showPrototype: false,
-            contentRatio: 0.97, //0.5
+            contentRatio: 0.97, //0.5 // 1.5
         };
     },
     computed: {

@@ -31,6 +31,10 @@ export function calculateSSM(
                 Math.max(0, Math.min(1, sim.euclidianPitchTransposed(features[x], features[y], f) - threshold)) /
                 (1 - threshold)
             );
+        } else if (similarityFunction === "euclideanTimbre") {
+            return (
+                Math.max(0, Math.min(1, sim.euclidianTimbre(features[x], features[y]) - threshold)) / (1 - threshold)
+            );
         }
     });
     return ssm;

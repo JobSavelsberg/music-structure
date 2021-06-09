@@ -30,7 +30,9 @@ export function createSegmentsFromNovelty(novelty, sampleDuration, threshold = 0
     for (let i = 0; i < peaks.length; i++) {
         const peak = peaks[i];
         const start = peak.sample * sampleDuration;
+        const startSample = peak.sample;
         const end = i < peaks.length - 1 ? sampleDuration * peaks[i + 1].sample : sampleDuration * novelty.length;
+        const endSample = i < peaks.length - 1 ? peaks[i + 1].sample : novelty.length;
         const confidence = peak.confidence;
         const groupID = structureSegments.length;
         structureSegments.push(
@@ -39,6 +41,8 @@ export function createSegmentsFromNovelty(novelty, sampleDuration, threshold = 0
                 end,
                 confidence,
                 groupID,
+                startSample,
+                endSample,
             })
         );
     }
@@ -890,7 +894,7 @@ export function MDSColorSegmentsPerGroup(segments, pathSSM, strategy = "overlap"
 
 export function MDSColorGivenDistanceMatrix(segments, distanceMatrix, coloringStrategy) {
     const coloredSegments = [];
-    const MdsCoordinates = mds.getMdsCoordinates(distanceMatrix, coloringStrategy);
+    const MdsCoordinates = mds.getMDSCoordinates(distanceMatrix, coloringStrategy);
     const MdsFeature = mds.getMDSFeature(distanceMatrix);
 
     segments.forEach((segment, index) => {
@@ -1130,13 +1134,13 @@ export function MDSColorTimbreSegmentsWithSSM(blurredTimbreSSM, segments) {
     });
 
     distanceMatrix.fill((x, y) => {
-        return similarity.cosine(segmentVectors[x], segmentVectors[y]);
+        return similarity.euclidianTimbre(segmentVectors[x], segmentVectors[y]);
     });
 
     return MDSColorGivenDistanceMatrix(segments, distanceMatrix);
 }
 
-export function MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sampleDuration) {
+export function MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sampleDuration, strategy) {
     const amount = segments.length;
     const distanceMatrix = new HalfMatrix({ size: amount, numberType: HalfMatrix.NumberType.FLOAT32 });
 
@@ -1159,17 +1163,17 @@ export function MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sam
     });
 
     distanceMatrix.fill((x, y) => {
-        return similarity.cosine(segmentVectors[x], segmentVectors[y]);
+        return 1 - similarity.euclidianTimbre(segmentVectors[x], segmentVectors[y]);
     });
 
-    return MDSColorGivenDistanceMatrix(segments, distanceMatrix);
+    return MDSColorGivenDistanceMatrix(segments, distanceMatrix, strategy);
 }
 
 export function MDSColorTimbreSamples(timbreFeatures) {
     const amount = timbreFeatures.length;
     const distanceMatrix = new HalfMatrix({ size: amount, numberType: HalfMatrix.NumberType.FLOAT32 });
     distanceMatrix.fill((x, y) => {
-        return similarity.cosine(timbreFeatures[x], timbreFeatures[y]);
+        return 1 - similarity.euclidianTimbre(timbreFeatures[x], timbreFeatures[y]);
     });
     //const MdsCoordinates = mds.getMdsCoordinates(distanceMatrix);
     const MdsFeature = mds.getMDSFeature(distanceMatrix);
@@ -1215,8 +1219,8 @@ export function clusterTimbreSegmentsWithFeatures(timbreFeatures, segments, samp
 
     return coloredSegments;
 }
-export function processTimbreSegments(timbreFeatures, segments, sampleDuration) {
-    const mdsColoredSegments = MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sampleDuration);
+export function processTimbreSegments(timbreFeatures, segments, sampleDuration, strategy) {
+    const mdsColoredSegments = MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sampleDuration, strategy);
     //log.debug("Clustering timbre segments")
     //const clusteredSegments = clusterTimbreSegmentsWithFeatures(timbreFeatures, mdsColoredSegments, sampleDuration);
     //log.debug("Clustered timbre segments")

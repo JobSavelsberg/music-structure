@@ -25,7 +25,7 @@ export function computeFromFeatures(features, sampleDuration, windowSizeSeconds)
     const averagedFeature = computeAveragedFeature(features, sampleDuration, windowSizeSeconds);
 
     for (let i = 0; i < features.length; i++) {
-        const uniqueness = (1 - similarity.cosine(averagedFeature[i], features[i])) / 2;
+        const uniqueness = (1 - similarity.euclidianTimbre(averagedFeature[i], features[i])) / 2;
         const absFeature = features[i].map((val) => Math.abs(val));
         const energy = absFeature.reduce((sum, val) => sum + val);
         uniquenessFeature.push(energy * uniqueness);
