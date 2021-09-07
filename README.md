@@ -1,6 +1,20 @@
 # music-structure
 A web application that connects with a user's spotify to show visualizations of the structure of music.
 
+The visualization consists of 6 separate modules each showing distinct musical concepts:
+* A repetitive structure visualization, displaying a decomposition of the song into sections, grouped by their harmonic sequential similarity.
+* A tempo graph, showing the change, or stability of a song’s tempo over time.
+* A unique timbre visualization, showing both segmentation in terms of instrumentation, and gradual timbral changes.
+* An event visualization, showing and characterizing moments of timbral anomalies across the song.
+* A tonality visualization, showing the large-scale changes in musical key.
+* A chord visualization, showing the small scale structure of chord progressions.
+
+[More information](http://jobsavelsberg.com/musicstructure/)
+
+[Research Paper](https://www.researchgate.net/publication/353829597_Visualizing_music_structure_using_Spotify_data)
+
+![tool_image](http://jobsavelsberg.com/wp-content/uploads/2021/07/Tool-1536x1363.png "Tool")
+
 # Setup
 ### npm install
 The project is separated into a **server** and **client**.
