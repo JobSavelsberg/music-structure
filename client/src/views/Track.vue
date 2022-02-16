@@ -1,5 +1,5 @@
 <template>
-    <div class="home">
+    <div class="track">
         <v-app-bar dark>
             <v-toolbar-title>Music Structure Visualizer</v-toolbar-title>
             <v-spacer></v-spacer>
@@ -7,6 +7,7 @@
             <form v-if="!testing && !synthesizing" v-on:submit.prevent="search">
                 <v-text-field
                     v-model="searchQuery"
+                    label="Search for songs"
                     hide-details
                     append-icon="mdi-magnify"
                     single-line
@@ -17,7 +18,7 @@
                     @blur="$store.commit('setInputFocus', false)"
                 ></v-text-field>
             </form>
-            <form v-if="testing && !synthesizing">
+            <!--<form v-if="testing && !synthesizing">
                 <v-select
                     v-model="selectedTestSet"
                     :items="allTestSets"
@@ -38,8 +39,9 @@
             <v-btn icon @click="synthesizing = !synthesizing">
                 <v-icon>mdi-pencil</v-icon>
             </v-btn>
+            -->
             <v-spacer></v-spacer>
-
+            <!--
             <v-btn icon @click="$store.commit('toggleZoomed')">
                 <v-icon>mdi-magnify-plus-outline</v-icon>
             </v-btn>
@@ -49,6 +51,7 @@
             <v-btn icon @click="clickActivePlayer()">
                 <v-icon>{{ activePlayer ? "mdi-speaker" : "mdi-speaker-off" }}</v-icon>
             </v-btn>
+            -->
             <div class="volumeSlider">
                 <v-container>
                     <v-slider
@@ -61,19 +64,22 @@
                     ></v-slider>
                 </v-container>
             </div>
-
-            <v-btn icon>
+            <v-btn icon @click="share()">
+                <v-icon>mdi-share-variant</v-icon>
+            </v-btn>
+            <!--<v-btn icon>
                 <v-icon>mdi-heart</v-icon>
-            </v-btn>
-            <v-btn icon>
-                <v-icon>mdi-dots-vertical</v-icon>
-            </v-btn>
+            </v-btn>-->
         </v-app-bar>
         <TrackSelector v-if="!synthesizing" :tracks="trackList" :album-size="120" />
         <div ref="mainContent" class="mainContent" :style="mainContentStyle">
             <!--<v-btn v-for="(n, i) in 10" :key="'colordiv' + i" width="20" height="20" :color="color(i)"></v-btn>-->
             <Player v-if="!synthesizing" :width="mainContentWidth" />
             <Visualization :width="mainContentWidth" :showPrototype="showPrototype" />
+            <v-btn class="readMore" @click="readMore()" style="color: #aaa">
+                <v-icon style="margin-right: .5em">mdi-book-information-variant</v-icon>
+                Read about this project
+            </v-btn>
         </div>
     </div>
 </template>
@@ -90,7 +96,7 @@ import * as vis from "../app/vis";
 
 import * as log from "../dev/log";
 export default {
-    name: "Home",
+    name: "Track",
     data() {
         return {
             searchQuery: "",
@@ -226,12 +232,18 @@ export default {
                 player.transferPlayback();
             }
         },
+        readMore() {
+            Object.assign(document.createElement("a"), {
+                target: "_blank",
+                href: "http://jobsavelsberg.com/musicstructure/",
+            }).click();
+        },
     },
 };
 </script>
 
 <style>
-.home {
+.track {
     overflow: hidden; /* Hide scrollbars */
 }
 .mainContent {
@@ -247,5 +259,11 @@ export default {
 }
 .trackScroll::-webkit-scrollbar {
     display: none;
+}
+.readMore {
+    position: fixed;
+    z-index: 1000;
+    right: 0px;
+    bottom: 0%;
 }
 </style>

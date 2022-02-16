@@ -66,7 +66,7 @@ function getResult(model, features) {
     let maxRadius = 0;
     for (let i = 0; i < features.length; i++) {
         const coord = result[i];
-        const radius = Math.sqrt(coord[0] * coord[0] + coord[1] + coord[1]);
+        const radius = Math.sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
         if (radius > maxRadius) maxRadius = radius;
     }
 

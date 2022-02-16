@@ -21,7 +21,7 @@ addEventListener("message", (event) => {
         data.allPitches
     );
     const transpositionInvariantPre = SSM.makeTranspositionInvariant(enhancedSSM);
-    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.15); // .22
+    let strictPathMatrixHalf = SSM.rowColumnAutoThreshold(transpositionInvariantPre, 0.15); // .22 //.15 (30/06)
     //strictPathMatrixHalf = SSM.multiply(strictPathMatrixHalf, 1.3);
     //strictPathMatrixHalf = SSM.threshold(strictPathMatrixHalf, 0.1);
     const strictPathMatrix = Matrix.fromHalfMatrix(strictPathMatrixHalf);
@@ -56,7 +56,7 @@ addEventListener("message", (event) => {
 
 function colorHarmonicStructure(harmonicStructure, ssm, strategy) {
     log.debug(strategy);
-    const harmonicStructureMDS = structure.MDSColorSegments(harmonicStructure, ssm, "DTW", strategy);
+    const harmonicStructureMDS = structure.MDSColorSegments(harmonicStructure, ssm, "DTW", strategy, true);
     const sortedHarmonicStructureMDS = harmonicStructureMDS.sort((a, b) => {
         if (a.groupID < b.groupID) return -1;
         if (b.groupID < a.groupID) return 1;

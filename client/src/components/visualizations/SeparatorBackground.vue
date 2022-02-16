@@ -64,6 +64,7 @@ export default {
             return vis.goldenRatioCategoricalColor(separator.groupID, 0, 0.5);
         },
         click(event) {
+            console.log("clicked", event);
             let xNormalized = 0;
             let yNormalized = 0;
             if (this.$store.state.browser === "Firefox") {

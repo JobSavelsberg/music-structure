@@ -27,15 +27,19 @@ export async function initialize() {
             store.commit("setUser", data);
         })
         .catch((err) => {
-            router.push("/");
+            router.push("/login");
         });
-    spotify.getPlaylistTracks("34wIIW2zm3vw5ZRqO8dHi0", {}, (error, result) => {
-        if (error) log.error(error);
-        const playlistTracks = result.items.map((item) => item.track);
-        spotify.getMyTopTracks({ limit: 50, offset: 0 }).then((topTracks) => {
-            loadTracksFromSpotify([...playlistTracks, ...topTracks.items], false);
-            selectTrackAtIndex(0);
-        });
+
+    let firstTrack;
+    const localTrackId = window.localStorage.getItem("trackId");
+    if (localTrackId && localTrackId !== "-1") {
+        firstTrack = (await spotify.getTracks([localTrackId])).tracks[0];
+    }
+    if (!firstTrack) {
+        firstTrack = (await spotify.getPlaylistTracks("34wIIW2zm3vw5ZRqO8dHi0")).items[0].track;
+    }
+    spotify.getMyTopTracks({ limit: 50, offset: 0 }).then((topTracks) => {
+        loadTracksFromSpotify([firstTrack, ...topTracks.items], false);
     });
 }
 
@@ -51,7 +55,7 @@ export async function selectTrackAtIndex(index) {
 
         //const query = { ...this.$route.query, trackID: newTrack.getID() };
         //router.replace({ query });
-        router.push(`/home/${newTrack.getID()}`);
+        router.push(`/track/${newTrack.getID()}`);
     });
 }
 export async function getAnalysis(track) {
@@ -163,5 +167,5 @@ export async function synthesize(synthesizerString) {
     store.commit("clearTrackList");
     store.commit("addToTrackList", track);
 
-    selectTrackAtIndex(0);
+    //selectTrackAtIndex(0);
 }

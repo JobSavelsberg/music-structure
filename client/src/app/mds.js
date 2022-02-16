@@ -39,7 +39,7 @@ export function getMDSCoordinatesSamples(features, strategy) {
     const amount = features.length;
     const distanceMatrix = new HalfMatrix({ size: amount, numberType: HalfMatrix.NumberType.FLOAT32 });
     distanceMatrix.fill((x, y) => {
-        return 1 - similarity.euclidianTimbre(features[x], features[y]);
+        return 1 - similarity.cosine(features[x], features[y]);
     });
     let coords = [];
     switch (strategy) {
@@ -173,7 +173,7 @@ export function getMDSCoordinates(
  */
 function getMdsCoordinatesWithGradientDescentMatrix(
     distances,
-    { lr = 7, maxSteps = 500, minLossDifference = 1e-9, momentum = 0, logEvery = 50 } = {}
+    { lr = 7, maxSteps = 500, minLossDifference = 1e-9, momentum = 0, logEvery = 0 } = {}
 ) {
     const numCoordinates = distances.rows;
     let coordinates = getInitialMdsCoordinates(numCoordinates);

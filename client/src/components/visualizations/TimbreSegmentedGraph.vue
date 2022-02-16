@@ -6,6 +6,16 @@
             <v-btn icon small @click="showLoudness = !showLoudness" :color="showLoudness ? 'white' : 'dimgrey'">
                 <v-icon>mdi-equalizer</v-icon>
             </v-btn>
+            <v-btn icon small @click="showHelp = !showHelp"> <v-icon color="#ccc" dark>mdi-help-box</v-icon> </v-btn>
+            <Tooltip :show="showHelp">
+                This visualization shows timbre in the form of a segmented graph. The vertical axis, together with
+                colour, denote similarity. Height in the graph will mostly correspond to energy and brightness. A sudden
+                change in timbre will show up as a break in the graph. The
+                <v-icon dark small color="#ccc">mdi-equalizer</v-icon> button toggles the embedding of loudnenss in the
+                visualization. <br />
+                The dots shown below the graph are moments of timbral anomaly, points in the music where the timbre is
+                unique and locally distinct.
+            </Tooltip>
         </v-row>
         <Seeker
             class="seeker"
@@ -52,7 +62,7 @@ import GraphSection from "./GraphSection";
 import Events from "./Events";
 
 import ClickableBackground from "./ClickableBackground";
-
+import Tooltip from "./Tooltip.vue";
 import * as testing from "../../app/testing";
 import ZoomCanvas from "../../app/visualization/ZoomCanvas";
 import * as player from "../../app/player";
@@ -65,6 +75,7 @@ export default {
         GraphSection,
         ClickableBackground,
         Events,
+        Tooltip,
     },
     data() {
         return {
@@ -72,6 +83,7 @@ export default {
             sectionHeight: 25,
             showLoudness: true,
             gradientStepAmount: 8,
+            showHelp: false,
         };
     },
     computed: {
@@ -117,5 +129,7 @@ export default {
     border-radius: 2px;
     background: #333333;
     margin: 20px 0px;
+}
+.timbreStructureSVG {
 }
 </style>

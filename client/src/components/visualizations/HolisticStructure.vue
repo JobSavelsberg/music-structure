@@ -1,11 +1,24 @@
 <template>
     <div class="pt-5">
         <v-row>
-            <v-col>Harmonic Structure</v-col>
+            <v-col>Repetition </v-col>
+
             <v-spacer></v-spacer>
             <v-btn icon small @click="showLoudness = !showLoudness" :color="showLoudness ? 'white' : 'dimgrey'">
                 <v-icon>mdi-equalizer</v-icon>
             </v-btn>
+            <v-btn icon small @click="catColoring = !catColoring" :color="catColoring ? 'white' : 'dimgrey'">
+                <v-icon dark>mdi-palette</v-icon>
+            </v-btn>
+            <v-btn icon small @click="showHelp = !showHelp"> <v-icon color="#ccc" dark>mdi-help-box</v-icon> </v-btn>
+            <Tooltip :show="showHelp">
+                This visualization shows section blocks, where each row/group of blocks represent repeating harmonic
+                sequences. For example, in many songs, a section block will represent a repeated chord progression. The
+                <v-icon dark small color="#ccc">mdi-palette</v-icon> button switches colours to show either the harmonic
+                sequential similarity within a group, or between groups. The
+                <v-icon dark small color="#ccc">mdi-equalizer</v-icon> button toggles the embedding of loudnenss in the
+                visualization.
+            </Tooltip>
         </v-row>
         <Seeker
             v-if="hasStructure"
@@ -17,7 +30,9 @@
             :drawMarkers="false"
         />
         <svg v-if="hasStructure" class="structureSVG" :width="width" :height="height" @contextmenu.prevent="rightClick">
-            <SeparatorBackground :width="width" :height="height" :scale="scale" @click="clicked" />
+            <SeparatorBackground :width="width" :height="height" :scale="scale" />
+            <rect class="clickRect" id="clickRect" :width="width" :height="height" @click="clicked"></rect>
+
             <rect class="glowRect"></rect>
             <Section
                 class="structureSection"
@@ -27,7 +42,7 @@
                 :height="sectionHeight"
                 :scale="scale"
                 :showLoudness="showLoudness"
-                :coloring="'circular'"
+                :coloring="catColoring ? 'categoricalMDS' : 'circular'"
                 :verticalOffset="paddingTop"
                 :loop="false"
             />
@@ -52,7 +67,7 @@
             :height="sectionHeight * 3"
             type="image"
         ></v-skeleton-loader>
-        <MDS v-if="hasStructure" :size="width / 3" :sections="courseStructure"></MDS>
+        <MDS v-if="showMDS && hasStructure" :size="width / 3" :sections="courseStructure"></MDS>
     </div>
 </template>
 
@@ -65,6 +80,7 @@ import Markers from "./Markers";
 import MDS from "./MDS";
 
 import SeparatorBackground from "./SeparatorBackground";
+import Tooltip from "./Tooltip.vue";
 
 import * as testing from "../../app/testing";
 import ZoomCanvas from "../../app/visualization/ZoomCanvas";
@@ -79,6 +95,7 @@ export default {
         Section,
         Markers,
         MDS,
+        Tooltip,
     },
     data() {
         return {
@@ -87,6 +104,9 @@ export default {
             spaceBetweenCourseFine: 50,
             showFineStructure: false,
             showLoudness: true,
+            showMDS: false,
+            catColoring: false,
+            showHelp: false,
         };
     },
     computed: {
@@ -132,8 +152,10 @@ export default {
             this.$refs["holisticSeeker"].rightClick(event);
         },
         clicked(event) {
+            log.debug("Clicked");
             this.$refs["holisticSeeker"].clicked(event);
         },
+        clickedHelp(event) {},
     },
 };
 </script>
@@ -147,5 +169,8 @@ export default {
 }
 .structureSection {
     z-index: 100;
+}
+.clickRect {
+    opacity: 0;
 }
 </style>

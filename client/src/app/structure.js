@@ -852,11 +852,28 @@ export function groupSimilarSegments(segments, pathSSM, maxDistance = 0.8) {
     return groupedSegments;
 }
 
-export function MDSColorSegments(segments, pathSSM, strategy = "overlap", coloringStrategy) {
+export function MDSColorSegments(segments, pathSSM, strategy = "overlap", coloringStrategy, colorBoth = false) {
     if (segments.length === 0) return segments;
 
     const distanceMatrix = pathExtraction.getDistanceMatrix(segments, pathSSM, strategy);
-    return MDSColorGivenDistanceMatrix(segments, distanceMatrix, coloringStrategy);
+    const segmentsColored = MDSColorGivenDistanceMatrix(segments, distanceMatrix, coloringStrategy);
+
+    if (colorBoth) {
+        const distanceMatrixCategorical = pathExtraction.getDistanceMatrix(segments, pathSSM, strategy, 0);
+        const segmentsColoredCategorical = MDSColorGivenDistanceMatrix(
+            segments,
+            distanceMatrixCategorical,
+            coloringStrategy
+        );
+
+        for (let i = 0; i < segmentsColored.length; i++) {
+            segmentsColored[i].catColorAngle = segmentsColoredCategorical[i].colorAngle;
+            segmentsColored[i].catColorRadius = segmentsColoredCategorical[i].colorRadius;
+            segmentsColored[i].catMdsFeature = segmentsColoredCategorical[i].mdsFeature;
+        }
+    }
+
+    return segmentsColored;
 }
 
 export function MDSColorSegmentsPerGroup(segments, pathSSM, strategy = "overlap", coloringStrategy) {
@@ -895,6 +912,7 @@ export function MDSColorSegmentsPerGroup(segments, pathSSM, strategy = "overlap"
 export function MDSColorGivenDistanceMatrix(segments, distanceMatrix, coloringStrategy) {
     const coloredSegments = [];
     const MdsCoordinates = mds.getMDSCoordinates(distanceMatrix, coloringStrategy);
+
     const MdsFeature = mds.getMDSFeature(distanceMatrix);
 
     segments.forEach((segment, index) => {
@@ -925,6 +943,11 @@ export function MDSColorGivenDistanceMatrix(segments, distanceMatrix, coloringSt
         segment.colorAngle = (1 + (segment.colorAngle - largestGapAngle)) % 1;
     });
 
+    // sort by family and start time
+    coloredSegments.sort((a, b) => {
+        return a.groupID > b.groupID ? 1 : b.groupID > a.groupID ? -1 : a.start - b.start;
+    });
+
     return coloredSegments;
 }
 
@@ -948,19 +971,19 @@ export function MDSIntuitionFlip(coloredSamples, timbreFeatures) {
 
     log.debug("loudness", loudness, "darkness", darkness, "mids", mids, "attack", attack);
 
-    if (Math.sign(loudness) > 0 && Math.sign(darkness) < 0) {
+    if (Math.sign(loudness) < 0) {
         return coloredSamples;
     }
 
     // By default the graph should display high loudness as high value
-    if (Math.sign(loudness) < 0) {
+    if (Math.sign(loudness) > 0) {
         return coloredSamples.map((val) => 1 - val);
     }
 
     // If graph depicts mostly darkness, we want bright sounds to have a high value
-    if (Math.sign(darkness) > 0 && Math.abs(darkness) > 2 * Math.abs(loudness)) {
+    /*if (Math.sign(darkness) > 0 && Math.abs(darkness) > 2 * Math.abs(loudness)) {
         return coloredSamples.map((val) => 1 - val);
-    }
+    }*/
 
     return coloredSamples;
 }
@@ -1163,7 +1186,7 @@ export function MDSColorTimbreSegmentsWithFeatures(timbreFeatures, segments, sam
     });
 
     distanceMatrix.fill((x, y) => {
-        return 1 - similarity.euclidianTimbre(segmentVectors[x], segmentVectors[y]);
+        return 1 - similarity.cosine(segmentVectors[x], segmentVectors[y]);
     });
 
     return MDSColorGivenDistanceMatrix(segments, distanceMatrix, strategy);

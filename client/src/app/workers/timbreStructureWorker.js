@@ -6,9 +6,7 @@ import * as events from "../events";
 import * as noveltyDetection from "../noveltyDetection";
 import * as Features from "../Features";
 import Section from "../Section";
-import { getDistanceMatrix } from "../pathExtraction";
 import * as mds from "../mds";
-import { logeq } from "numeric";
 
 addEventListener("message", (event) => {
     const data = event.data;
@@ -43,7 +41,7 @@ addEventListener("message", (event) => {
             const end = start + segment.length * downSampleDuration;
             const section = new Section({ start, end });
             const smoothedSegment = filter.gaussianBlur1D(segment, 3, "mirror");
-            section.graph = smoothedSegment;
+            section.graph = smoothedSegment.map((val) => 1 - val);
             section.mdsFeature = segment.reduce((a, v, i) => (a * i + v) / (i + 1));
             segmentedTimbreGraph.push(section);
             prevPeakSample = peak.sample;
@@ -61,8 +59,8 @@ addEventListener("message", (event) => {
         data.sampleDuration
     );
 
-    const smoothedTimbreFeatures = filter.gaussianBlurFeatures(data.timbreFeatures, 2);
-    const eventArray = events.detectAverageWindow(smoothedTimbreFeatures, data.sampleDuration, 20, 0.4);
+    const smoothedTimbreFeatures = filter.gaussianBlurFeatures(data.timbreFeatures, 4);
+    const eventArray = events.detectAverageWindow(smoothedTimbreFeatures, data.sampleDuration, 60, 0.6);
 
     const newEvents = events.computeEvents(data.timbreFeatures, data.sampleDuration);
     //const lof = events.detectLOF(data.timbreFeatures);
@@ -80,7 +78,7 @@ function calculateSegmentedTimbreGraph(data) {
     const segmentationSmoothingLength = Math.round(5);
     const continuousSmoothingLength = Math.round(10);
 
-    const ssmTimbre = SSM.calculateSSM(data.timbreFeatures, data.sampleDuration);
+    const ssmTimbre = SSM.calculateSSM(data.timbreFeatures, data.sampleDuration, false, 0, "cosine");
     const blurredTimbreLarge = filter.gaussianBlur2DOptimized(ssmTimbre, 5);
     const timbreNoveltyColumn = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbreLarge);
 
@@ -108,7 +106,8 @@ function calculateSegmentedTimbreGraph(data) {
     const downSampledFeatures = Features.downSample(frankenFeatures, downSampleAmount);
     log.debug("Downsampled", downSampledFeatures);
 
-    const mdsFeature = mds.getMDSCoordinatesSamples(downSampledFeatures, "Classic");
+    let mdsFeature = mds.getMDSCoordinatesSamples(downSampledFeatures, "Classic");
+    mdsFeature = structure.MDSIntuitionFlip(mdsFeature, downSampledFeatures);
 
     segments.forEach((segment, index) => {
         const downSampleStart = Math.round((downSampleAmount / features.length) * segment.startSample);

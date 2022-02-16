@@ -457,7 +457,7 @@ export function simplePathDetect(pathSSM, threshold = 0.1) {
     }
 }
 
-export function getDistanceMatrix(segments, pathSSM, strategy) {
+export function getDistanceMatrix(segments, pathSSM, strategy, kappa = 0.7) {
     const amount = segments.length;
     const distanceMatrix = new HalfMatrix({ size: amount, numberType: HalfMatrix.NumberType.FLOAT32 });
 
@@ -469,7 +469,6 @@ export function getDistanceMatrix(segments, pathSSM, strategy) {
         const inducedSegments = getInducedSegmentsFromSampleRange(sampleStart, sampleEnd, pathSSM);
         segmentInducedSegments.push(inducedSegments);
     });
-    const kappa = 0.75;
     distanceMatrix.fill((x, y) => {
         let dist = 0;
         const sameGroup = segments[x].groupID === segments[y].groupID;

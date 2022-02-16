@@ -8,7 +8,7 @@ export const levels = {
 };
 
 let currentLevel = () => levelStack[levelStack.length - 1];
-let levelStack = [levels.DEBUG];
+let levelStack = [levels.INFO];
 
 export let debug;
 export let info;

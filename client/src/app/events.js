@@ -13,14 +13,14 @@ import lof from "lof";
 export function detectAverageWindow(features, sampleDuration, windowSizeSeconds, threshold) {
     const uniquenessFeature = uniqueness.computeFromFeatures(features, sampleDuration, windowSizeSeconds);
     const events = [];
-    const uniquenessSmooth = filter.gaussianBlur1D(uniquenessFeature, 2);
+    const uniquenessSmooth = filter.gaussianBlur1D(uniquenessFeature, 1);
 
     const peaks = noveltyDetection.findPeaks(uniquenessSmooth);
     peaks.forEach((peak) => {
         if (peak.confidence >= threshold) {
             events.push({
                 time: peak.sample * sampleDuration,
-                confidence: (peak.confidence - threshold) / (1 - threshold),
+                confidence: 1,
                 uniqueness: uniquenessFeature[peak.sample],
                 timbre: features[peak.sample],
             });
@@ -47,12 +47,15 @@ export function color(events) {
     });
 }
 
-export function computeEvents(features, sampleDuration, median = 1, neighbourHoodSize = 6, threshold = 0.005) {
+export function computeEvents(features, sampleDuration, median = 1, neighbourHoodSize = 20, threshold = 0.01) {
     const events = [];
 
-    const medianTimbre = filter.medianFilterFeatures(features, 1);
+    //const blurTimbre = filter.medianFilterFeatures(features, 2);
+
+    const medianTimbre = filter.medianFilterFeatures(features, 4);
     const csFeature = colSumFeature(medianTimbre, sampleDuration);
-    const difFeatureRaw = splitAverageDifferenceFeature(medianTimbre, 6);
+    const difFeatureRaw = splitAverageDifferenceFeature(medianTimbre, 8);
+    //const difFeatureRaw = minDifferenceFeature(medianTimbre, 20);
     const colsumDiff = csFeature.map((colsumVal, index) => colsumVal * difFeatureRaw[index]);
     const eventPeaks = noveltyDetection.findPeaks(colsumDiff);
 
@@ -70,7 +73,7 @@ export function computeEvents(features, sampleDuration, median = 1, neighbourHoo
     let sd = Math.sqrt(squareSum / squares.length);
 
     eventPeaks.forEach((peak) => {
-        if (colsumDiff[peak.sample] >= mean + sd * 1.5) {
+        if (colsumDiff[peak.sample] >= mean + sd * 4) {
             events.push({
                 time: peak.sample * sampleDuration,
                 confidence: 1,
@@ -106,6 +109,24 @@ export function splitAverageDifferenceFeature(features, size, offset = 2) {
         const differenceLeft = 1 - similarity.cosine(features[i], leftBlur[i]);
         const differenceRight = 1 - similarity.cosine(features[i], rightBlur[i]);
         differenceFeature.push(Math.min(differenceLeft, differenceRight));
+    }
+
+    return differenceFeature;
+}
+
+export function minDifferenceFeature(features, size, offset = 2) {
+    const differenceFeature = [];
+    for (let i = 0; i < features.length; i++) {
+        let minDistance = 1;
+        for (let j = 0; j < size; j++) {
+            if (i - offset - j >= 0) {
+                minDistance = Math.min(minDistance, 1 - similarity.cosine(features[i], features[i - offset - j]));
+            }
+            if (i + offset + j < features.length) {
+                minDistance = Math.min(minDistance, 1 - similarity.cosine(features[i], features[i + offset + j]));
+            }
+        }
+        differenceFeature.push(minDistance);
     }
 
     return differenceFeature;

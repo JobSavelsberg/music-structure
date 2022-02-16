@@ -173,7 +173,6 @@ export function medianFilterFeatures(features, size) {
         }
         filteredFeatures.push(newVector);
     }
-    log.error("FilteredFeatures", filteredFeatures);
     return filteredFeatures;
 }
 

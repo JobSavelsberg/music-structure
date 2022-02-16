@@ -3,37 +3,57 @@
         <div>
             <v-row class="d-flex justify-center py-2"> </v-row>
             <div v-if="showPrototype">
-                <Matrixes :width="width" />
-                <Structure :width="width" />
+                <!--<Matrixes :width="width" />-->
+                <!--<Structure :width="width" />-->
                 <GroundTruth :width="width" />
                 <Graphs :width="width" />
 
-                <Beats :width="width" />
+                <!--<Beats :width="width" />-->
                 <PitchTimbre :width="width" />
                 <!--<ScapePlot :width="width" />-->
             </div>
+
             <div v-if="!showPrototype">
-                <HolisticStructure :width="width" />
-                <!--div style="height: 200px"></div>-->
+                <div style="height: 5px"></div>
+
                 <svg
                     v-if="!loadingTrack && tsneReady"
                     class="tsneContainer"
-                    :style="`height: ${tsneSize + 8 * 20}px; width: ${width}px; left: ${10}`"
+                    :style="`height: ${tsneSize + 5 * 20}px; width: ${width}px; left: ${10}`"
                 >
+                    <line
+                        v-for="index in tsneCoords.length - 2"
+                        :key="index + 'clusterline'"
+                        :x1="tsneCoordX(tsneCoords[index][0])"
+                        :y1="tsneCoordY(tsneCoords[index][1])"
+                        :x2="tsneCoordX(tsneCoords[index + 1][0])"
+                        :y2="tsneCoordY(tsneCoords[index + 1][1])"
+                        :stroke="clusterColor(clusters[index])"
+                        style="stroke-opacity: .1;"
+                        stroke-width="2"
+                    />
                     <circle
                         v-for="(coord, index) in tsneCoords"
                         :key="index + 'clustercircle'"
-                        :r="isPlayingSample(index) ? 8 : 2"
-                        :cx="2 + ((coord[0] + 1) * tsneSize) / 2"
-                        :cy="2 + ((coord[1] + 1) * tsneSize) / 2"
+                        :r="isPlayingSample(index) ? 5 + tsneDynamics(index) * 10 : 3 + tsneDynamics(index) * 5"
+                        :cx="
+                            tsneCoordX(coord[0]) -
+                                (isPlayingSample(index) ? 5 + tsneDynamics(index) * 10 : 3 + tsneDynamics(index) * 5) /
+                                    2
+                        "
+                        :cy="
+                            tsneCoordY(coord[1]) -
+                                (isPlayingSample(index) ? 5 + tsneDynamics(index) * 10 : 3 + tsneDynamics(index) * 5) /
+                                    2
+                        "
                         :class="isPlayingSample(index) ? 'segmentCirclePlaying' : 'segmentCircle'"
                         :fill="isPlayingSample(index) ? 'white' : clusterColor(clusters[index])"
                     />
 
                     <circle
-                        :r="8"
-                        :cx="2 + ((tsneCoords[playingSample][0] + 1) * tsneSize) / 2"
-                        :cy="2 + ((tsneCoords[playingSample][1] + 1) * tsneSize) / 2"
+                        :r="5 + tsneDynamics(playingSample) * 10"
+                        :cx="tsneCoordX(tsneCoords[playingSample][0]) - (5 + tsneDynamics(playingSample) * 10) / 2"
+                        :cy="tsneCoordY(tsneCoords[playingSample][1]) - (5 + tsneDynamics(playingSample) * 10) / 2"
                         :class="'playingSegmentCircle'"
                         :style="
                             `transition:  cx ${track.features.sampleDuration}s linear, cy ${track.features.sampleDuration}s linear;`
@@ -50,20 +70,35 @@
                         :width="samplePosNormalized(clusterSection.end - clusterSection.start) * width"
                         :height="20"
                     ></rect>
+                    <rect
+                        class="seekerRect"
+                        :x="seekerNormalized * width - 1.25"
+                        :y="tsneSize"
+                        :width="2.5"
+                        :height="20 * 6"
+                        fill="rgb(255,255,255,0.3)"
+                    ></rect>
                 </svg>
+                <HolisticStructure :width="width" />
+
                 <TimbreSegmentedGraph :width="width" />
+
+                <!--<Tempo :width="width" :height="70" />-->
+
                 <Chords :width="width" />
+                <div style="height: 50px"></div>
+
                 <Tonality :width="width" />
 
-                <div style="height: 600px"></div>
-                <TimbreStructure :width="width" />
-                <TimbreGraph :width="width" />
+                <div style="height: 400px"></div>
+                <!--<TimbreStructure :width="width" />
+                <TimbreGraph :width="width" />-->
             </div>
         </div>
 
-        <div class="floatingTime">
+        <!--<div class="floatingTime">
             {{ parseFloat(seekerTime).toFixed(2) }}
-        </div>
+        </div>-->
     </div>
 </template>
 
@@ -80,6 +115,7 @@ import TimbreStructure from "./visualizations/TimbreStructure";
 import TimbreSegmentedGraph from "./visualizations/TimbreSegmentedGraph";
 import Tonality from "./visualizations/Tonality";
 import Chords from "./visualizations/Chords";
+import Tempo from "./visualizations/Tempo";
 
 import TimbreGraph from "./visualizations/TimbreGraph";
 
@@ -91,16 +127,17 @@ import * as d3 from "d3";
 export default {
     props: ["width", "showPrototype"],
     components: {
-        Matrixes,
+        //Matrixes,
         GroundTruth,
-        Beats,
+        //Beats,
         Graphs,
         //ScapePlot,
         PitchTimbre,
-        Structure,
+        //Tempo,
+        //Structure,
         HolisticStructure,
-        TimbreGraph,
-        TimbreStructure,
+        //TimbreGraph,
+        //TimbreStructure,
         Chords,
         TimbreSegmentedGraph,
         Tonality,
@@ -109,7 +146,7 @@ export default {
         return {
             readyForPrototypeVis: false,
             tsneReady: false,
-            tsneSize: 500,
+            tsneSize: this.width * 0.75,
         };
     },
     watch: {
@@ -179,6 +216,19 @@ export default {
         },
         samplePosNormalized(sample) {
             return (sample * this.track.features.sampleDuration) / this.track.getAnalysisDuration();
+        },
+        tsneCoord(x, y) {
+            return [this.tsneCoordX(x), this.tsneCoordY(y)];
+        },
+        tsneCoordX(x) {
+            return this.width / 2 + (x * this.tsneSize) / 2;
+        },
+        tsneCoordY(y) {
+            return 80 + ((y + 1) * this.tsneSize) / 2;
+        },
+        tsneDynamics(index) {
+            const fraction = index / this.tsneCoords.length;
+            return this.track.features.directLoudness[Math.floor(this.track.features.directLoudness.length * fraction)];
         },
     },
 };

@@ -41,7 +41,7 @@ addEventListener("message", (event) => {
     }
 
     // tonality feature
-    const smallBlurredPitch = filter.gaussianBlurFeatures(data.fastSampledPitch, 2);
+    const smallBlurredPitch = filter.gaussianBlurFeatures(data.fastSampledPitch, 5);
     const largeBlurredPitch = filter.gaussianBlurFeatures(data.fastSampledPitch, 75);
     const hugeBlurredPitch = filter.gaussianBlurFeatures(data.fastSampledPitch, 70);
     const windowSize = 150;
@@ -52,8 +52,8 @@ addEventListener("message", (event) => {
     const keyFeature = [];
     const chordFeature = [];
     for (let i = 0; i < smallBlurredPitch.length; i++) {
-        tonalityFeatureSmall.push(keyDetection.detect2D(largeBlurredPitch[i]));
-        tonalityFeatureLarge.push(audioUtil.tonality(largeBlurredPitch[i]));
+        tonalityFeatureSmall.push(keyDetection.detect2D(smallBlurredPitch[i]));
+        tonalityFeatureLarge.push(keyDetection.detect2D(largeBlurredPitch[i]));
 
         keyFeature.push(
             keyDetection.detect(
@@ -63,6 +63,28 @@ addEventListener("message", (event) => {
             )
         );
     }
+
+    const tonalityDerivative = noveltyDetection.featureDerivative(tonalityFeatureSmall);
+    const segments = structure.createSegmentsFromNovelty(tonalityDerivative, data.sampleDuration, 0.35);
+    const segmentedTonality = [];
+    segments.forEach((segment) => {
+        const featureSegment = data.fastSampledPitch.slice(segment.startSample, segment.endSample);
+        const smoothedFeatureSegment = filter.gaussianBlurFeatures(featureSegment, 75);
+        segmentedTonality.push(smoothedFeatureSegment);
+    });
+
+    log.debug("segmentedTonality", segmentedTonality);
+
+    const frankenFeatures = [];
+    segmentedTonality.forEach((featureSegment) => {
+        frankenFeatures.push(...featureSegment);
+    });
+
+    const tonalityFeatureNew = [];
+    for (let i = 0; i < smallBlurredPitch.length; i++) {
+        tonalityFeatureNew.push(keyDetection.detect2D(frankenFeatures[i]));
+    }
+    log.debug("tonalityFeatureNew", tonalityFeatureNew);
 
     postMessage({
         chords: prunedChords,

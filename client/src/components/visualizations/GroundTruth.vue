@@ -64,6 +64,8 @@ export default {
             this.zoomCanvas.setTrackDuration(this.track);
             this.zoomCanvas.setDrawFunction(this.drawGT);
         });
+        this.zoomCanvas.setTrackDuration(this.track);
+        this.zoomCanvas.setDrawFunction(this.drawGT);
     },
     methods: {
         drawGT() {

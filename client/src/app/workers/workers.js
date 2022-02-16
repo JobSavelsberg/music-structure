@@ -3,14 +3,14 @@ import HalfMatrix from "../dataStructures/HalfMatrix";
 import * as log from "../../dev/log";
 
 export async function init() {
-    ssm = new Worker("./ssmWorker.js", { type: "module" });
+    //ssm = new Worker("./ssmWorker.js", { type: "module" });
     timbreGraphWorker = new Worker("./timbreGraphWorker.js", { type: "module" });
     timbreStructureWorker = new Worker("./timbreStructureWorker.js", { type: "module" });
     harmonicStructureWorker = new Worker("./harmonicStructureWorker.js", { type: "module" });
     chordWorker = new Worker("./chordWorker.js", { type: "module" });
 
-    tsneWorker = new Worker("./tsneWorker.js", { type: "module" });
-    clusterWorker = new Worker("./clusterWorker.js", { type: "module" });
+    //tsneWorker = new Worker("./tsneWorker.js", { type: "module" });
+    // clusterWorker = new Worker("./clusterWorker.js", { type: "module" });
 }
 
 let isCalculating = false;

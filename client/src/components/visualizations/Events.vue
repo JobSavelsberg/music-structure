@@ -19,7 +19,7 @@
                 ></rect>
                 <circle
                     v-for="event in events"
-                    :key="event.time"
+                    :key="event.time + 'eventcircle'"
                     class="event"
                     :ref="`event${event.time}`"
                     :cx="eventSize + event.time * scale + eventSize / 2"
@@ -28,19 +28,19 @@
                     :fill="seekerInEvent(event) ? 'white' : color(event, event.confidence + 0.5)"
                     @click="clickEvent(event)"
                 ></circle>
-                <rect
+                <!--<rect
                     v-for="event in events"
-                    :key="event.time"
+                    :key="event.time + 'eventrect'"
                     class="rectevent"
                     :ref="`rectevent${event.time}`"
-                    :x="eventSize + event.time * scale + eventSize / 2"
-                    :y="eventHeight + 3"
+                    :x="eventSize + event.time * scale + eventSize / 2 - 2"
+                    :y="0"
                     :height="eventSize * 4"
                     :width="3"
                     rx="1"
                     :fill="seekerInEvent(event) ? 'white' : color(event, event.confidence + 0.5)"
                     @click="clickEvent(event)"
-                ></rect>
+                ></rect>-->
             </svg>
         </div>
     </div>
@@ -104,7 +104,7 @@ export default {
             return vis.sinebowColorNormalizedRadius(element.colorAngle, 1, confidence);
         },
         clickEvent(event) {
-            player.seekS(event.time);
+            player.seekS(event.time - 0.2);
             this.triggerEvent(event);
         },
         clickBackground(event) {
@@ -120,6 +120,8 @@ export default {
 <style scoped>
 .seeker {
     pointer-events: none;
+}
+.eventSVG {
 }
 .event {
     transition: 0.5s;

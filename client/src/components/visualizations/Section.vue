@@ -81,6 +81,9 @@ export default {
                     return vis.goldenRatioCategoricalColor(this.section.groupID, 0, 1);
                 case "circular":
                     return vis.sinebowColorNormalizedRadius(this.section.colorAngle, this.section.colorRadius, 1);
+                case "categoricalMDS":
+                    return vis.sinebowColorNormalizedRadius(this.section.catColorAngle, this.section.catColorRadius, 1);
+
                 case "linear":
                     return vis.zeroOneColorWarm(this.section.mdsFeature);
             }

@@ -111,6 +111,14 @@ export function circleOfFifthsColor(angle, radius, confidence = 1) {
     return `rgba(${c.r},${c.g},${c.b},${confidence})`;
 }
 
+export function circleOfFifthsColorBrightness(angle, radius, brightness = 1) {
+    const color = colorWheel(angle);
+    const colorHSL = d3.hsl(color);
+    colorHSL.s = radius; //Math.pow(radius, 0.2);
+    colorHSL.l = brightness;
+    return d3.rgb(colorHSL);
+}
+
 export function renderRawPitch(track, left, width, yOffset, height, ctx) {
     const scale = width / track.getAnalysis().track.duration;
     track.getSegments().forEach((segment) => {
@@ -205,7 +213,6 @@ export function renderTonality(track, left, width, yOffset, height, ctx) {
 }
 
 export function renderSSM(track, left, width, yOffset, height, ctx) {
-    console.log("Rendering ssm...");
     const scale = height / track.getAnalysis().track.duration;
     const size = track.getSegments().length;
     for (let i = 0; i < size; i++) {

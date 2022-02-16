@@ -6,7 +6,12 @@ import * as log from "../dev/log";
 import * as audioUtil from "./audioUtil";
 import * as vis from "./vis";
 import * as filter from "./filter";
-
+import * as structure from "./structure";
+import * as SSM from "./SSM";
+import * as events from "./events";
+import * as noveltyDetection from "./noveltyDetection";
+import Section from "./Section";
+import * as mds from "./mds";
 import * as pathExtraction from "./pathExtraction";
 import * as d3 from "d3";
 
@@ -61,6 +66,8 @@ export default class Track {
 
     keyFeature = [];
 
+    //tempoFeature = { data: [], min: 0, max: 0, avg: 0 };
+
     events = [];
     timbreStructure = [];
     timbreFeatureGraph;
@@ -111,9 +118,79 @@ export default class Track {
             sampleBlur: sampleBlur,
             downsampleAmount: maxTimbreDownSamples,
         });
-        this.smoothedTimbre = filter.gaussianBlurFeatures(this.features.sampled.timbres, 5);
+
+        const segmentationSmoothingLength = Math.round(10);
+        const continuousSmoothingLength = Math.round(10);
+
+        const ssmTimbre = SSM.calculateSSM(
+            this.features.sampled.timbres,
+            this.features.sampleDuration,
+            false,
+            0,
+            "cosine"
+        );
+        const blurredTimbreLarge = filter.gaussianBlur2DOptimized(ssmTimbre, 5);
+        const timbreNoveltyColumn = noveltyDetection.absoluteEuclideanColumnDerivative(blurredTimbreLarge);
+
+        const segmentationSmoothedFeatures = filter.gaussianBlurFeatures(
+            this.features.sampled.timbres,
+            segmentationSmoothingLength
+        );
+        const segmentationDerivative = noveltyDetection.featureDerivative(segmentationSmoothedFeatures);
+        const smoothedSegmentationDerivative = filter.gaussianBlur1D(segmentationDerivative, 5);
+        const segments = structure.createSegmentsFromNovelty(
+            smoothedSegmentationDerivative,
+            this.features.sampleDuration,
+            0.2
+        );
+        const averagedColouredSegments = structure.processTimbreSegments(
+            this.features.sampled.timbres,
+            segments,
+            this.features.sampleDuration
+        );
+
+        const segmentedFeatures = [];
+        segments.forEach((segment) => {
+            const featureSegment = this.features.sampled.timbres.slice(segment.startSample, segment.endSample);
+            const smoothedFeatureSegment = filter.gaussianBlurFeatures(featureSegment, 5);
+            segmentedFeatures.push(smoothedFeatureSegment);
+        });
+
+        const frankenFeatures = [];
+        segmentedFeatures.forEach((featureSegment) => {
+            frankenFeatures.push(...featureSegment);
+        });
+        const downSampleAmount = 200;
+        //this.smoothedTimbre = Features.downSample(frankenFeatures, downSampleAmount);
+        this.smoothedTimbre = frankenFeatures;
+        //this.smoothedTimbre = filter.gaussianBlurFeatures(this.features.sampled.timbres, 4);
         log.debug("Emit features processed");
 
+        /*let beatIndex = 0;
+        const tempoSampleAmount = 350;
+        const tempoSampleDuration = this.features.duration / tempoSampleAmount;
+        this.tempoFeature.min = 500;
+        this.tempoFeature.max = 0;
+        this.tempoFeature.avg = 0;
+        for (let i = 0; i < tempoSampleAmount; i++) {
+            let [start, duration] = this.features.beatsStartDuration[beatIndex];
+            while (start + duration < tempoSampleDuration * i) {
+                beatIndex++;
+                [start, duration] = this.features.beatsStartDuration[beatIndex];
+            }
+            const bpm = 60 / duration;
+            this.tempoFeature.data.push(bpm);
+            this.tempoFeature.avg += bpm / tempoSampleAmount;
+            this.tempoFeature.min = Math.min(this.tempoFeature.min, bpm);
+            this.tempoFeature.max = Math.max(this.tempoFeature.max, bpm);
+        }
+        this.tempoFeature.data = filter.gaussianBlur1D(
+            this.tempoFeature.data,
+            Math.round(10 / tempoSampleDuration),
+            "mirror"
+        );*/
+
+        //log.debug("Tempofeature", this.tempoFeature);
         window.eventBus.$emit("featuresProcessed");
 
         //this.tsne();

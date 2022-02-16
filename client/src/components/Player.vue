@@ -15,37 +15,45 @@
         </div>
 
         <!-- Waveform -->
-        <Seeker
-            class="seeker"
-            :ref="'holisticSeeker'"
-            :width="width"
-            :height="height + markerLabelHeight"
-            :color="'rgb(255,255,255,1)'"
-            :markerOpacity="1"
-            showMarkerLabel
-        />
-        <div v-show="!loadingTrack" class="waveformWrapper" @click="clickedWaveform">
-            <canvas id="waveform" :height="height + markerLabelHeight" class="waveform pa-0 ma-0"></canvas>
-            <svg
-                v-if="false && !loadingTrack"
-                :height="height"
+        <div v-if="doDrawWaveform">
+            <Seeker
+                class="seeker"
+                :ref="'holisticSeeker'"
                 :width="width"
-                class="seekerSVG"
-                :style="`transform: translate(${-width}px, 0px);`"
-            >
-                <rect
-                    :x="0"
-                    :y="0"
-                    :width="seekerNormalized * width"
+                :height="height + markerLabelHeight"
+                :color="'rgb(255,255,255,1)'"
+                :markerOpacity="1"
+                showMarkerLabel
+            />
+            <div v-show="!loadingTrack" class="waveformWrapper" @click="clickedWaveform">
+                <canvas id="waveform" :height="height + markerLabelHeight" class="waveform pa-0 ma-0"></canvas>
+                <svg
+                    v-if="false && !loadingTrack"
                     :height="height"
-                    :fill="'#121212'"
-                    class="darkenWaveform"
-                ></rect>
-                <rect :x="seekerNormalized * width - 1.25" :y="0" :width="2.5" :height="height" fill="#1DB954"></rect>
-            </svg>
-        </div>
-        <div v-if="loadingTrack">
-            <v-progress-linear indeterminate color="success"></v-progress-linear>
+                    :width="width"
+                    class="seekerSVG"
+                    :style="`transform: translate(${-width}px, 0px);`"
+                >
+                    <rect
+                        :x="0"
+                        :y="0"
+                        :width="seekerNormalized * width"
+                        :height="height"
+                        :fill="'#121212'"
+                        class="darkenWaveform"
+                    ></rect>
+                    <rect
+                        :x="seekerNormalized * width - 1.25"
+                        :y="0"
+                        :width="2.5"
+                        :height="height"
+                        fill="#1DB954"
+                    ></rect>
+                </svg>
+            </div>
+            <div v-if="loadingTrack">
+                <v-progress-linear indeterminate color="success"></v-progress-linear>
+            </div>
         </div>
     </div>
 </template>
@@ -68,6 +76,7 @@ export default {
             height: 50,
             canvas: null,
             ctx: null,
+            doDrawWaveform: false,
         };
     },
     computed: {

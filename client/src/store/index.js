@@ -20,7 +20,7 @@ export default new Vuex.Store({
         seekerUpdateSpeed: 40, // 100ms
         isZoomed: false,
         zoomScale: 10,
-        playerActive: false,
+        playerActive: true,
         inputFocus: false,
     },
     mutations: {

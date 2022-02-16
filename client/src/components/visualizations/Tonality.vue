@@ -9,6 +9,14 @@
             <p>
                 Tonality
             </p>
+            <v-spacer></v-spacer>
+            <v-btn icon small @click="showHelp = !showHelp"> <v-icon color="#ccc" dark>mdi-help-box</v-icon> </v-btn>
+            <Tooltip :show="showHelp">
+                This visualization shows the song's tonality change over time. Similarly to the chords, the colours
+                correspond to the circle of fifths. Click the
+                <v-icon small color="#ccc">mdi-unfold-more-horizontal</v-icon> button to see the circle of fifths with their
+                corresponding key names. A real-time, fast and slow pointer shows the detected key for that moment.
+            </Tooltip>
         </v-row>
         <Seeker
             v-if="hasTonality"
@@ -71,19 +79,20 @@
                         {{ keyName(keyNumber + 12) }}
                     </text>
                 </g>
-                <path
-                    class="tonalityPointer"
-                    :transform="`rotate(${-currentAngle * 360} ${co5Size / 2} ${co5Size / 2})`"
-                    :d="tonalityPointerPath(tonality)"
-                    stroke-width="4"
-                    :stroke="color(1 - currentAngle)"
-                />
+
                 <path
                     class="tonalityPointerSlow"
-                    :transform="`rotate(${-currentAngleSlow * 360} ${co5Size / 2} ${co5Size / 2})`"
+                    :transform="`rotate(${currentAngleSlow * 360} ${co5Size / 2} ${co5Size / 2})`"
                     :d="tonalityPointerPath(tonalitySlow)"
                     stroke-width="4"
-                    stroke="white"
+                    :stroke="color(currentAngleSlow, 0.6, 0.6)"
+                />
+                <path
+                    class="tonalityPointer"
+                    :transform="`rotate(${currentAngle * 360} ${co5Size / 2} ${co5Size / 2})`"
+                    :d="tonalityPointerPath(tonality)"
+                    stroke-width="4"
+                    :stroke="color(currentAngle)"
                 />
             </svg>
         </div>
@@ -101,7 +110,7 @@ import Section from "./Section";
 
 import ClickableBackground from "./ClickableBackground";
 import SeparatorBackground from "./SeparatorBackground";
-
+import Tooltip from "./Tooltip.vue";
 import * as testing from "../../app/testing";
 import ZoomCanvas from "../../app/visualization/ZoomCanvas";
 import * as player from "../../app/player";
@@ -111,21 +120,23 @@ export default {
     props: ["width"],
     components: {
         Seeker,
+        Tooltip,
     },
     data() {
         return {
             paddingTop: 10,
-            sectionHeight: 15,
+            sectionHeight: 20,
             showLoudness: true,
             accumulativeAngle: [],
             collapsed: true,
             co5Size: 300,
+            showHelp: false,
         };
     },
     computed: {
         height() {
             let height = 0;
-            height += this.sectionHeight * 3;
+            height += this.sectionHeight * 2;
             height += 2 * 2;
             return height;
         },
@@ -208,7 +219,7 @@ export default {
         },
         tonalityPointerPath(tonality) {
             const scale = this.co5Size / 2;
-            const radius = Math.tanh(tonality[this.currentFastSample][1] * 3) * 0.65;
+            const radius = Math.tanh(tonality[this.currentFastSample][1] * 3) * 0.5;
             const x = 0; // Math.cos(this.tonality[this.currentSample][0] * Math.PI * 2);
             const y = -1; //Math.sin(this.tonality[this.currentSample][0] * Math.PI * 2);
 
@@ -226,8 +237,7 @@ export default {
 
             for (let i = 0; i < this.tonality.length; i++) {
                 const x = i * this.fastSampleDuration * this.scale;
-                this.ctx.fillStyle = this.color(this.tonality[i][0], this.tonality[i][1] * 1.5, 1);
-                this.ctx.fillRect(x, 0, this.fastSampleDuration * this.scale + 2, this.sectionHeight);
+
                 this.ctx.fillStyle = this.color(this.tonalitySlow[i][0], Math.sqrt(this.tonalitySlow[i][1] * 2), 1);
                 this.ctx.fillRect(
                     x,
@@ -235,13 +245,16 @@ export default {
                     this.fastSampleDuration * this.scale + 2,
                     this.sectionHeight
                 );
+                this.ctx.fillStyle = this.color(this.tonality[i][0], this.tonality[i][1] * 1.5, 1);
+                this.ctx.fillRect(x, 0, this.fastSampleDuration * this.scale + 2, this.sectionHeight);
+                /*
                 this.ctx.fillStyle = this.color(keyDetection.circleOfFifthsAngle(this.keyFeature[i]), 1, 1);
                 this.ctx.fillRect(
                     x,
                     (this.sectionHeight + 2) * 2,
                     this.fastSampleDuration * this.scale + 2,
                     this.sectionHeight
-                );
+                );*/
                 /*if (i === 0 || i === 200) {
                     this.ctx.fillStyle = "white";
                     this.ctx.fillRect(

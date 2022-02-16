@@ -78,6 +78,8 @@ export default {
             this.clickedSVG(event);
         },
         clickedSVG(event) {
+            log.debug("CLickedseeker");
+
             this.$store.commit("setInputFocus", false);
             let xNormalized = 0;
             let yNormalized = 0;
