@@ -1,49 +1,49 @@
 {
-  "name": "music-structure-server",
-  "version": "0.1.0",
-  "description": "",
-  "main": "server.js",
-  "engines": {
-    "node": "10.x",
-    "npm": "6.x"
-  },
-  "scripts": {
-    "start": "node server/server",
-    "server": "nodemon --watch server server/server.js",
-    "client:build": "cd client && npm run build",
-    "client": "cd client && npm run serve",
-    "test": "cd client && npm run test"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/JobSavelsberg/music-structure.git"
-  },
-  "author": "Job Savelsberg",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/JobSavelsberg/music-structure/issues"
-  },
-  "homepage": "https://github.com/JobSavelsberg/music-structure#readme",
-  "devDependencies": {
-    "@babel/plugin-proposal-class-properties": "^7.10.4",
-    "@babel/plugin-transform-runtime": "^7.12.1",
-    "nodemon": "^2.0.4"
-  },
-  "dependencies": {
-    "@babel/core": "^7.12.9",
-    "@babel/runtime": "^7.12.5",
-    "axios": "^0.20.0",
-    "body-parser": "^1.19.0",
-    "concurrently": "^5.3.0",
-    "connect-history-api-fallback": "^1.6.0",
-    "cors": "^2.8.5",
-    "dotenv": "^8.2.0",
-    "eslint": "^7.8.1",
-    "express": "^4.17.1",
-    "morgan": "^1.10.0",
-    "needle": "^2.5.0",
-    "node-fetch": "^2.6.0",
-    "querystring": "^0.2.0",
-    "serve-static": "^1.14.1"
-  }
+    "name": "music-structure-server",
+    "version": "0.2.0",
+    "description": "",
+    "main": "server.js",
+    "engines": {
+        "node": "10.x",
+        "npm": "6.x"
+    },
+    "scripts": {
+        "start": "node server/server",
+        "server": "nodemon --watch server server/server.js",
+        "client:build": "cd client && npm run build",
+        "client": "cd client && npm run serve",
+        "test": "cd client && npm run test"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/JobSavelsberg/music-structure.git"
+    },
+    "author": "Job Savelsberg",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/JobSavelsberg/music-structure/issues"
+    },
+    "homepage": "https://github.com/JobSavelsberg/music-structure#readme",
+    "devDependencies": {
+        "@babel/plugin-proposal-class-properties": "^7.10.4",
+        "@babel/plugin-transform-runtime": "^7.12.1",
+        "nodemon": "^2.0.4"
+    },
+    "dependencies": {
+        "@babel/core": "^7.12.9",
+        "@babel/runtime": "^7.12.5",
+        "axios": "^0.20.0",
+        "body-parser": "^1.19.0",
+        "concurrently": "^5.3.0",
+        "connect-history-api-fallback": "^1.6.0",
+        "cors": "^2.8.5",
+        "dotenv": "^8.2.0",
+        "eslint": "^7.8.1",
+        "express": "^4.17.1",
+        "morgan": "^1.10.0",
+        "needle": "^2.5.0",
+        "node-fetch": "^2.6.0",
+        "querystring": "^0.2.0",
+        "serve-static": "^1.14.1"
+    }
 }
